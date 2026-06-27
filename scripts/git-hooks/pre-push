@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Full pre-push gate: the canonical Standard Gate.
+exec sh "$(git rev-parse --show-toplevel)/scripts/gate.sh"

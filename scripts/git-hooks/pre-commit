@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# Fast pre-commit gate: format check + static analysis (no tests).
+# App directory is auto-detected (override with APP_DIR=<dir>).
+set -e
+root="$(git rev-parse --show-toplevel)"
+app_dir="$(sh "$root/scripts/app-dir.sh")"
+cd "$app_dir"
+dart format --output=none --set-exit-if-changed .
+flutter analyze

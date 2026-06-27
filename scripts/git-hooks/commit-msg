@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Reject commit messages that are not Conventional Commits.
+# Types: feat|fix|refactor|test|docs|chore
+pattern='^(feat|fix|refactor|test|docs|chore)(\(.+\))?: .+'
+# Validate the subject line only — a conforming body line must not rescue a bad subject.
+if ! head -n 1 "$1" | grep -Eq "$pattern"; then
+  echo "commit-msg: message must follow Conventional Commits:" >&2
+  echo "  <type>(<scope>): <description>" >&2
+  echo "  types: feat|fix|refactor|test|docs|chore" >&2
+  exit 1
+fi
