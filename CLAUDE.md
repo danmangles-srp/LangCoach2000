@@ -53,8 +53,8 @@ with a fresh eye: `/code-review` for code, `/design-review` for UI. The *mechani
 - **App identity** *(to pin at bootstrap, before M1; one-way doors)*: name **Rivendell**; Dart package
   `rivendell`; store/bundle id **`com.rivendell.app`** (org `com.rivendell`); platform **Android-first**
   (Samsung Voice Recorder integration is Android-specific); iOS port is a future goal (NFR-2.3.1), not in
-  scope now. Min OS **Android API 26 (8.0)**. App dir is auto-detected by `scripts/app-dir.sh` (default
-  `app/` if a single subdir holds `pubspec.yaml`, else the repo root) — pin the exact path at bootstrap.
+  scope now. Min OS **Android API 26 (8.0)**. App dir is pinned at **`app/`** (auto-detected by
+  `scripts/app-dir.sh`).
   *Pinned versions + any toolkit deviations (Riverpod 3.x, freezed, lint surface) are recorded in the
   bootstrap PR, following the `setup.md` matrix. Re-pin when the ecosystem aligns.*
 - **Stack**: Flutter (Dart 3, sound null safety) + Material 3 / **Riverpod** (riverpod_generator) for

@@ -1,0 +1,22 @@
+# Rivendell — static analysis.
+# Lint surface = very_good_analysis (riverpod_lint/custom_lint deferred per setup.md).
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    # freezed/json annotations on private/field targets.
+    invalid_annotation_target: ignore
+  language:
+    strict-casts: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # Use the injected AppLogger — never print().
+    avoid_print: true
+    public_member_api_docs: false
+    # LogSink is a single-method seam by design (testability over ceremony).
+    one_member_abstracts: false
+    # Conventional Flutter layout keeps the `flutter`/`flutter_test` SDK deps
+    # first; alphabetical sorting of those is noise.
+    sort_pub_dependencies: false

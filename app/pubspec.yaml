@@ -1,0 +1,41 @@
+name: rivendell
+description: Rivendell — an offline-first GPA review pipeline for learners of Uzbek.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.0
+
+# Pinned matrix — source of truth: plan.md → "Reconciled dependency matrix".
+# Domain packages (drift, audio, anki, fal.ai, smtp, charts, notifications) land
+# with the milestones that need them (T0.2+, T1.x, T4.x, T6.x). Re-pin only if a
+# resolution fails the gate, and record the bump in the PR.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State + DI / routing / models — core baseline (T0.1).
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^3.0.0
+  freezed_annotation: ^3.0.0
+  go_router: ^16.0.0
+  intl: ^0.19.0
+  json_annotation: ^4.9.0
+  riverpod_annotation: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Codegen — pairs move in lockstep with their runtime package.
+  build_runner: ^2.4.13
+  freezed: ^3.0.0
+  json_serializable: ^6.9.0
+  riverpod_generator: ^3.0.0
+
+  # Test doubles + lint surface.
+  mocktail: ^1.0.4
+  very_good_analysis: ^7.0.0
+
+flutter:
+  uses-material-design: true
