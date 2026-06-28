@@ -1,5 +1,3 @@
-// coverage:ignore-file
-//
 // Drift schema for Rivendell's local-only, SQLCipher-encrypted store.
 //
 // Tables land with their milestones (recordings @ M1, review_events @ M2,
@@ -7,8 +5,8 @@
 // trivial `key_values` table to prove the seam end-to-end (open → migrate →
 // round-trip) before any feature depends on it.
 //
-// Excluded from line-coverage: pure schema (column defs + a PK getter). The
-// table is exercised end-to-end by [app_database_test.dart] round-trips.
+// Pure schema (column defs + a PK getter); exercised end-to-end by
+// [app_database_test.dart] round-trips.
 
 import 'package:drift/drift.dart';
 

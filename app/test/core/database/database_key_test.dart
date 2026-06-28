@@ -25,9 +25,11 @@ void main() {
       );
     });
 
-    test('defaults to a non-empty key', () async {
-      final k = await InMemoryDatabaseKeyStore().readOrCreate();
-      expect(k, isNotEmpty);
+    test('echoes a full-shape key', () async {
+      final k = await InMemoryDatabaseKeyStore(
+        generateDatabaseKey(),
+      ).readOrCreate();
+      expect(k, matches(RegExp(r'^[0-9a-f]{64}$')));
     });
   });
 }

@@ -88,12 +88,13 @@ void main(List<String> args) {
   // of line-coverage entirely (typical for platform-plugin seams that can't be
   // exercised without a device). Lets pure logic stay at 100% while platform
   // glue is verified on-device instead of dragging the floor.
+  //
+  // Resolved once per SF (when its record opens) so each source file is read at
+  // most once across the whole pass.
   bool optsOut(String path) {
-    final file = File(path);
-    if (!file.existsSync()) return false;
-    return file
-        .readAsLinesSync()
-        .any((l) => l.contains('coverage:ignore-file'));
+    final src = File(path);
+    if (!src.existsSync()) return false;
+    return src.readAsLinesSync().any((l) => l.contains('coverage:ignore-file'));
   }
 
   var totalFound = 0;
@@ -101,17 +102,22 @@ void main(List<String> args) {
   final files = <_FileCov>[];
 
   String? current;
+  var currentOptsOut = false;
   var curFound = 0;
   var curHit = 0;
 
   void flush() {
     final path = current;
-    if (path != null && !isExcluded(path) && !optsOut(path) && curFound > 0) {
+    if (path != null &&
+        !isExcluded(path) &&
+        !currentOptsOut &&
+        curFound > 0) {
       totalFound += curFound;
       totalHit += curHit;
       files.add(_FileCov(path, curFound, curHit));
     }
     current = null;
+    currentOptsOut = false;
     curFound = 0;
     curHit = 0;
   }
@@ -120,7 +126,9 @@ void main(List<String> args) {
     final line = raw.trim();
     if (line.startsWith('SF:')) {
       flush();
-      current = line.substring(3);
+      final path = line.substring(3);
+      current = path;
+      currentOptsOut = optsOut(path);
     } else if (line.startsWith('DA:')) {
       // DA:<line>,<hits> — require a numeric line number to skip malformed records.
       final parts = line.substring(3).split(',');
