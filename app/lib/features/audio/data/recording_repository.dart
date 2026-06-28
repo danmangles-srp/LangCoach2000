@@ -32,10 +32,14 @@ class RecordingRepository {
   final AppDatabase _db;
 
   /// All recordings, newest file first (matches the library list order).
+  /// `id` is a secondary key so same-`createdAt` rows stay in a stable order —
+  /// batch recordings share a timestamp (Android `stat()` is second-grained).
   Future<List<Recording>> all() {
-    return (_db.select(
-      _db.recordings,
-    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
+    return (_db.select(_db.recordings)..orderBy([
+          (t) => OrderingTerm.desc(t.createdAt),
+          (t) => OrderingTerm.desc(t.id),
+        ]))
+        .get();
   }
 
   /// Look up a recording by its stable file path (SAF URI / absolute path).
@@ -47,7 +51,10 @@ class RecordingRepository {
 
   /// Upsert a batch of scanned files. New paths insert; known paths update
   /// their mutable stat (name/createdAt/sizeBytes/format) while preserving
-  /// `durationMs` and `id`. Returns the number of rows written.
+  /// `durationMs` and `id`. Returns the number of input files written (inserts
+  /// + updates), NOT distinct rows — a re-scan of an unchanged directory
+  /// returns the input size, so callers needing "new since last scan" must
+  /// diff against prior state themselves.
   ///
   /// Batched into one transaction so a 1000-file scan commits once
   /// (NFR-2.2.1 — indexing must not thrash the store).
@@ -88,5 +95,14 @@ class RecordingRepository {
 }
 
 /// Decode a stored recording's `format` text back to the typed enum.
-AudioFormat formatOf(Recording recording) =>
-    AudioFormat.values.byName(recording.format);
+///
+/// Returns `null` for a value outside [AudioFormat]. The column is free text,
+/// so a manual edit, stale build, or future migration could write something
+/// unknown — degrading to `null` keeps a single bad row from crashing the list
+/// UI instead of `AudioFormat.values.byName` throwing `ArgumentError`.
+AudioFormat? formatOf(Recording recording) {
+  for (final f in AudioFormat.values) {
+    if (f.name == recording.format) return f;
+  }
+  return null;
+}

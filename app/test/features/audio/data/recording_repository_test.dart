@@ -63,7 +63,10 @@ void main() {
       ]);
       // Duration filled by playback between scans.
       final first = await repo.findByPath('/svr/a.m4a');
-      await repo.setDuration(first!.id, durationMs: 42_000);
+      if (first == null) {
+        fail('expected recording at /svr/a.m4a after upsert');
+      }
+      await repo.setDuration(first.id, durationMs: 42_000);
 
       // Re-scan: file grew, name metadata changed.
       await repo.upsertScanned([
@@ -122,6 +125,29 @@ void main() {
       final all = await repo.all();
       expect(all.map((r) => r.filePath), ['/new.wav', '/old.wav']);
     });
+
+    test('ties on createdAt break by newest id for a stable order', () async {
+      final sameSecond = DateTime(2026, 6, 15, 10);
+      await repo.upsertScanned([
+        ScannedFile(
+          path: '/a.m4a',
+          name: 'a.m4a',
+          createdAt: sameSecond,
+          sizeBytes: 1,
+          format: AudioFormat.m4a,
+        ),
+        ScannedFile(
+          path: '/b.m4a',
+          name: 'b.m4a',
+          createdAt: sameSecond,
+          sizeBytes: 1,
+          format: AudioFormat.m4a,
+        ),
+      ]);
+      final all = await repo.all();
+      // Same createdAt → higher id (inserted last) leads, deterministically.
+      expect(all.map((r) => r.filePath), ['/b.m4a', '/a.m4a']);
+    });
   });
 
   group('schema', () {
@@ -159,8 +185,32 @@ void main() {
                 format: AudioFormat.m4a.name,
               ),
             ),
-        throwsA(isA<Object>()),
+        throwsA(
+          predicate(
+            (Object e) => e.toString().toUpperCase().contains('UNIQUE'),
+          ),
+        ),
       );
+    });
+  });
+
+  group('formatOf', () {
+    Recording row({String format = 'm4a'}) => Recording(
+      id: 1,
+      filePath: '/x',
+      name: 'x',
+      createdAt: DateTime(2026),
+      sizeBytes: 1,
+      format: format,
+      indexedAt: DateTime(2026),
+    );
+
+    test('decodes a stored format to its enum', () {
+      expect(formatOf(row(format: AudioFormat.wav.name)), AudioFormat.wav);
+    });
+
+    test('returns null for an unknown format instead of throwing', () {
+      expect(formatOf(row(format: 'bogus')), isNull);
     });
   });
 }

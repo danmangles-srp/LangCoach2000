@@ -1,7 +1,9 @@
 // Supported audio container formats (FR-1.1.1: `.m4a`, `.mp3`, `.wav`).
 //
-// Stored as the enum name in the `recordings.format` column via Drift's
-// EnumNameConverter; parsed back from a filename/extension at index time.
+// Stored as the enum name in the `recordings.format` text column (encoded at
+// the repository seam via `f.format.name`, decoded via `formatOf`). Plain text
+// is used instead of a Drift TypeConverter — `EnumNameConverter` misgenerates
+// in drift 2.34. Parsed from a filename/extension at index time.
 
 /// Audio container formats Rivendell indexes and plays.
 enum AudioFormat {
