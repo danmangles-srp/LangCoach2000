@@ -1,17 +1,35 @@
 // Rivendell — top-level router.
 //
-// go_router shell; the home route is a placeholder until T1.4 lands the
-// recordings list. Feature routes are added per milestone.
+// go_router shell with a first-run folder gate (FR-1.1.1): while no audio
+// folder is persisted, every route redirects to onboarding. The home route is
+// a placeholder until T1.4 lands the recordings list. Feature routes are
+// added per milestone.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:rivendell/features/audio/application/folder_providers.dart';
+import 'package:rivendell/features/audio/presentation/folder_onboarding_screen.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
+    redirect: (_, state) async {
+      // Block first-route resolution until the folder check resolves so the
+      // onboarding gate is correct from the first frame (DB open is fast).
+      final hasFolder = await ref.read(hasFolderProvider.future);
+      final onOnboarding = state.matchedLocation == '/onboarding';
+      if (!hasFolder && !onOnboarding) return '/onboarding';
+      if (hasFolder && onOnboarding) return '/';
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const _BootstrapScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const FolderOnboardingScreen(),
+      ),
     ],
   );
 });
@@ -36,7 +54,7 @@ class _BootstrapScreen extends StatelessWidget {
             Text('Rivendell', style: theme.textTheme.headlineMedium),
             const SizedBox(height: 8),
             Text(
-              'M0 bootstrap',
+              'M1 — folder ready',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
