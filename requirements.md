@@ -33,9 +33,13 @@
   stamp over the GPA intervals.
 * **FR-1.2.2:** The calculation engine must evaluate review status against day-intervals
   `D+1, D+2, D+4, D+7, D+30, D+90, D+180, D+365`.
-* **FR-1.2.3:** A recording is flagged "Reviewed" for its active milestone once it has been played past
-  **80%** of its total duration.
-* **FR-1.2.4:** Today's queue must show recordings due today; a recording that became due yesterday
+* **FR-1.2.3:** When a recording is played past **80%** of its total duration, the app appends a
+  **review event** to an append-only per-recording log (recording id, milestone index, completed-at
+  timestamp). "Reviewed for milestone N" is **derived** from the existence of an event for that milestone
+  — there is no separate flag to keep in sync.
+* **FR-1.2.4:** The app must surface each recording's review history — last reviewed date, milestone
+  reached, and total review count — on its detail screen, derived from the review-event log.
+* **FR-1.2.5:** Today's queue must show recordings due today; a recording that became due yesterday
   (1 day stale) is still presented and marked stale, but the stale prompt disappears on the 2nd stale day.
 
 ### 1.3 Vocabulary & Flashcard Automation

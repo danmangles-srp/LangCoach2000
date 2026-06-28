@@ -1,46 +1,42 @@
 ---
 name: structure
-description: Architecture, file organization, naming conventions, Riverpod patterns, repository/sync design, error handling, and null safety for any Flutter app built with this toolkit. Use when building features, writing new code, or reviewing implementation patterns.
+description: Architecture, file organization, naming conventions, Riverpod patterns, repository/outbound-queue design, error handling, and null safety. Use when building features, writing new code, or reviewing implementation patterns.
 ---
 
 # Structure: How We Build
 
 > This skill is **stack and process**, not product. The *what* (features, domain models, screens)
-> always lives in the project's `requirements.md` + `CLAUDE.md`. When this skill and the project docs
-> disagree about a pattern, the project docs win — but raise the conflict with the user first.
+> always lives in the project's `requirements.md` + `CLAUDE.md` + `plan.md`. When this skill and the
+> project docs disagree about a pattern, the project docs win — but raise the conflict with the user first.
 
-## Tech Stack (the default — keep unless the project overrides it)
+## Tech Stack (the project default — see `plan.md` for the full matrix)
 
 - **Language**: Dart 3, sound null safety (never the `!` null-assertion operator)
 - **UI**: Flutter + Material 3
 - **State + DI**: Riverpod (`riverpod_generator` — `@riverpod` Notifiers/providers); no service locators
-- **Navigation**: go_router (typed routes, deep links, auth redirect)
-- **Backend**: Supabase (Postgres + Auth + Storage + Edge Functions) — the default; swap per project.
-  *(TCKonnect: **none** — offline-only; the Drift store is the source of truth.)*
-- **Local store**: Drift (SQLite) — source of truth for the UI; a sync engine reconciles with the backend
+- **Navigation**: go_router (typed routes)
+- **Backend**: **none.** Offline-first; the Drift store is the single source of truth.
+- **Local store**: Drift (SQLite + SQLCipher) — the only source of truth for the UI
 - **Models**: Freezed + json_serializable
-- **Payments**: RevenueCat (`purchases_flutter`) for premium entitlements (apps that sell a subscription)
-- **Charts / extras**: add domain packages (e.g. `fl_chart`) only when a feature needs them
+- **Outbound work**: a one-way **Task Queue** (see below) — no sync engine, no reconciliation
+- **Charts / extras**: add domain packages (e.g. `fl_chart`, `just_audio`) only when a feature needs them
 
 ## Architecture: offline-first, feature-first
 
-The UI **always reads from and writes to the local store (Drift)**. A sync engine pushes queued local
-writes to the backend and pulls remote changes — so the app is fully usable offline and reconciles on
-reconnect (idempotent writes, last-write-wins by `id` + `updated_at`). Repositories are the only seam
-that knows about both the local store and the remote backend.
+The UI **always reads from and writes to the local Drift store**. There is no backend and no sync
+engine. The only thing that leaves the device is **outbound one-way work** to two gated services (Fal.ai
+images, SMTP email): it is enqueued in a local task table and drained when connectivity returns. The
+queue never feeds data *back* into the local store — there is nothing to reconcile.
 
 ```
-Widget → Controller (@riverpod Notifier) → Repository → { Local DAO (Drift) , Remote (Supabase) }
-                                                            ↑ Sync engine drains the write queue
+Widget → Controller (@riverpod Notifier) → Repository → Local DAO (Drift)
+                                                      ↘ TaskQueue (Drift) → OutboundService (Fal.ai / SMTP)
+                                                              ↑ drained by QueueWorker on reconnect
 ```
 
-> **When offline-first is overkill** (a read-only app, a thin client over a live API), say so and ask
-> the user before dropping the local store — it's a product decision, not a silent one. See `workflow.md`.
-
-> **TCKonnect (this project): offline-_only_.** There is **no backend and no sync engine** — the Drift
-> store is the single source of truth. Keep the repository → datasource seam (so a remote could be added
-> later), but implement **only** the local Drift datasource; ignore the Supabase/sync specifics in the
-> diagram above and in "Repositories & sync" below. See `CLAUDE.md` + `plan.md` → decision 1.
+> The repository → datasource seam stays abstract so a backend *could* be added later, but implement
+> **only** the local Drift datasource now. Do not build a sync engine, conflict resolution, or
+> last-write-wins logic — there is nothing to merge.
 
 ## File Organization
 
@@ -52,34 +48,32 @@ lib/
   main.dart
   app/
     app.dart                 root MaterialApp.router
-    router.dart              go_router config + auth redirect
+    router.dart              go_router config
     theme.dart               Material 3 theme: color + type + spacing tokens (see ui-ux.md)
   core/
-    backend/                 backend client provider (Supabase by default)
-    db/                      AppDatabase (Drift), tables, DAOs
-    sync/                    SyncEngine, WriteQueue, connectivity
+    db/                      AppDatabase (Drift), tables, DAOs, migrations
+    queue/                   TaskQueue (Drift table) + QueueWorker (drains on reconnect)
+    connectivity/            NetworkService seam (online/offline)
     result/                  Result<T> / Failure types
     time/                    AppClock abstraction, timezone-aware "today"
     notifications/           notification scheduler (seam) + platform/ adapter
-    logging/                 AppLogger (tagged: AUTH / SYNC / DB / IAP / …)
+    logging/                 AppLogger (tagged — see CLAUDE.md for the tag list)
   features/
-    auth/         { presentation, application, data, domain }
     <feature>/    one folder per product feature from requirements.md
-    paywall/      premium entitlement + purchase + restore (if the app sells a subscription)
+      presentation/  screens + widgets (stateless, driven by state)
+      application/   @riverpod controllers exposing immutable UI state
+      data/          repositories + local datasources (Drift DAOs)
+      domain/        Freezed models + enums
+      platform/      thin shells wrapping a device/SDK API (audio, Anki intents, Fal.ai, SMTP,
+                     notifications). Keep them logic-free; put `// coverage:ignore-file` atop each.
   shared/
     widgets/                 reusable widgets used across features
     formatting/              date/number/intl helpers
 ```
 
-Per-feature layers:
-- `presentation/` — screens + widgets (stateless, driven by state)
-- `application/` — `@riverpod` controllers exposing immutable UI state
-- `data/` — repositories + datasources (local DAO + remote)
-- `domain/` — Freezed models + enums
-- `platform/` — thin shells wrapping a device/SDK API (sign-in, payments, notifications, the backend
-  client). Keep them logic-free; put `// coverage:ignore-file` atop each. **All testable logic lives in
-  `domain`/`application`/`data`** — these are the coverage-counted surface. `presentation/` and
-  `platform/` are verified by widget tests / device, not by the coverage %.
+**Where logic lives:** `domain`/`application`/`data` are the coverage-counted surface — all testable
+logic lives there in pure Dart. `presentation/` is verified by widget/golden tests; `platform/` adapters
+are verified on-device. Neither is counted by the coverage floor.
 
 ## Naming Conventions
 
@@ -122,23 +116,26 @@ class ItemListController extends _$ItemListController {
 - **Never use `!`.** Use `?.`, `??`, pattern matching, or `ArgumentError`-guarded unwrap.
 - Expose read-only types (`List`, not growable internals leaked).
 
-### Repositories & sync
+### Repositories & the Task Queue
 - Repositories return `Result<T>` (or throw a typed `Failure` caught at the controller) — never leak a
-  raw backend/DB exception to the UI.
-- Every mutating op: write the local store first, enqueue a sync task, return immediately (optimistic).
-  The `SyncEngine` is idempotent and resolves conflicts by `updated_at` (last-write-wins) keyed on row id.
+  raw DB exception to the UI.
+- Mutating ops write the local store first and return immediately. If the change triggers outbound work
+  (generate an image, send an email), the repository **enqueues a task** in the `TaskQueue` and returns;
+  the `QueueWorker` drains it later.
+- The queue is **idempotent on a task key** (e.g. an Uzbek word for image generation) so a retried task
+  doesn't double-spend or duplicate. There is no inbound merge.
 - Inject an `AppClock` and the timezone so date-dependent logic is deterministic and testable.
 
-### Premium / entitlement gating
-- A single `entitlementProvider` exposes the active entitlement (e.g. from RevenueCat). Premium features
-  check it and otherwise show the paywall/upsell. Gate **at the controller/repository**, not only in the
-  widget.
+### Connectivity-gated services
+- The two outbound services (`Fal.ai`, `SMTP`) sit behind abstract seams (`AIImageService`,
+  `EmailService`). The `QueueWorker` checks `NetworkService` before calling them; if offline, the task
+  stays enqueued for the next drain.
 
 ## Code Quality
 
 - Small, deep functions that own one thing; dartdoc for non-obvious public APIs.
 - Comments explain **WHY**, not WHAT.
-- Validate external input at boundaries (backend responses, deep-link params, user input).
+- Validate external input at boundaries (user input, parsed vocab, Anki/Fal.ai responses).
 - Catch only what you can handle; log via `AppLogger` with the right tag; never `print()`.
 - New code should read like the code around it — match the file's existing idiom, not your preference.
 
@@ -152,7 +149,7 @@ Future<Result<List<Item>>> itemsForRange(TimeRange range);
 Default to a quick batched question (with a recommended option) rather than a silent assumption when:
 - A **data-model / domain shape** has more than one reasonable design (relationships, enum sets, what's
   the source of truth).
-- A choice is **hard to reverse** later (schema, sync/merge strategy, public API surface).
+- A choice is **hard to reverse** later (schema, public API surface).
 - The pattern here **conflicts** with `requirements.md` or `CLAUDE.md`.
 
 Just decide (and note it in the PR) for reversible, mechanical, or one-obvious-answer choices. See
@@ -161,6 +158,6 @@ Just decide (and note it in the PR) for reversible, mechanical, or one-obvious-a
 ## What NOT to Do
 
 - Use `!`, mutate state inside widgets, or call `print()`.
-- Hit the backend directly from a widget or controller (go through a repository).
-- Put any server secret (API keys, service-role keys) in the Flutter app — see `setup.md`.
+- Build a sync engine, conflict resolution, or last-write-wins reconciliation — there is no backend.
+- Put any key or credential in the Flutter app repo — see `setup.md`.
 - Add packages or features beyond `requirements.md`, or touch unrelated code.

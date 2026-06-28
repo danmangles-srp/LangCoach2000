@@ -1,6 +1,6 @@
 ---
 name: setup
-description: Flutter project bootstrap, pinned package versions, code generation, backend/payments config, static analysis, test infra, and git hooks. Use when initializing a new app or troubleshooting the build.
+description: Flutter project bootstrap, pinned package versions, code generation, static analysis, test infra, and git hooks. Use when initializing a new app or troubleshooting the build.
 ---
 
 # Setup: How We Start
@@ -12,19 +12,20 @@ Bootstrap is blind-executable with the Flutter SDK on PATH.
 
 App identity is a set of one-way doors. **Ask the user once, up front** (one batched question, with
 recommended defaults) before running `flutter create`:
-- **App name** + **bundle/org identifier** (e.g. `com.acme.appname`) — painful to change after store submission.
-- **Platforms** (iOS, Android, both) and **min OS versions**.
-- **Backend + payments**: keep the defaults or swap? (See `structure.md`.) *(TCKonnect: **offline-only —
-  no backend**; RevenueCat only. See `CLAUDE.md` + `plan.md`.)*
 
-Pin the answers in `CLAUDE.md` so the rest of the build is deterministic.
+- **App name** + **bundle/org identifier** (e.g. `com.acme.appname`) — painful to change after store submission.
+- **Platforms** and **min OS versions**.
+
+The remaining stack choices (backend, payments, networked services) are already decided for this
+project in `CLAUDE.md` + `plan.md` → "Architecture decisions". Pin the answers there so the rest of the
+build is deterministic.
 
 ## Prerequisites (verify, don't assume)
 
 ```bash
 flutter --version      # Flutter stable >= 3.27, Dart >= 3.6
 dart --version
-flutter doctor         # platform toolchains; iOS build needs macOS + Xcode
+flutter doctor
 ```
 
 ## Project location
@@ -32,7 +33,7 @@ flutter doctor         # platform toolchains; iOS build needs macOS + Xcode
 The Flutter app lives in the **app directory named in `CLAUDE.md`** (`app/` by convention). Create once:
 
 ```bash
-flutter create --org <org.identifier> --platforms=ios,android <app_dir>
+flutter create --org <org.identifier> --platforms=android <app_dir>
 ```
 
 All `flutter`/`dart` commands below run from that app directory. Wherever this skill says `<app_dir>`,
@@ -40,36 +41,35 @@ substitute the real one.
 
 ## Pinned Version Matrix (single source of truth)
 
-Declare these in `pubspec.yaml`. **If a version is unavailable or incompatible in the resolved
+The **project's full matrix is `plan.md` → "Reconciled dependency matrix"** — that is authoritative. The
+generic core below is the bootstrap baseline; add the project's domain packages (audio, Anki, Fal.ai,
+SMTP, charts, notifications) per `plan.md` when each milestone needs them.
+
+Declare everything in `pubspec.yaml`. **If a version is unavailable or incompatible in the resolved
 environment, bump to the nearest compatible stable release, keep each codegen package in lockstep with
-its runtime package, and record the change in the PR.** Packages marked *(domain-optional)* are added
-only when a feature needs them.
+its runtime package, and record the change in the PR.**
 
 | Package | Version | Role |
 | ------- | ------- | ---- |
-| `flutter_riverpod` / `riverpod_annotation` | ^2.6.1 | State management + DI |
-| `riverpod_generator` / `riverpod_lint` / `custom_lint` | ^2.6.3 / ^2.6.1 / ^0.7.0 | Provider codegen + lints (dev) |
-| `go_router` | ^14.6.0 | Declarative navigation / deep links |
-| `supabase_flutter` | ^2.8.0 | Auth + Postgres + Storage + Edge Functions client (default backend) |
-| `drift` / `drift_flutter` / `sqlite3_flutter_libs` | ^2.23.0 / ^0.2.0 / ^0.5.0 | Local SQLite cache + write queue |
+| `flutter_riverpod` / `riverpod_annotation` | ^3.0.0 | State management + DI |
+| `riverpod_generator` | ^3.0.0 | Provider codegen (dev) |
+| `go_router` | ^16.0.0 | Declarative navigation |
+| `drift` / `drift_flutter` / `sqlite3_flutter_libs` | ^2.23.0 / ^0.2.0 / ^0.5.0 | Local SQLite store (source of truth) |
+| `sqlcipher_flutter_libs` | ^0.6.0 | Encrypted SQLite (SQLCipher) |
 | `drift_dev` | ^2.23.0 | Drift codegen (dev) |
-| `freezed_annotation` / `freezed` | ^2.5.7 / ^2.5.7 | Immutable models + unions (dev: `freezed`) |
+| `freezed_annotation` / `freezed` | ^3.0.0 / ^3.0.0 | Immutable models + unions (dev: `freezed`) |
 | `json_serializable` / `json_annotation` | ^6.9.0 / ^4.9.0 | DTO (de)serialization |
-| `purchases_flutter` | ^8.2.0 | RevenueCat — premium entitlements (apps that sell a subscription) |
-| `google_sign_in` / `sign_in_with_apple` | ^6.2.2 / ^6.1.3 | Native OAuth (Apple required on iOS if any social login) |
-| `connectivity_plus` | ^6.1.0 | Online/offline detection for the sync engine |
+| `connectivity_plus` | ^6.1.0 | Online/offline detection (gates the outbound queue) |
 | `flutter_local_notifications` | ^18.0.1 | Local notifications / reminders |
 | `intl` | ^0.19.0 | Locale-aware date/number formatting (i18n) |
+| `flutter_secure_storage` | ^9.2.0 | Stores the SQLCipher DB key per install |
 | `build_runner` | ^2.4.13 | Runs all codegen (dev) |
 | `mocktail` | ^1.0.4 | Test doubles (dev) |
 | `very_good_analysis` | ^7.0.0 | Lint ruleset (dev) |
-| `fl_chart` | ^0.69.0 | *(domain-optional)* charts / data viz |
 
-> **TCKonnect override (offline-only) — canonical list in `plan.md` → "Reconciled dependency matrix".**
-> **Don't add:** `supabase_flutter`, `google_sign_in`, `sign_in_with_apple`, `connectivity_plus`,
-> `flutter_local_notifications`. **Do add:** `drift` / `drift_dev` / `drift_flutter` /
-> `sqlite3_flutter_libs` + `sqlcipher_flutter_libs`, `flutter_secure_storage`, then per-milestone
-> `flutter_map` + `latlong2`, `qr_flutter`, `mobile_scanner`, `share_plus`, `archive`.
+> **Lint surface = `very_good_analysis`.** `riverpod_lint` + `custom_lint` are **optional** — add them
+> at T0.1 only if they resolve cleanly against the current analyzer; otherwise defer and record why.
+> Don't block bootstrap on the Riverpod lint plugin.
 
 > **Codegen pairs move together:** `riverpod_annotation`↔`riverpod_generator`,
 > `freezed_annotation`↔`freezed`, `json_annotation`↔`json_serializable`, `drift`↔`drift_dev`.
@@ -94,8 +94,6 @@ Generated files are committed (so `flutter test` works without a codegen step in
 ```yaml
 include: package:very_good_analysis/analysis_options.yaml
 analyzer:
-  plugins:
-    - custom_lint            # enables riverpod_lint
   errors:
     invalid_annotation_target: ignore   # freezed/json on fields
 linter:
@@ -103,26 +101,26 @@ linter:
     avoid_print: true                    # use AppLogger, never print()
 ```
 
-Run: `flutter analyze` and `dart run custom_lint` (Riverpod-specific rules).
+Run: `flutter analyze`. (If `riverpod_lint` was added, also run `dart run custom_lint`.)
 
-## Backend config — secrets discipline (non-negotiable)
+## Keys & secrets discipline (non-negotiable)
 
-> **TCKonnect ships no backend.** No Edge Functions, no Supabase, no RLS, no server secrets. The only
-> bundled key is the **RevenueCat public SDK key** (via `--dart-define`); nothing but native billing
-> receipts leaves the device (NFR-2.6). The rest of this section applies only if a project keeps the
-> default backend.
-
-- **Client** (`<app_dir>`): commit only **public-by-design** keys — the backend URL + anon/public key
-  and the RevenueCat **public SDK key** — read from `--dart-define` (or a gitignored `env.json`).
-- **Server** (Edge Functions / backend): any **secret** (third-party API keys, payment webhook secrets,
-  service-role keys) lives ONLY as a server-side secret. It must NEVER appear in the Flutter app or in
-  git. Any call to a paid third-party API (e.g. an LLM) is made **server-side**, never from the client.
-- Database schema + Row-Level Security policies live in `migrations/` (a user can read/write only their
-  own rows).
+This project is **offline-first with no backend, no auth, no monetization**. The only network egress is
+the two gated services in `plan.md` (Fal.ai image generation, SMTP email). Their keys are injected at
+build time — never committed:
 
 ```bash
-flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=... --dart-define=RC_PUBLIC_KEY=...
+flutter run \
+  --dart-define=FAL_KEY=... \
+  --dart-define=SMTP_USER=... \
+  --dart-define=SMTP_PASS=...
 ```
+
+- **Client** (`<app_dir>`): no secrets in git. Keys arrive via `--dart-define` (or a gitignored
+  `env.json` for local dev). The SQLCipher DB key is generated per install and held in
+  `flutter_secure_storage`.
+- Any paid third-party call (Fal.ai) runs from the client by design (there is no server to proxy it);
+  the key is build-injected, not committed.
 
 ## Test infrastructure (set up once in the first milestone)
 
@@ -132,6 +130,7 @@ device needed. See `testing.md`. Add a trivial passing `smoke_test.dart`, and **
 is green at the end of bootstrap.
 
 Committed harness, all under `scripts/` and app-agnostic (see `scripts/README.md`):
+
 - **`scripts/gate.sh`** — the **Standard Gate**, the single source of truth for "is this green". It
   auto-detects the app directory (override with `APP_DIR=<dir>`), then runs codegen → format → analyze →
   `flutter test --coverage` → the coverage floor. The `pre-push` hook calls exactly this.
@@ -158,7 +157,7 @@ Scripts in `scripts/git-hooks/`, activated once with `sh scripts/install-hooks.s
 ## Command reference
 
 ```bash
-sh scripts/gate.sh                               # THE GATE: codegen+format+analyze+test+coverage (run before every push)
+sh scripts/gate.sh                               # THE GATE (run before every push)
 flutter pub get                                  # resolve deps
 dart run build_runner build --delete-conflicting-outputs  # codegen
 flutter analyze                                  # static analysis
@@ -166,14 +165,13 @@ dart format .                                    # format (CI uses --set-exit-if
 flutter test                                     # all unit/widget tests (no coverage gate)
 flutter test test/features/<f>/<x>_test.dart     # one file — for fast iteration ONLY, not the gate
 flutter build apk --debug                        # Android build
-flutter build ios --no-codesign                  # iOS build (macOS only)
 ```
 
 ## Verification Checklist (end of bootstrap)
 
 - [ ] `flutter pub get` resolves with the pinned matrix
 - [ ] `dart run build_runner build` succeeds; generated files committed
-- [ ] `flutter analyze` + `dart run custom_lint` are clean
+- [ ] `flutter analyze` is clean
 - [ ] `sh scripts/gate.sh` is green (smoke test; coverage step reports "no measurable logic lines")
 - [ ] Generated `test/widget_test.dart` deleted; `smoke_test.dart` present
 - [ ] No real secrets in the repo; client reads keys via `--dart-define`
@@ -186,7 +184,6 @@ flutter build ios --no-codesign                  # iOS build (macOS only)
 | ------- | --- |
 | `*.g.dart` / `*.freezed.dart` missing | Run `build_runner build --delete-conflicting-outputs` |
 | build_runner conflict errors | Add `--delete-conflicting-outputs`; ensure codegen pairs are in lockstep |
-| riverpod_lint not firing | Confirm `custom_lint` plugin in `analysis_options.yaml`; run `dart run custom_lint` |
-| Backend "row violates RLS" | The policy is working — query as the authed user, or fix the policy in `migrations/` |
-| Apple sign-in rejected on iOS | `sign_in_with_apple` capability + entitlement required when any social login is offered (App Store 4.8) |
+| riverpod_lint not firing | Confirm it resolved at T0.1; if not, defer it (lint surface is `very_good_analysis`) |
 | Drift "table not found" after schema change | Bump `schemaVersion` + add a migration; regenerate |
+| SQLCipher key not persisting | Confirm `flutter_secure_storage` is initialized before opening the DB |

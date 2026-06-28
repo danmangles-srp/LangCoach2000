@@ -35,7 +35,13 @@
 7. **Business logic is pure Dart.** GPA interval math, vocab parsing, queue scheduling, metric
    aggregation — all testable without a device or emulator.
 8. **Encrypted local DB (SQLCipher) by default** (NFR-2.4.2). Recordings are sensitive cultural content.
-9. **No monetization in v1.** No IAP, no paywall, no RemoteConfig. Scope creep into billing is explicitly
+9. **Review completion is an append-only event log, not a flag.** A `review_events` table records one
+   row per completed milestone (recording id, milestone index, completed-at). "Reviewed for milestone N",
+   "last reviewed", and "review count" are all **derived** from this log — no boolean column to keep in
+   sync, and the same log feeds the M6 "Completed Queue items" metric. Replaying the same milestone
+   appends a new event (a user can review the same interval more than once); the *active* milestone is
+   still the next-unreached one.
+10. **No monetization in v1.** No IAP, no paywall, no RemoteConfig. Scope creep into billing is explicitly
    out of scope.
 10. **v1 cut = all six milestones.** M1–M3 form the daily-use core; M4–M6 add automation + insight. All
     six ship before "sellable".
@@ -132,21 +138,29 @@ the abstract service seams, the offline queue, and the gate green — before any
 ### Acceptance criteria
 * Home screen shows a dynamic "Today's Review Queue" computed from creation dates + GPA intervals.
 * A 1-day-stale recording is shown and marked stale; the stale prompt disappears on the 2nd stale day.
-* Queue items are playable with one tap; a recording is "Reviewed" for its active milestone once played
-  past 80% of duration.
+* Queue items are playable with one tap; crossing 80% playback appends a review event, marking that
+  milestone reviewed (derived from the event log).
+* The recording detail screen shows the review history: last reviewed, milestone reached, review count.
 * An in-app "Record" button captures audio and exports it to the indexed folder (and it's indexed on next
   scan).
 
 ### Tickets
 - **T2.1 — GPA interval engine (pure Dart).** Given creation date + now, compute due milestones over
   `1,2,4,7,30,90,180,365`. *ACs:* FR-1.2.1, FR-1.2.2. *Deps:* T0.2. (Pure-Dart, fully unit-tested.)
-- **T2.2 — Review status + 80% rule.** Track per-milestone reviewed state; flag reviewed when played past
-  80%. *ACs:* FR-1.2.3. *Deps:* T2.1, T1.5.
-- **T2.3 — Today's queue + stale rule.** Compute today's due set; mark 1-day-stale; suppress on 2nd
-  stale day. *ACs:* FR-1.2.4, M2 AC 1–2. *Deps:* T2.1.
-- **T2.4 — Home / queue screen.** "Today's Review Queue", one-tap play, stale badge. *ACs:* M2 AC 3,
-  NFR-2.4.1. *Deps:* T2.3, T1.6.
-- **T2.5 — In-app recorder.** `record` package; save to the designated Samsung dir; trigger rescan.
+- **T2.2 — Review-event log.** A `review_events` table (recording id, milestone index, completed-at) +
+  repository. Appending an event when playback crosses 80%. "Reviewed for milestone N" derived from the
+  log, not stored as a flag. *ACs:* FR-1.2.3. *Deps:* T0.2, T1.5.
+- **T2.3 — Review-history derivation.** Pure-Dart queries over `review_events`: last-reviewed date,
+  milestone reached, review count, active (next-unreached) milestone per recording. *ACs:* FR-1.2.4.
+  *Deps:* T2.2. (Pure-Dart, unit-tested.)
+- **T2.4 — Today's queue + stale rule.** Compute today's due set (active milestone due today); mark
+  1-day-stale; suppress on 2nd stale day. *ACs:* FR-1.2.5, M2 AC 1–2. *Deps:* T2.1, T2.3.
+- **T2.5 — Home / queue screen.** "Today's Review Queue", one-tap play, stale badge. *ACs:* M2 AC 3,
+  NFR-2.4.1. *Deps:* T2.4, T1.6.
+- **T2.6 — Recording detail: review history.** On the recording detail screen, show last-reviewed
+  date, milestone reached, and review count (derived from `review_events`). *ACs:* FR-1.2.4, NFR-2.4.1.
+  *Deps:* T1.6, T2.3.
+- **T2.7 — In-app recorder.** `record` package; save to the designated Samsung dir; trigger rescan.
   *ACs:* FR-1.1.3, M2 AC 4. *Deps:* T1.3.
 
 ---
@@ -255,7 +269,9 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ### tickets
 - **T6.1 — Metrics schema + ingestion.** `metrics_events` table; increment Lesson Duration, Journaling
-  Output, Completed Queue items, Flashcards reviewed from existing flows. *ACs:* FR-1.5.1. *Deps:* T0.2.
+  Output, Flashcards reviewed from existing flows. "Completed Queue items" is **derived directly from
+  `review_events`** (count of milestone completions in the window) — do not duplicate it into a second
+  counter. *ACs:* FR-1.5.1. *Deps:* T0.2, T2.2.
 - **T6.2 — Metrics aggregation (pure Dart).** Roll up events into daily/weekly/monthly series. *ACs:*
   FR-1.5.1. *Deps:* T6.1. (Pure-Dart, unit-tested.)
 - **T6.3 — Analytics dashboard.** `fl_chart` daily/weekly/monthly views; premium styling; empty states.

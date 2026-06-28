@@ -17,7 +17,7 @@ the product. Working code that solved the wrong problem is a failure, not a near
 1. **Scope.** Find the story + acceptance criteria in `requirements.md`. Restate what you're about to
    build in one or two lines and **confirm scope + any ambiguity with the user before coding** (batched
    questions — see "How to ask well"). The ACs are the definition of done.
-2. **Branch.** `<type>/t<n>-<slug>` off `dev` (per `plan.md` — e.g. `feat/t1-2-timeline-repository`).
+2. **Branch.** `<type>/t<n>-<slug>` off `dev` (per `plan.md` — e.g. `feat/t2-1-gpa-interval-engine`).
 3. **Test (red).** Write a failing test mapped to an AC. See `testing.md`.
 4. **Code (green).** Implement the minimum to pass; run codegen if you touched annotated classes.
 5. **Refactor.** Clean up to meet `structure.md`.
@@ -119,14 +119,14 @@ context rationalizes. Don't grade your own homework with the same pen.
 Conventional Commits (`type(scope): description`):
 
 - All lowercase, no emojis. Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
-- Scopes track features and layers — use the names from `plan.md`/`CLAUDE.md` (e.g. `db`, `timeline`,
-  `map`, `share`, `paywall`, `core`, plus one per feature).
+- Scopes track features and layers — use the names from `plan.md`/`CLAUDE.md` (e.g. `db`, `queue`,
+  `audio`, `anki`, `ai`, `mail`, `core`, plus one per feature).
 - **Do NOT write "Co-authored-by".**
 
 ```
-feat(timeline): persist nodes across cold start
-fix(share): reject an oversized share payload on decode
-test(map): cover the empty-bounds branch
+feat(gpa): compute review milestones from creation date
+fix(anki): reject duplicate notes on re-export
+test(queue): cover the offline-drain branch
 ```
 
 ## PR Creation

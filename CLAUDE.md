@@ -74,11 +74,13 @@ with a fresh eye: `/code-review` for code, `/design-review` for UI. The *mechani
   testable without a device.
 - **Data model**: a **recording** = file path + name + creation date + size + format (`.m4a`/`.mp3`/`.wav`,
   FR-1.1.1). Each recording carries a **GPA review timeline** computed from its creation date over the
-  fixed intervals **D+1, D+2, D+4, D+7, D+30, D+90, D+180, D+365** (FR-1.2.2); a milestone is "Reviewed"
-  once playback passes **80%** of duration (FR-1.2.3). A recording links to **one text vocab log and/or
-  multiple image logs** (FR-1.3.1); text logs parse English-definition ↔ Uzbek-word pairs via `:` / `-`
-  delimiters (FR-1.3.2) and feed Anki card generation tagged by recording filename (FR-1.3.3). Use these
-  names and intervals everywhere.
+  fixed intervals **D+1, D+2, D+4, D+7, D+30, D+90, D+180, D+365** (FR-1.2.2). When playback passes **80%**
+  of duration, the app appends a row to an **append-only `review_events` log** (recording id, milestone
+  index, completed-at) (FR-1.2.3). "Reviewed for milestone N", **last reviewed**, and **review count** are
+  all **derived** from that log — there is no separate flag (FR-1.2.4). A recording links to **one text
+  vocab log and/or multiple image logs** (FR-1.3.1); text logs parse English-definition ↔ Uzbek-word pairs
+  via `:` / `-` delimiters (FR-1.3.2) and feed Anki card generation tagged by recording filename
+  (FR-1.3.3). Use these names and intervals everywhere.
 - **GPA intervals** (canonical, do not change without asking): `1, 2, 4, 7, 30, 90, 180, 365` days.
 - **Loop**: Confirm scope + ask (requirements/plan AC) → Branch → Test (red) → Code (green) → Refactor →
   Self-review (`/code-review` + `/design-review`) → Verify (gate) → Check in → Commit → PR.

@@ -1,6 +1,6 @@
 ---
 name: testing
-description: Testing standards, TDD workflow, test tiers, golden/visual review, and validation patterns for any Flutter app built with this toolkit. Use when writing tests, debugging failures, or setting up test infrastructure.
+description: Testing standards, TDD workflow, test tiers, golden/visual review, and validation patterns. Use when writing tests, debugging failures, or setting up test infrastructure.
 ---
 
 # Testing: How We Break/Fix
@@ -13,7 +13,8 @@ description: Testing standards, TDD workflow, test tiers, golden/visual review, 
   `addTearDown(container.dispose)`.
 - **Widgets**: `testWidgets` + `WidgetTester` (`pumpWidget`, `pump`, `tester.tap`, finders).
 - **Golden / visual**: `matchesGoldenFile` for pixel-stable widget snapshots (see the visual loop below).
-- **Integration**: `integration_test` for the real local↔backend sync path (device/CI only).
+- **Integration**: `integration_test` for real device flows (audio playback, Anki intents, notifications)
+  — device/CI only, not in the per-commit gate.
 - **Location**: `test/` mirrors `lib/` (`test/features/<f>/<x>_test.dart`). Integration tests live in
   `integration_test/`.
 
@@ -28,27 +29,29 @@ Hard requirement. Smallest testable chunk at a time, each mapped to a requiremen
 ## Self-Validation Loop (no device required)
 
 The app ships to phones, but the agent validates its own work **on the host Dart VM** — no emulator, no
-live backend, no real purchases. This works because logic lives in pure Dart (controllers, repositories,
-domain math) behind injectable seams (`AppClock`, repositories, datasources).
+live network, no real purchases. This works because logic lives in pure Dart (controllers, repositories,
+domain math) behind injectable seams (`AppClock`, repositories, datasources, `NetworkService`).
 
 - **Tier 1 — Unit (every TDD cycle):** pure Dart with fakes/mocks via `ProviderContainer` overrides.
-  Covers all domain math/rules, the sync write-queue + last-write-wins reconciliation, entitlement
-  gating, debounce/throttle logic (fake `AppClock`), and validation at boundaries.
+  Covers all domain math/rules (GPA intervals, 80% rule, stale-day logic, vocab parsing, metrics
+  aggregation), the Task Queue enqueue + idempotent-drain, and validation at boundaries.
 - **Tier 2 — Widget (in `flutter test`):** screens render every state of their `AsyncValue` (loading /
-  error / empty / data); a tap calls the right controller method; selection highlights; the paywall
-  shows for free users. Use `pumpWidget` wrapped in a `ProviderScope` with overrides.
-- **Tier 3 — Integration (`integration_test`, device/CI):** drive a real local DB through a fake/staging
-  backend to prove offline write → queue → sync → reconcile. Closest thing to "it works" the harness can
-  run; needs a device/emulator, so it is **not** part of the per-commit gate.
+  error / empty / data); a tap calls the right controller method; selection highlights. Use `pumpWidget`
+  wrapped in a `ProviderScope` with overrides.
+- **Tier 3 — Integration (`integration_test`, device/CI):** drive real device flows — actual audio
+  playback/record, AnkiDroid intent round-trip, local-notification delivery, the Fal.ai + SMTP paths
+  against a test key. Closest thing to "it works" the harness can run; needs a device/emulator, so it is
+  **not** part of the per-commit gate.
 
-`dart run build_runner build && dart format --set-exit-if-changed . && flutter analyze && flutter test`
+`dart run build_runner build && dart format --set-exact-if-changed . && flutter analyze && flutter test`
 is the complete, trustworthy self-validation loop for logic and wiring.
 
-**What the loop canNOT prove (device + human only — NOT in the gate):** real OAuth / magic-link
-redirects; real purchase + cross-device entitlement; real push/local-notification delivery; any live
-third-party/LLM call; and the performance NFRs (cold start, large-list scroll at 60 fps). These are the
-**manual acceptance** tier. Green Tier 1–2 means the logic is correct and wired — say so honestly in the
-PR; it is **not** "shippable" proof. Pair it with the visual loop below for UI quality.
+**What the loop canNOT prove (device + human only — NOT in the gate):** real audio capture/playback
+latency; the AnkiDroid intent round-trip on a real device; real local-notification delivery (exact-alarm
+behavior); any live Fal.ai / SMTP call; and the performance NFRs (index ≤1000 files in <2s, playback
+latency ≤250ms, 60fps scroll). These are the **manual acceptance** tier. Green Tier 1–2 means the logic
+is correct and wired — say so honestly in the PR; it is **not** "shippable" proof. Pair it with the
+visual loop below for UI quality.
 
 ## Visual / golden review loop (UI quality is testable too)
 
@@ -66,19 +69,16 @@ Logic tests prove behavior; they say nothing about whether a screen *looks* righ
 
 | Component | Test focus |
 | --------- | ---------- |
-| Domain logic / calculations | Correct output for fixtures, including boundaries and empty input; signs/units preserved |
-| Repositories | Map backend/DB rows ↔ domain models; surface failures as `Result`/`Failure`, never raw exceptions |
-| Sync engine | Offline write enqueued; reconnect drains the queue once (idempotent); LWW by `updated_at` |
+| Domain logic / calculations | Correct output for fixtures, including boundaries and empty input (GPA intervals, 80%-played, stale-day, metrics rollup) |
+| Repositories | Map DB rows ↔ domain models; surface failures as `Result`/`Failure`, never raw exceptions |
+| Task Queue | Offline task enqueued; reconnect drains it once (idempotent on task key); failed task retried with backoff |
+| Connectivity gating | `NetworkService` offline → outbound service not called, task stays queued; online → drained |
 | Controllers | Each method transitions state correctly; optimistic write + reconcile on success/failure |
 | Validation / debounce | Boundary inputs rejected; autosave debounce via fake `AppClock`; failed save re-queues, no data loss |
-| Entitlement gating | Free user blocked from premium → paywall; subscriber unlocked (gate at controller/repo) |
-| Auth redirect | Unauthed → sign-in; unverified → verify prompt for gated actions |
 | Widget states | Every `AsyncValue` branch (loading/error/empty/data) renders; interactive widgets have Semantics labels |
 
-> **TCKonnect is offline-only:** the **Sync engine** and **Auth redirect** rows above don't apply, and
-> Tier-3 "backend integration" reduces to **local-DB** integration. Everything else holds.
-
-Keep every collaborator injectable (`AppClock`, repositories, datasources) so widgets need no backend.
+Keep every collaborator injectable (`AppClock`, repositories, datasources, `NetworkService`) so widgets
+need no device.
 
 ## Example (Riverpod ProviderContainer + mocktail)
 
@@ -106,9 +106,8 @@ void main() {
 
 ## Validation Commands
 
-The **Standard Gate** is the single source of truth for "is this green" — `scripts/gate.sh` (committed
-in the first milestone). It is identical to the `pre-push` hook and to every milestone's Validation
-Script. Run it before every push — no exceptions:
+The **Standard Gate** is the single source of truth for "is this green" — `scripts/gate.sh`. It is
+identical to the `pre-push` hook. Run it before every push — no exceptions:
 
 ```bash
 sh scripts/gate.sh

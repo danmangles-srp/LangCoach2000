@@ -106,7 +106,7 @@ Motion's job is to **explain change and confirm action** — fast, purposeful, s
 ## Component & screen patterns
 
 - **Buttons** follow one hierarchy per screen: **one** filled (primary) → tonal/outlined (secondary) →
-  text (tertiary). Verb labels ("Save", "Add place"), never "OK/Submit" where a real verb fits.
+  text (tertiary). Verb labels ("Save", "Record"), never "OK/Submit" where a real verb fits.
 - **Touch targets ≥ 48×48dp** even if the visual is smaller (pad the hit area).
 - **Lists**: consistent row height, generous vertical padding, dividers *only* when grouping needs them;
   prefer spacing. Use cards to group a unit of related content, not to box every row.
@@ -125,7 +125,7 @@ during load, or a raw exception on error, is a bug.
 | State | Design |
 | ----- | ------ |
 | **Loading** | **Skeleton** that mirrors the final layout (shimmering placeholders), not a centered spinner, wherever the layout is known. Spinner only for short, shape-unknown waits. |
-| **Empty** | First-run guidance: a friendly line + one clear CTA ("Add your first place"), on-brand, never a blank canvas. The empty state is a *sales* surface — make it inviting. |
+| **Empty** | First-run guidance: a friendly line + one clear CTA (e.g. "Add your first recording"), on-brand, never a blank canvas. The empty state is a *sales* surface — make it inviting. |
 | **Error** | Plain-language cause + a **Retry**. Offline → reassure ("You're offline — changes will sync"), don't alarm. Never show a stack trace or `Exception: …`. |
 | **Content** | The data, as the hero. |
 
@@ -139,15 +139,15 @@ on failure the change stays queued (offline-first) and is surfaced, never silent
 - **Prime before you prompt.** Explain *why* before triggering an OS permission dialog (notifications,
   contacts); a denied permission is hard to recover.
 - **Progressive disclosure.** Reveal complexity as needed; don't tour every feature up front.
-- **Paywall** (if premium): lead with value and outcomes, not a feature checklist; show the price clearly;
-  offer restore-purchases; make "not now" possible without dead-ending.
+- **Paywall / monetization**: this project ships **no paywall** in v1 (see `CLAUDE.md`). Don't add
+  entitlement gates, upsell, or restore-purchase flows — they're out of scope.
 
 ## Accessibility (WCAG 2.1 AA — a requirement, not optional)
 
 - Text contrast ≥ **4.5:1** (≥ 3:1 for large text); verify the brand palette and any status colors in
   **both** light and dark.
 - Touch targets ≥ **48×48dp**; every interactive widget has a `Semantics` label conveying role + state
-  (e.g. "Add place, button"; "Porto, selected").
+  (e.g. "Play recording, button"; "Due today, selected").
 - Support OS **dynamic type up to 200%** without clipping — use `TextScaler`, avoid fixed heights, let
   text wrap.
 - **Never color-alone** (restated because it's the most-missed): status, selection, categories, and chart
@@ -163,7 +163,7 @@ structure for more locales, and design layouts that survive ~30% text expansion 
 longest realistic string.
 
 ```dart
-Text(AppLocalizations.of(context).addFirstPlace);
+Text(AppLocalizations.of(context).addFirstRecording);
 ```
 
 ## Widget testing the UI (keeps the loop deterministic)
