@@ -1,18 +1,20 @@
 model_list:
-  - model_name: claude-3-5-sonnet-latest
+  - model_name: claude-sonnet-4-6
     litellm_params:
-      model: openrouter/z-ai/glm-5.2
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: anthropic/glm-5.2
+      api_base: https://api.z.ai/api/anthropic
+      api_key: os.environ/ZAI_API_KEY
       extra_body:
-        reasoning:
-          effort: "high"
-          exclude: true # Highly recommended for Claude Code
+        thinking:
+          type: "enabled"
+        reasoning_effort: "high"
 
   - model_name: claude-opus-4-8
     litellm_params:
-      model: openrouter/z-ai/glm-5.2
-      api_key: os.environ/OPENROUTER_API_KEY
+      model: anthropic/glm-5.2
+      api_base: https://api.z.ai/api/anthropic
+      api_key: os.environ/ZAI_API_KEY
       extra_body:
-        reasoning:
-          effort: "xhigh"
-          exclude: true # Highly recommended for Claude Code
+        thinking:
+          type: "enabled"
+        reasoning_effort: "max"

@@ -166,7 +166,7 @@ What this PR accomplishes and which requirements story it serves.
 ## How to verify (human steps)
 Concrete, numbered steps a reviewer follows on a device to confirm the *product*
 behaviour — not "tests pass" (the gate proved that). Lead with the golden path,
-then edge cases. Example:
+then edge cases. No "run the gate.sh" "run tests" but actual steps on the app. Example:
 1. Launch the app on a Pixel API 34 emulator.
 2. Grant the mic permission when prompted.
 3. Tap Record, speak ~5s, tap Stop.
