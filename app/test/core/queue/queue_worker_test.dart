@@ -1,27 +1,27 @@
-// QueueProcessor — enqueue → reconnect → drain (T0.3 gate, NFR-2.1.3).
+// QueueWorker — enqueue → reconnect → drain (T0.3 gate, NFR-2.1.3).
 
 import 'dart:async';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:rivendell/core/connectivity/network_service.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/logging/app_logger.dart';
-import 'package:rivendell/core/queue/network_service.dart';
-import 'package:rivendell/core/queue/queue_processor.dart';
 import 'package:rivendell/core/queue/queue_repository.dart';
+import 'package:rivendell/core/queue/queue_worker.dart';
 
 void main() {
   late AppDatabase db;
   late QueueRepository queue;
   late FakeNetworkService network;
-  late QueueProcessor processor;
+  late QueueWorker worker;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     queue = QueueRepository(db);
     network = FakeNetworkService();
-    processor = QueueProcessor(
+    worker = QueueWorker(
       repository: queue,
       network: network,
       logger: AppLogger(sink: RecordingSink()),
@@ -29,19 +29,19 @@ void main() {
   });
 
   tearDown(() async {
-    await processor.stop();
+    await worker.stop();
     network.dispose();
     await db.close();
   });
 
   test('drains pending items on reconnect', () async {
     final handled = <String>[];
-    processor.registerHandler('echo', (payload) async {
+    worker.registerHandler('echo', (payload) async {
       handled.add(payload);
     });
     // Enqueue while offline, then go online.
     network.emit(online: false);
-    processor.start();
+    worker.start();
     await queue.enqueue(type: 'echo', payload: 'a');
     await queue.enqueue(type: 'echo', payload: 'b');
 
@@ -49,7 +49,7 @@ void main() {
     network.emit(online: true);
     // Give the async drain a beat to complete.
     await Future<void>.delayed(Duration.zero);
-    await processor.drain();
+    await worker.drain();
 
     expect(handled, ['a', 'b']);
     expect(await queue.pending(), isEmpty);
@@ -58,11 +58,11 @@ void main() {
   test(
     'a handler that throws leaves the item pending and records the failure',
     () async {
-      processor.registerHandler('boom', (payload) async {
+      worker.registerHandler('boom', (payload) async {
         throw StateError('fail');
       });
       final id = await queue.enqueue(type: 'boom', payload: 'x');
-      await processor.drain();
+      await worker.drain();
 
       final pending = await queue.pending();
       expect(pending, hasLength(1));
@@ -74,7 +74,7 @@ void main() {
 
   test('items with no registered handler are skipped, not failed', () async {
     final id = await queue.enqueue(type: 'unhandled', payload: 'x');
-    await processor.drain();
+    await worker.drain();
 
     final pending = await queue.pending();
     expect(pending, hasLength(1));
@@ -86,7 +86,7 @@ void main() {
     final handled = <String>[];
     // Go offline before start so the initial seed is offline.
     network.emit(online: false);
-    processor
+    worker
       ..registerHandler('echo', (payload) async {
         handled.add(payload);
       })
@@ -103,14 +103,14 @@ void main() {
   test('re-entry guard prevents overlapping drains', () async {
     var calls = 0;
     final gate = Completer<void>();
-    processor.registerHandler('echo', (payload) async {
+    worker.registerHandler('echo', (payload) async {
       calls++;
       if (calls == 1) await gate.future;
     });
     await queue.enqueue(type: 'echo', payload: 'a');
 
-    final first = processor.drain();
-    final second = processor.drain(); // concurrent — must not double-process
+    final first = worker.drain();
+    final second = worker.drain(); // concurrent — must not double-process
     gate.complete();
     await Future.wait([first, second]);
 

@@ -34,12 +34,14 @@ class QueueRepository {
         );
   }
 
-  /// All items not yet completed, oldest first.
+  /// All items not yet completed, in enqueue order. Ordered by the
+  /// autoincrement `id` (not `createdAt`) so two enqueues in the same clock
+  /// tick still return in insertion order.
   Future<List<QueueItem>> pending() async {
     final rows =
         await (_db.select(_db.offlineQueueItems)
               ..where((t) => t.done.equals(false))
-              ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+              ..orderBy([(t) => OrderingTerm.asc(t.id)]))
             .get();
     return rows
         .map(

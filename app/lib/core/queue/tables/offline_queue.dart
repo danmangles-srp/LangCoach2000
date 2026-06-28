@@ -9,7 +9,7 @@ import 'package:drift/drift.dart';
 
 /// Persisted offline work item.
 ///
-/// `type` names the handler registered with QueueProcessor
+/// `type` names the handler registered with QueueWorker
 /// (e.g. `ai_image`, `email`). `payload` is a feature-defined JSON blob the
 /// handler knows how to interpret.
 class OfflineQueueItems extends Table {

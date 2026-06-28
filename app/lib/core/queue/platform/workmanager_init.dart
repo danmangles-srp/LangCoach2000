@@ -12,7 +12,7 @@ import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:workmanager/workmanager.dart';
 
 /// workmanager task name for the periodic connectivity-drain backstop.
-const kQueueDrainTask = 'rivendell.queue.drain';
+const queueDrainTask = 'rivendell.queue.drain';
 
 /// Top-level callback executed in the workmanager background isolate.
 ///
@@ -24,7 +24,7 @@ void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     logger.i(LogTag.task, 'workmanager task: $task');
     // TODO(rivendell): open the DB (openAppDatabase, shared key) and run
-    // QueueProcessor.drain here; feature handlers register their types.
+    // QueueWorker.drain here; feature handlers register their types.
     return true;
   });
 }
@@ -35,8 +35,8 @@ Future<void> initWorkmanager() async {
   // Periodic drain every ~15 min (Workmanager minimum) as a closed-app
   // backstop; the connectivity-driven in-process drain is the primary path.
   await Workmanager().registerPeriodicTask(
-    kQueueDrainTask,
-    kQueueDrainTask,
+    queueDrainTask,
+    queueDrainTask,
     frequency: const Duration(minutes: 15),
     constraints: Constraints(networkType: NetworkType.connected),
     existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
