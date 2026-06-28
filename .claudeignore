@@ -1,0 +1,28 @@
+# ====================================================================
+# MANDATORY AGENT BLOCKS (Massive Token Killers)
+# ====================================================================
+
+# Ignore local Git tracking & history index
+.git/
+.gitignore
+
+# Ignore Test Environments & Mock Data
+testenv/
+test_env/
+.testenv/
+fixtures/
+__pycache__/
+*.pyc
+
+# ====================================================================
+# PACKAGE MANAGERS & VIRTUAL ENVS
+# ====================================================================
+testenv
+
+# ====================================================================
+# SYSTEM JUNK & OS CACHES
+# ====================================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

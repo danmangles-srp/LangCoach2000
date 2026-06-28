@@ -1,0 +1,9 @@
+model_list:
+  - model_name: claude-opus-4-8
+    litellm_params:
+      model: openrouter/z-ai/glm-5.2
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: claude-3-5-sonnet-latest
+    litellm_params:
+      model: openrouter/z-ai/glm-5.2
+      api_key: os.environ/OPENROUTER_API_KEY
