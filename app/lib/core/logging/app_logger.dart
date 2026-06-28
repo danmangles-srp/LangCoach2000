@@ -5,7 +5,9 @@
 // set lets a developer follow one subsystem without noise from the rest.
 //
 // The concrete sink is injectable: tests pass a recording sink; production
-// wires a debug-print sink (no-op outside debug builds).
+// wires a sink that always forwards warnings/errors (so background-work
+// failures — MAIL/AI/TASK — survive release builds) and additionally
+// forwards debug/info in debug builds.
 
 import 'package:flutter/foundation.dart';
 
@@ -13,13 +15,17 @@ import 'package:flutter/foundation.dart';
 enum LogTag { db, audio, record, anki, ai, mail, task, notify, chart, core }
 
 /// Severity (the levels a developer cares about at this stage).
+///
+/// Order matters: `index` comparison in [AppLogger.log] assumes ascending
+/// severity (debug < info < warning < error). Do not reorder.
 enum LogLevel { debug, info, warning, error }
 
-/// Receives a formatted log line.
+/// Receives a formatted log line, with its [LogLevel] so a sink can route by
+/// severity (e.g. always emit errors, gate debug to debug builds).
 abstract class LogSink {
   const LogSink();
 
-  void write(String line);
+  void write(LogLevel level, String line);
 }
 
 /// A tagged, filterable logger.
@@ -40,7 +46,7 @@ class AppLogger {
   /// Log `message` under `tag` at `level`.
   void log(LogTag tag, String message, {LogLevel level = LogLevel.debug}) {
     if (!_passes(tag, level)) return;
-    sink.write(_format(tag, level, message));
+    sink.write(level, _format(tag, level, message));
   }
 
   /// True iff this tag/level survives the filter.
@@ -66,17 +72,31 @@ class AppLogger {
       log(tag, message, level: LogLevel.error);
 }
 
-/// A production sink: forwards to `debugPrint` only in debug builds.
+/// A production sink.
+///
+/// Warnings and errors always forward to `debugPrint` — these are the levels
+/// used to diagnose background-work failures (MAIL/AI/TASK, NFR-2.1.3), which
+/// run in release builds where debug/info would otherwise be silent. Debug and
+/// info forward only in debug builds to keep release output clean.
 class DebugPrintSink extends LogSink {
   const DebugPrintSink();
 
   @override
-  void write(String line) {
-    if (kDebugMode) {
-      // avoid_print does not apply to debugPrint.
-      debugPrint(line);
-    }
+  void write(LogLevel level, String line) {
+    if (!emitsInBuild(level, isDebugBuild: kDebugMode)) return;
+    // avoid_print does not apply to debugPrint.
+    debugPrint(line);
   }
+}
+
+/// True iff a line at [level] should emit given the build's debug flag.
+///
+/// Warnings and errors emit in every build; debug and info emit only in debug
+/// builds. Pure (no Flutter imports) so the contract is unit-testable without
+/// toggling the compile-time `kDebugMode` constant.
+bool emitsInBuild(LogLevel level, {required bool isDebugBuild}) {
+  final alwaysEmit = level == LogLevel.warning || level == LogLevel.error;
+  return alwaysEmit || isDebugBuild;
 }
 
 /// A test sink: records every line that survives the filter.
@@ -84,5 +104,5 @@ class RecordingSink extends LogSink {
   final List<String> lines = <String>[];
 
   @override
-  void write(String line) => lines.add(line);
+  void write(LogLevel level, String line) => lines.add(line);
 }
