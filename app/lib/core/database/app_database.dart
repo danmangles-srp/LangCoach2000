@@ -2,17 +2,18 @@
 //
 // SQLCipher-encrypted by default (NFR-2.4.2): the key is derived per-install
 // and held in platform keystore. The platform-bound open path lives in
-// [database_connection.dart]; this file holds the schema, the migration
-// strategy, and the in-memory testing constructor — all pure Dart, unit-tested
-// via [AppDatabase.forTesting].
+// `platform/database_connection.dart`; this file holds the schema, the
+// migration strategy, and the in-memory testing constructor — all pure Dart,
+// unit-tested via `forTesting`.
 
 import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/tables/key_values.dart';
+import 'package:rivendell/core/queue/tables/offline_queue.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [KeyValues])
+@DriftDatabase(tables: [KeyValues, OfflineQueueItems])
 class AppDatabase extends _$AppDatabase {
   /// Internal — accepts any executor. Production MUST open through
   /// `openAppDatabase` (SQLCipher key applied); tests through `forTesting`.
@@ -25,11 +26,16 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(offlineQueueItems);
+      }
+    },
     beforeOpen: (details) async {
       // Enforce FK constraints on every open (off by default in SQLite).
       await customStatement('PRAGMA foreign_keys = ON;');
