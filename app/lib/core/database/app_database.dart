@@ -14,6 +14,10 @@ part 'app_database.g.dart';
 
 @DriftDatabase(tables: [KeyValues])
 class AppDatabase extends _$AppDatabase {
+  /// Internal — accepts any executor. Production MUST open through
+  /// `openAppDatabase` (SQLCipher key applied); tests through `forTesting`.
+  /// Constructing AppDatabase directly with a plaintext NativeDatabase
+  /// bypasses encryption and violates NFR-2.4.2 — do not.
   AppDatabase(super.e);
 
   /// In-memory database for tests — no encryption, no file, no platform calls.

@@ -6,6 +6,8 @@
 
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 /// Stores / creates the SQLCipher key for the local Drift store.
 abstract class DatabaseKeyStore {
   /// Returns the existing key, or creates + persists a fresh random key.
@@ -17,13 +19,16 @@ abstract class DatabaseKeyStore {
 /// Pure (no platform deps) so the contract is unit-testable: 256-bit, hex,
 /// unique per call. [Random.secure] is cryptographic.
 String generateDatabaseKey() {
-  final bytes = List<int>.generate(32, (_) => Random.secure().nextInt(256));
+  final rng = Random.secure();
+  final bytes = List<int>.generate(32, (_) => rng.nextInt(256));
   return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 }
 
-/// In-memory key store for tests.
+/// In-memory key store for tests. Requires an explicit key — no default, so a
+/// weak secret can never be imported into production wiring.
+@visibleForTesting
 class InMemoryDatabaseKeyStore implements DatabaseKeyStore {
-  InMemoryDatabaseKeyStore([this._key = 'test-key-test-key-test-key-test']);
+  InMemoryDatabaseKeyStore(this._key);
   final String _key;
 
   @override
