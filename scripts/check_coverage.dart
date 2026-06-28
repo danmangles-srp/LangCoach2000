@@ -84,6 +84,18 @@ void main(List<String> args) {
     return patterns.any((re) => re.hasMatch(normalised));
   }
 
+  // Honor the well-known `// coverage:ignore-file` marker: a file opt-ing out
+  // of line-coverage entirely (typical for platform-plugin seams that can't be
+  // exercised without a device). Lets pure logic stay at 100% while platform
+  // glue is verified on-device instead of dragging the floor.
+  bool optsOut(String path) {
+    final file = File(path);
+    if (!file.existsSync()) return false;
+    return file
+        .readAsLinesSync()
+        .any((l) => l.contains('coverage:ignore-file'));
+  }
+
   var totalFound = 0;
   var totalHit = 0;
   final files = <_FileCov>[];
@@ -94,7 +106,7 @@ void main(List<String> args) {
 
   void flush() {
     final path = current;
-    if (path != null && !isExcluded(path) && curFound > 0) {
+    if (path != null && !isExcluded(path) && !optsOut(path) && curFound > 0) {
       totalFound += curFound;
       totalHit += curHit;
       files.add(_FileCov(path, curFound, curHit));
