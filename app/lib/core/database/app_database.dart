@@ -10,10 +10,11 @@ import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/tables/key_values.dart';
 import 'package:rivendell/core/queue/tables/offline_queue.dart';
+import 'package:rivendell/features/audio/data/recordings_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [KeyValues, OfflineQueueItems])
+@DriftDatabase(tables: [KeyValues, OfflineQueueItems, Recordings])
 class AppDatabase extends _$AppDatabase {
   /// Internal — accepts any executor. Production MUST open through
   /// `openAppDatabase` (SQLCipher key applied); tests through `forTesting`.
@@ -26,7 +27,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -34,6 +35,9 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(offlineQueueItems);
+      }
+      if (from < 3) {
+        await m.createTable(recordings);
       }
     },
     beforeOpen: (details) async {

@@ -72,14 +72,17 @@ void main() {
     expect(removed, 2);
   });
 
-  test('schema is at version 2 with the offline_queue_items table', () async {
-    expect(db.schemaVersion, 2);
-    final tables = await db
-        .customSelect(
-          'SELECT name FROM sqlite_master '
-          "WHERE type='table' AND name='offline_queue_items'",
-        )
-        .get();
-    expect(tables, hasLength(1));
-  });
+  test(
+    'includes the offline_queue_items table at the current schema version',
+    () async {
+      expect(db.schemaVersion, greaterThanOrEqualTo(2));
+      final tables = await db
+          .customSelect(
+            'SELECT name FROM sqlite_master '
+            "WHERE type='table' AND name='offline_queue_items'",
+          )
+          .get();
+      expect(tables, hasLength(1));
+    },
+  );
 }
