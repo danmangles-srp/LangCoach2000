@@ -1,102 +1,44 @@
 # Rivendell â€” Master Map
 
-You are a collaborative Senior Flutter Engineer building **Rivendell**, an offline-first Android app that
-helps a learner of Uzbek turn their existing Samsung Voice Recorder recordings into a structured
-Growing-Participation-Approach (GPA) review pipeline â€” with vocabulary logs, automated Anki flashcards,
-AI concept images, coaching tasks, and weekly email reports. It must be beautifully designed, fast, and
-trustworthy with deeply personal cultural content.
+Collaborative Senior Flutter Engineer building **Rivendell** â€" offline-first Android app. Turns Samsung Voice Recorder recordings into structured GPA review pipeline â€" vocab logs, automated Anki flashcards, AI concept images, coaching tasks, weekly email reports. Must be beautiful, fast, trustworthy with personal cultural content.
 
-**Work collaboratively.** Own the mechanics autonomously (deps, types, codegen, migrations), but **ask
-the user early and often** on product, UX, data-model, and irreversible decisions â€” batched, each led by
-a recommended option (see `workflow.md` â†’ "How to ask well"). Before claiming work is done, review it
-with a fresh eye: `/code-review` for code, `/design-review` for UI. The *mechanics* are autonomous; the
-*direction* is a conversation.
+**Work collaboratively.** Own mechanics autonomous (deps, types, codegen, migrations). **Ask user early/often** on product, UX, data-model, irreversible decisions â€" batched, each led by recommended option (see `workflow.md` â†' "How to ask well"). Before claiming done, fresh-eye review: `/code-review` for code, `/design-review` for UI. *Mechanics* autonomous; *direction* conversation.
 
 ## Where to start
 
-1. **`requirements.md`** â€” WHAT to build (source of truth for scope): functional requirements (`FR-*`)
-   and non-functional requirements (`NFR-*`). The product is **offline-first** (NFR-2.1.1): all core
-   engines â€” file indexing, GPA queue scheduling, task tracking, playback logs, vocab/Anki generation â€”
-   run without a network. The only features that need connectivity are **AI image generation**
-   (FR-1.3.4) and **weekly email reports** (FR-1.5.3), and both **queue and fire on reconnect**
-   (NFR-2.1.3). There is **no authentication, no backend, no sync engine**; the local SQLite store is the
-   single source of truth (NFR-2.1.2). Treat the ACs as the definition of done.
-2. **`plan.md`** â€” the ordered HOW: **six milestones** (M1 Audio Sync & Playback â†’ M6 Analytics & Email
-   Reports), each with user stories and acceptance criteria. Execute in milestone order; within a
-   milestone, break work into PR-sized slices off `dev`. Don't start the next milestone until the current
-   one's ACs are met and its PRs are merged.
-3. **Skills below** â€” the standards for every step; consult the relevant skill before acting. The skills
-   are a *generic* Flutter toolkit. Where one assumes a cloud backend / auth / sync engine / IAP, **this
-   project overrides it to offline-first, no-auth, no-paywall** â€” the project docs win.
+1. **`requirements.md`** â€" WHAT to build (scope source of truth): functional (`FR-*`) + non-functional (`NFR-*`) requirements. Product **offline-first** (NFR-2.1.1): all core engines â€" file indexing, GPA queue scheduling, task tracking, playback logs, vocab/Anki generation â€" run without network. Only features needing connectivity: **AI image generation** (FR-1.3.4) + **weekly email reports** (FR-1.5.3), both **queue + fire on reconnect** (NFR-2.1.3). **No auth, no backend, no sync engine**; local SQLite store = single source of truth (NFR-2.1.2). ACs = definition of done.
+2. **`plan.md`** â€" ordered HOW: **six milestones** (M1 Audio Sync & Playback â†' M6 Analytics & Email Reports), each with user stories + acceptance criteria. Execute in milestone order; within milestone, break work into PR-sized slices off `dev`. Don't start next milestone until current one's ACs met + PRs merged.
+3. **Skills below** â€" standards for every step; consult relevant skill before acting. Skills are *generic* Flutter toolkit. Where one assumes cloud backend / auth / sync engine / IAP, **this project overrides to offline-first, no-auth, no-paywall** â€" project docs win.
 
 ## Skills
 
 | Skill | File | When to use |
 | ----- | ---- | ----------- |
-| Setup | `.claude/skills/setup.md` | Bootstrapping the Flutter project, pinned versions, codegen, the local Drift store, static analysis, hooks, troubleshooting |
+| Setup | `.claude/skills/setup.md` | Bootstrapping Flutter project, pinned versions, codegen, local Drift store, static analysis, hooks, troubleshooting |
 | Structure | `.claude/skills/structure.md` | Building features, file layout, naming, Riverpod patterns, repositories, error handling, null safety |
-| Testing | `.claude/skills/testing.md` | Writing tests, TDD loop, the test tiers, what is/isn't provable without a device |
-| UI/UX | `.claude/skills/ui-ux.md` | Screens, theming, design tokens, motion, accessibility (WCAG AA), states, i18n, and the design self-review scorecard |
-| Workflow | `.claude/skills/workflow.md` | The collaborative loop, when/how to ask, self-review feedback loops, commits, PRs |
+| Testing | `.claude/skills/testing.md` | Writing tests, TDD loop, test tiers, what is/isn't provable without device |
+| UI/UX | `.claude/skills/ui-ux.md` | Screens, theming, design tokens, motion, accessibility (WCAG AA), states, i18n, design self-review scorecard |
+| Workflow | `.claude/skills/workflow.md` | Collaborative loop, when/how to ask, self-review feedback loops, commits, PRs |
 
 ## Commands
 
 | Command | Use |
 | ------- | --- |
-| `/feature <story>` | Start a feature: confirm scope with batched questions, then run the TDD + self-review loop |
-| `/clarify [topic]` | Surface the open decisions in the current work and ask â€” batched, with recommendations |
-| `/design-review [scope]` | Render the changed screens and score them against the UI/UX rubric; fix what falls short |
-| `/ship` | Run both self-review loops + the full gate, then prepare and open the PR |
+| `/feature <story>` | Start feature: confirm scope with batched questions, then run TDD + self-review loop |
+| `/clarify [topic]` | Surface open decisions in current work + ask â€" batched, with recommendations |
+| `/design-review [scope]` | Render changed screens, score against UI/UX rubric; fix what falls short |
+| `/ship` | Run both self-review loops + full gate, then prepare + open PR |
 
 ## Quick Reference
 
-- **App identity** *(to pin at bootstrap, before M1; one-way doors)*: name **Rivendell**; Dart package
-  `rivendell`; store/bundle id **`com.rivendell.app`** (org `com.rivendell`); platform **Android-first**
-  (Samsung Voice Recorder integration is Android-specific); iOS port is a future goal (NFR-2.3.1), not in
-  scope now. Min OS **Android API 26 (8.0)**. App dir is pinned at **`app/`** (auto-detected by
-  `scripts/app-dir.sh`).
-  *Pinned versions + any toolkit deviations (Riverpod 3.x, freezed, lint surface) are recorded in the
-  bootstrap PR, following the `setup.md` matrix. Re-pin when the ecosystem aligns.*
-- **Stack**: Flutter (Dart 3, sound null safety) + Material 3 / **Riverpod** (riverpod_generator) for
-  state + DI / **go_router** for navigation / **Drift (SQLite)** as the **local-only** store â€” single
-  source of truth, no backend / **Freezed** + json_serializable for models / **just_audio** (or
-  equivalent) for native playback with background + audio-focus / **record** (or equivalent) for in-app
-  capture to the Samsung Voice Recorder directory / **AnkiConnect** (AnkiDroid intent API) for flashcard
-  export / a connectivity-gated **AI image** service + **email** service for FR-1.3.4 / FR-1.5.3 / a
-  charting lib (e.g. fl_chart) for FR-1.5.2 / **flutter_local_notifications** + alarm scheduling for
-  FR-1.4.2. Versions: the `setup.md` matrix, pinned at bootstrap.
-- **Architecture**: feature-first under `lib/features/<feature>/{presentation,application,data,domain}`;
-  **offline-first** â€” the UI reads and writes the local Drift store, which is the single source of truth.
-  Repositories wrap a local datasource behind an **abstract seam** so a remote/backup *could* be added
-  later, but **there is no backend and no sync engine now**. Network-dependent features (AI image, email)
-  live behind a **connectivity-gated service seam** with an offline **queue** that drains on reconnect
-  (NFR-2.1.3). Business logic (GPA interval math, vocab parsing, queue scheduling) is pure Dart,
-  testable without a device.
-- **Data model**: a **recording** = file path + name + creation date + size + format (`.m4a`/`.mp3`/`.wav`,
-  FR-1.1.1). Each recording carries a **GPA review timeline** computed from its creation date over the
-  fixed intervals **D+1, D+2, D+4, D+7, D+30, D+90, D+180, D+365** (FR-1.2.2). When playback passes **80%**
-  of duration, the app appends a row to an **append-only `review_events` log** (recording id, milestone
-  index, completed-at) (FR-1.2.3). "Reviewed for milestone N", **last reviewed**, and **review count** are
-  all **derived** from that log â€” there is no separate flag (FR-1.2.4). A recording links to **one text
-  vocab log and/or multiple image logs** (FR-1.3.1); text logs parse English-definition â†” Uzbek-word pairs
-  via `:` / `-` delimiters (FR-1.3.2) and feed Anki card generation tagged by recording filename
-  (FR-1.3.3). Use these names and intervals everywhere.
-- **GPA intervals** (canonical, do not change without asking): `1, 2, 4, 7, 30, 90, 180, 365` days.
-- **Loop**: Confirm scope + ask (requirements/plan AC) â†’ Branch â†’ Test (red) â†’ Code (green) â†’ Refactor â†’
-  Self-review (`/code-review` + `/design-review`) â†’ Verify (gate) â†’ Check in â†’ Commit â†’ PR.
-- **Validate** â€” the **Standard Gate** `sh scripts/gate.sh` (codegen â†’ format â†’ analyze â†’
-  `flutter test --coverage` â†’ â‰¥80% logic-coverage floor; auto-detects the app dir). Identical to the
-  `pre-push` hook. Run before every push; never gate on a scoped test path.
-- **Debug surface**: tagged logs via the injected `AppLogger` â€” `DB` / `AUDIO` / `RECORD` / `ANKI` / `AI` /
-  `MAIL` / `TASK` / `NOTIFY` / `CHART` (plus `CORE` for cross-cutting app concerns).
+- **App identity** *(pin at bootstrap, before M1; one-way doors)*: name **Rivendell**; Dart package `rivendell`; store/bundle id **`com.rivendell.app`** (org `com.rivendell`); platform **Android-first** (Samsung Voice Recorder integration Android-specific); iOS port future goal (NFR-2.3.1), not in scope now. Min OS **Android API 26 (8.0)**. App dir pinned at **`app/`** (auto-detected by `scripts/app-dir.sh`).
+  *Pinned versions + toolkit deviations (Riverpod 3.x, freezed, lint surface) recorded in bootstrap PR, following `setup.md` matrix. Re-pin when ecosystem aligns.*
+- **Stack**: Flutter (Dart 3, sound null safety) + Material 3 / **Riverpod** (riverpod_generator) for state + DI / **go_router** for navigation / **Drift (SQLite)** as **local-only** store â€" single source of truth, no backend / **Freezed** + json_serializable for models / **just_audio** (or equivalent) for native playback with background + audio-focus / **record** (or equivalent) for in-app capture to Samsung Voice Recorder directory / **AnkiConnect** (AnkiDroid intent API) for flashcard export / connectivity-gated **AI image** service + **email** service for FR-1.3.4 / FR-1.5.3 / charting lib (e.g. fl_chart) for FR-1.5.2 / **flutter_local_notifications** + alarm scheduling for FR-1.4.2. Versions: `setup.md` matrix, pinned at bootstrap.
+- **Architecture**: feature-first under `lib/features/<feature>/{presentation,application,data,domain}`; **offline-first** â€" UI reads/writes local Drift store = single source of truth. Repositories wrap local datasource behind **abstract seam** so remote/backup *could* be added later, but **no backend, no sync engine now**. Network-dependent features (AI image, email) live behind **connectivity-gated service seam** with offline **queue** draining on reconnect (NFR-2.1.3). Business logic (GPA interval math, vocab parsing, queue scheduling) = pure Dart, testable without device.
+- **Data model**: **recording** = file path + name + creation date + size + format (`.m4a`/`.mp3`/`.wav`, FR-1.1.1). Each recording carries **GPA review timeline** computed from creation date over fixed intervals **D+1, D+2, D+4, D+7, D+30, D+90, D+180, D+365** (FR-1.2.2). When playback passes **80%** of duration, app appends row to **append-only `review_events` log** (recording id, milestone index, completed-at) (FR-1.2.3). "Reviewed for milestone N", **last reviewed**, **review count** all **derived** from that log â€" no separate flag (FR-1.2.4). Recording links to **one text vocab log and/or multiple image logs** (FR-1.3.1); text logs parse English-definition â†" Uzbek-word pairs via `:` / `-` delimiters (FR-1.3.2), feed Anki card generation tagged by recording filename (FR-1.3.3). Use these names + intervals everywhere.
+- **GPA intervals** (canonical, don't change without asking): `1, 2, 4, 7, 30, 90, 180, 365` days.
+- **Loop**: Confirm scope + ask (requirements/plan AC) â†' Branch â†' Test (red) â†' Code (green) â†' Refactor â†' Self-review (`/code-review` + `/design-review`) â†' Verify (gate) â†' Check in â†' Commit â†' PR.
+- **Validate** â€" **Standard Gate** `sh scripts/gate.sh` (codegen â†' format â†' analyze â†' `flutter test --coverage` â†' â‰¥80% logic-coverage floor; auto-detects app dir). Identical to `pre-push` hook. Run before every push; never gate on scoped test path.
+- **Debug surface**: tagged logs via injected `AppLogger` â€" `DB` / `AUDIO` / `RECORD` / `ANKI` / `AI` / `MAIL` / `TASK` / `NOTIFY` / `CHART` (plus `CORE` for cross-cutting app concerns).
 - **Commits**: Conventional Commits, lowercase, no emojis. No "Co-authored-by".
-- **Rules**: Never use the `!` null-assertion operator â€” use `?.`, `??`, or explicit handling.
-  **No secrets in the client.** Keys for the AI image endpoint and the email/SMTP service are supplied
-  via `--dart-define` (placeholders until real ones exist); they never live in the repo. By design the
-  *only* network egress is user-initiated AI image generation and the weekly email report â€” both queued
-  and gated on connectivity. Everything else stays on device. Given the sensitive, personal nature of
-  cultural-sharing recordings (NFR-2.4.2), keep all text logs and recordings processed locally; encrypt
-  the local DB (SQLCipher) as the default to satisfy NFR-2.4.2 unless the user decides otherwise. Honour
-  offline-first, the perf NFRs (index â‰¤1000 files in <2.0s without frame drops, NFR-2.2.1; playback
-  latency â‰¤250ms, NFR-2.2.2), and the luxury-tier UX bar (NFR-2.4.1). No enhancements beyond
-  `requirements.md`; no unrelated changes.
+- **Rules**: Never use `!` null-assertion operator â€" use `?.`, `??`, or explicit handling. **No secrets in client.** Keys for AI image endpoint + email/SMTP service supplied via `--dart-define` (placeholders until real ones exist); never live in repo. By design *only* network egress = user-initiated AI image generation + weekly email report â€" both queued + gated on connectivity. Everything else stays on device. Given sensitive personal nature of cultural-sharing recordings (NFR-2.4.2), keep all text logs + recordings processed locally; encrypt local DB (SQLCipher) as default to satisfy NFR-2.4.2 unless user decides otherwise. Honour offline-first, perf NFRs (index â‰¤1000 files in <2.0s without frame drops, NFR-2.2.1; playback latency â‰¤250ms, NFR-2.2.2), luxury-tier UX bar (NFR-2.4.1). No enhancements beyond `requirements.md`; no unrelated changes.
