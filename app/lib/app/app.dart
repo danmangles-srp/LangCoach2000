@@ -1,9 +1,11 @@
 // Rivendell — root widget + Material 3 theme.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/app/router.dart';
+import 'package:rivendell/l10n/app_strings.dart';
 
 class RivendellApp extends ConsumerWidget {
   const RivendellApp({super.key});
@@ -15,6 +17,13 @@ class RivendellApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
+      localizationsDelegates: const [
+        AppStrings.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppStrings.supportedLocales,
       routerConfig: ref.watch(routerProvider),
     );
   }
