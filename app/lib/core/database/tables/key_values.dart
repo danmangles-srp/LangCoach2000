@@ -1,3 +1,4 @@
+// coverage:ignore-file — declarative Drift schema; no unit-testable logic.
 // Drift schema for Rivendell's local-only, SQLCipher-encrypted store.
 //
 // Tables land with their milestones (recordings @ M1, review_events @ M2,

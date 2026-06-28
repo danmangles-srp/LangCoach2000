@@ -1,3 +1,4 @@
+// coverage:ignore-file — declarative Drift schema; no unit-testable logic.
 // Drift schema for the persistent offline queue (NFR-2.1.3).
 //
 // Network-dependent work (AI image generation FR-1.3.4, email reports
