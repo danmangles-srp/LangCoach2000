@@ -29,8 +29,9 @@ class FolderRepository {
   /// Forget the current folder — used by the re-pick flow (settings, later).
   Future<void> clear() => _kv.delete(_folderKey);
 
-  /// True until the non-SVR warning has been shown once for the current pick.
-  /// Resets implicitly when a new folder is set (caller re-checks after pick).
+  /// True until the non-SVR warning has been shown once. "Warn once" is once
+  /// ever — the user has been told non-SVR folders are allowed, so we don't
+  /// nag on later re-picks.
   Future<bool> shouldShowNonSvrWarning() async =>
       (await _kv.read(_warnShownKey)) != '1';
 

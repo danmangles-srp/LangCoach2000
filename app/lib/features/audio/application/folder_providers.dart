@@ -8,17 +8,14 @@ import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/features/audio/data/folder_repository.dart';
 
-/// True once the DB is open and a folder has been chosen. Drives the first-run
-/// redirect: while this resolves, the router shows the app shell; once false,
-/// it routes to onboarding.
+/// True once a folder has been chosen. Drives the first-run redirect.
 final hasFolderProvider = FutureProvider<bool>((ref) async {
-  final db = await ref.watch(appDatabaseProvider.future);
-  final repo = FolderRepository(KvRepository(db));
+  final repo = await ref.watch(folderRepositoryProvider.future);
   return repo.hasFolder();
 });
 
-/// The persisted folder identity, or null. Read by the indexer (T1.2) to know
-/// where to scan.
+/// The [FolderRepository] singleton. Read by the indexer (T1.2) and the
+/// onboarding flow to get/set the chosen folder.
 final folderRepositoryProvider = FutureProvider<FolderRepository>((ref) async {
   final db = await ref.watch(appDatabaseProvider.future);
   return FolderRepository(KvRepository(db));

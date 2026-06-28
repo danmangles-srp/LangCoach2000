@@ -17,8 +17,16 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (_, state) async {
       // Block first-route resolution until the folder check resolves so the
-      // onboarding gate is correct from the first frame (DB open is fast).
-      final hasFolder = await ref.read(hasFolderProvider.future);
+      // onboarding gate is correct from the first frame. If the DB open fails
+      // (key mismatch, corrupt store), don't brick routing — let the requested
+      // route render and surface the failure downstream (full recovery is a
+      // follow-up).
+      bool hasFolder;
+      try {
+        hasFolder = await ref.read(hasFolderProvider.future);
+      } on Object {
+        hasFolder = false;
+      }
       final onOnboarding = state.matchedLocation == '/onboarding';
       if (!hasFolder && !onOnboarding) return '/onboarding';
       if (hasFolder && onOnboarding) return '/';

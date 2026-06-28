@@ -64,30 +64,43 @@ class FolderOnboardingScreen extends ConsumerWidget {
 
   Future<void> _pick(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
-    final picked = await ref.read(folderSelectionServiceProvider).pickFolder();
-    if (picked == null) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('No folder selected.')),
-      );
-      return;
-    }
-    final repo = await ref.read(folderRepositoryProvider.future);
-    await repo.setFolder(picked);
+    try {
+      final picked = await ref
+          .read(folderSelectionServiceProvider)
+          .pickFolder();
+      if (!context.mounted) return;
+      if (picked == null) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('No folder selected.')),
+        );
+        return;
+      }
+      final repo = await ref.read(folderRepositoryProvider.future);
+      await repo.setFolder(picked);
 
-    final nonSvr = !looksLikeVoiceRecorderFolder(picked);
-    if (nonSvr && await repo.shouldShowNonSvrWarning()) {
-      await repo.markNonSvrWarningShown();
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            "That isn't the usual Voice Recorder folder — indexing it anyway.",
+      final nonSvr = !looksLikeVoiceRecorderFolder(picked);
+      if (nonSvr && await repo.shouldShowNonSvrWarning()) {
+        await repo.markNonSvrWarningShown();
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              "That isn't the usual Voice Recorder folder — "
+              'indexing it anyway.',
+            ),
           ),
-        ),
+        );
+      }
+
+      // Invalidate the gate so the redirect re-evaluates against the new
+      // folder.
+      ref.invalidate(hasFolderProvider);
+      if (context.mounted) context.go('/');
+    } on Object {
+      // Picker or persistence failure: surface a plain-language retry. A
+      // typed Failure + Result<T> lands with the repo-seam work (T0.x).
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Couldn't save that folder. Try again.")),
       );
     }
-
-    // Invalidate the gate so the redirect re-evaluates against the new folder.
-    ref.invalidate(hasFolderProvider);
-    if (context.mounted) context.go('/');
   }
 }
