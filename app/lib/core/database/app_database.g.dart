@@ -1154,6 +1154,341 @@ class RecordingsCompanion extends UpdateCompanion<Recording> {
   }
 }
 
+class $ReviewEventsTable extends ReviewEvents
+    with TableInfo<$ReviewEventsTable, ReviewEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReviewEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _recordingIdMeta = const VerificationMeta(
+    'recordingId',
+  );
+  @override
+  late final GeneratedColumn<int> recordingId = GeneratedColumn<int>(
+    'recording_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recordings (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _milestoneIndexMeta = const VerificationMeta(
+    'milestoneIndex',
+  );
+  @override
+  late final GeneratedColumn<int> milestoneIndex = GeneratedColumn<int>(
+    'milestone_index',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recordingId,
+    milestoneIndex,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'review_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ReviewEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('recording_id')) {
+      context.handle(
+        _recordingIdMeta,
+        recordingId.isAcceptableOrUnknown(
+          data['recording_id']!,
+          _recordingIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recordingIdMeta);
+    }
+    if (data.containsKey('milestone_index')) {
+      context.handle(
+        _milestoneIndexMeta,
+        milestoneIndex.isAcceptableOrUnknown(
+          data['milestone_index']!,
+          _milestoneIndexMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_completedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReviewEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReviewEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      recordingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recording_id'],
+      )!,
+      milestoneIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}milestone_index'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReviewEventsTable createAlias(String alias) {
+    return $ReviewEventsTable(attachedDatabase, alias);
+  }
+}
+
+class ReviewEvent extends DataClass implements Insertable<ReviewEvent> {
+  final int id;
+
+  /// The recording this review counts toward. Cascade-deleted with the
+  /// recording so a (future) recording delete cleans its history.
+  final int recordingId;
+
+  /// The GPA milestone (0..7) this event satisfied, or null for a play that
+  /// earned no milestone. Nullable by design — see file header.
+  final int? milestoneIndex;
+
+  /// When the 80%-threshold was crossed (auto) or the correction was made
+  /// (manual). Day-granularity drives milestone assignment (see gpa_review).
+  final DateTime completedAt;
+  const ReviewEvent({
+    required this.id,
+    required this.recordingId,
+    this.milestoneIndex,
+    required this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['recording_id'] = Variable<int>(recordingId);
+    if (!nullToAbsent || milestoneIndex != null) {
+      map['milestone_index'] = Variable<int>(milestoneIndex);
+    }
+    map['completed_at'] = Variable<DateTime>(completedAt);
+    return map;
+  }
+
+  ReviewEventsCompanion toCompanion(bool nullToAbsent) {
+    return ReviewEventsCompanion(
+      id: Value(id),
+      recordingId: Value(recordingId),
+      milestoneIndex: milestoneIndex == null && nullToAbsent
+          ? const Value.absent()
+          : Value(milestoneIndex),
+      completedAt: Value(completedAt),
+    );
+  }
+
+  factory ReviewEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReviewEvent(
+      id: serializer.fromJson<int>(json['id']),
+      recordingId: serializer.fromJson<int>(json['recordingId']),
+      milestoneIndex: serializer.fromJson<int?>(json['milestoneIndex']),
+      completedAt: serializer.fromJson<DateTime>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'recordingId': serializer.toJson<int>(recordingId),
+      'milestoneIndex': serializer.toJson<int?>(milestoneIndex),
+      'completedAt': serializer.toJson<DateTime>(completedAt),
+    };
+  }
+
+  ReviewEvent copyWith({
+    int? id,
+    int? recordingId,
+    Value<int?> milestoneIndex = const Value.absent(),
+    DateTime? completedAt,
+  }) => ReviewEvent(
+    id: id ?? this.id,
+    recordingId: recordingId ?? this.recordingId,
+    milestoneIndex: milestoneIndex.present
+        ? milestoneIndex.value
+        : this.milestoneIndex,
+    completedAt: completedAt ?? this.completedAt,
+  );
+  ReviewEvent copyWithCompanion(ReviewEventsCompanion data) {
+    return ReviewEvent(
+      id: data.id.present ? data.id.value : this.id,
+      recordingId: data.recordingId.present
+          ? data.recordingId.value
+          : this.recordingId,
+      milestoneIndex: data.milestoneIndex.present
+          ? data.milestoneIndex.value
+          : this.milestoneIndex,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewEvent(')
+          ..write('id: $id, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('milestoneIndex: $milestoneIndex, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, recordingId, milestoneIndex, completedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReviewEvent &&
+          other.id == this.id &&
+          other.recordingId == this.recordingId &&
+          other.milestoneIndex == this.milestoneIndex &&
+          other.completedAt == this.completedAt);
+}
+
+class ReviewEventsCompanion extends UpdateCompanion<ReviewEvent> {
+  final Value<int> id;
+  final Value<int> recordingId;
+  final Value<int?> milestoneIndex;
+  final Value<DateTime> completedAt;
+  const ReviewEventsCompanion({
+    this.id = const Value.absent(),
+    this.recordingId = const Value.absent(),
+    this.milestoneIndex = const Value.absent(),
+    this.completedAt = const Value.absent(),
+  });
+  ReviewEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required int recordingId,
+    this.milestoneIndex = const Value.absent(),
+    required DateTime completedAt,
+  }) : recordingId = Value(recordingId),
+       completedAt = Value(completedAt);
+  static Insertable<ReviewEvent> custom({
+    Expression<int>? id,
+    Expression<int>? recordingId,
+    Expression<int>? milestoneIndex,
+    Expression<DateTime>? completedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recordingId != null) 'recording_id': recordingId,
+      if (milestoneIndex != null) 'milestone_index': milestoneIndex,
+      if (completedAt != null) 'completed_at': completedAt,
+    });
+  }
+
+  ReviewEventsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? recordingId,
+    Value<int?>? milestoneIndex,
+    Value<DateTime>? completedAt,
+  }) {
+    return ReviewEventsCompanion(
+      id: id ?? this.id,
+      recordingId: recordingId ?? this.recordingId,
+      milestoneIndex: milestoneIndex ?? this.milestoneIndex,
+      completedAt: completedAt ?? this.completedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (recordingId.present) {
+      map['recording_id'] = Variable<int>(recordingId.value);
+    }
+    if (milestoneIndex.present) {
+      map['milestone_index'] = Variable<int>(milestoneIndex.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReviewEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('milestoneIndex: $milestoneIndex, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1161,6 +1496,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OfflineQueueItemsTable offlineQueueItems =
       $OfflineQueueItemsTable(this);
   late final $RecordingsTable recordings = $RecordingsTable(this);
+  late final $ReviewEventsTable reviewEvents = $ReviewEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1169,7 +1505,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     keyValues,
     offlineQueueItems,
     recordings,
+    reviewEvents,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'recordings',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('review_events', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
 typedef $$KeyValuesTableCreateCompanionBuilder =
@@ -1573,6 +1920,29 @@ typedef $$RecordingsTableUpdateCompanionBuilder =
       Value<DateTime> indexedAt,
     });
 
+final class $$RecordingsTableReferences
+    extends BaseReferences<_$AppDatabase, $RecordingsTable, Recording> {
+  $$RecordingsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$ReviewEventsTable, List<ReviewEvent>>
+  _reviewEventsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.reviewEvents,
+    aliasName: 'recordings__id__review_events__recording_id',
+  );
+
+  $$ReviewEventsTableProcessedTableManager get reviewEventsRefs {
+    final manager = $$ReviewEventsTableTableManager(
+      $_db,
+      $_db.reviewEvents,
+    ).filter((f) => f.recordingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_reviewEventsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$RecordingsTableFilterComposer
     extends Composer<_$AppDatabase, $RecordingsTable> {
   $$RecordingsTableFilterComposer({
@@ -1621,6 +1991,31 @@ class $$RecordingsTableFilterComposer
     column: $table.indexedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> reviewEventsRefs(
+    Expression<bool> Function($$ReviewEventsTableFilterComposer f) f,
+  ) {
+    final $$ReviewEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviewEvents,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.reviewEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RecordingsTableOrderingComposer
@@ -1707,6 +2102,31 @@ class $$RecordingsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get indexedAt =>
       $composableBuilder(column: $table.indexedAt, builder: (column) => column);
+
+  Expression<T> reviewEventsRefs<T extends Object>(
+    Expression<T> Function($$ReviewEventsTableAnnotationComposer a) f,
+  ) {
+    final $$ReviewEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reviewEvents,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReviewEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reviewEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RecordingsTableTableManager
@@ -1720,12 +2140,9 @@ class $$RecordingsTableTableManager
           $$RecordingsTableAnnotationComposer,
           $$RecordingsTableCreateCompanionBuilder,
           $$RecordingsTableUpdateCompanionBuilder,
-          (
-            Recording,
-            BaseReferences<_$AppDatabase, $RecordingsTable, Recording>,
-          ),
+          (Recording, $$RecordingsTableReferences),
           Recording,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool reviewEventsRefs})
         > {
   $$RecordingsTableTableManager(_$AppDatabase db, $RecordingsTable table)
     : super(
@@ -1779,9 +2196,45 @@ class $$RecordingsTableTableManager
                 indexedAt: indexedAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$RecordingsTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({reviewEventsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (reviewEventsRefs) db.reviewEvents],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (reviewEventsRefs)
+                    await $_getPrefetchedData<
+                      Recording,
+                      $RecordingsTable,
+                      ReviewEvent
+                    >(
+                      currentTable: table,
+                      referencedTable: $$RecordingsTableReferences
+                          ._reviewEventsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$RecordingsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).reviewEventsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.recordingId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -1796,9 +2249,305 @@ typedef $$RecordingsTableProcessedTableManager =
       $$RecordingsTableAnnotationComposer,
       $$RecordingsTableCreateCompanionBuilder,
       $$RecordingsTableUpdateCompanionBuilder,
-      (Recording, BaseReferences<_$AppDatabase, $RecordingsTable, Recording>),
+      (Recording, $$RecordingsTableReferences),
       Recording,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool reviewEventsRefs})
+    >;
+typedef $$ReviewEventsTableCreateCompanionBuilder =
+    ReviewEventsCompanion Function({
+      Value<int> id,
+      required int recordingId,
+      Value<int?> milestoneIndex,
+      required DateTime completedAt,
+    });
+typedef $$ReviewEventsTableUpdateCompanionBuilder =
+    ReviewEventsCompanion Function({
+      Value<int> id,
+      Value<int> recordingId,
+      Value<int?> milestoneIndex,
+      Value<DateTime> completedAt,
+    });
+
+final class $$ReviewEventsTableReferences
+    extends BaseReferences<_$AppDatabase, $ReviewEventsTable, ReviewEvent> {
+  $$ReviewEventsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $RecordingsTable _recordingIdTable(_$AppDatabase db) =>
+      db.recordings.createAlias('review_events__recording_id__recordings__id');
+
+  $$RecordingsTableProcessedTableManager get recordingId {
+    final $_column = $_itemColumn<int>('recording_id')!;
+
+    final manager = $$RecordingsTableTableManager(
+      $_db,
+      $_db.recordings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recordingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ReviewEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReviewEventsTable> {
+  $$ReviewEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get milestoneIndex => $composableBuilder(
+    column: $table.milestoneIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RecordingsTableFilterComposer get recordingId {
+    final $$RecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReviewEventsTable> {
+  $$ReviewEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get milestoneIndex => $composableBuilder(
+    column: $table.milestoneIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RecordingsTableOrderingComposer get recordingId {
+    final $$RecordingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReviewEventsTable> {
+  $$ReviewEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get milestoneIndex => $composableBuilder(
+    column: $table.milestoneIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  $$RecordingsTableAnnotationComposer get recordingId {
+    final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ReviewEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReviewEventsTable,
+          ReviewEvent,
+          $$ReviewEventsTableFilterComposer,
+          $$ReviewEventsTableOrderingComposer,
+          $$ReviewEventsTableAnnotationComposer,
+          $$ReviewEventsTableCreateCompanionBuilder,
+          $$ReviewEventsTableUpdateCompanionBuilder,
+          (ReviewEvent, $$ReviewEventsTableReferences),
+          ReviewEvent,
+          PrefetchHooks Function({bool recordingId})
+        > {
+  $$ReviewEventsTableTableManager(_$AppDatabase db, $ReviewEventsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReviewEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReviewEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReviewEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> recordingId = const Value.absent(),
+                Value<int?> milestoneIndex = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
+              }) => ReviewEventsCompanion(
+                id: id,
+                recordingId: recordingId,
+                milestoneIndex: milestoneIndex,
+                completedAt: completedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int recordingId,
+                Value<int?> milestoneIndex = const Value.absent(),
+                required DateTime completedAt,
+              }) => ReviewEventsCompanion.insert(
+                id: id,
+                recordingId: recordingId,
+                milestoneIndex: milestoneIndex,
+                completedAt: completedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ReviewEventsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({recordingId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (recordingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.recordingId,
+                                referencedTable: $$ReviewEventsTableReferences
+                                    ._recordingIdTable(db),
+                                referencedColumn: $$ReviewEventsTableReferences
+                                    ._recordingIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ReviewEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReviewEventsTable,
+      ReviewEvent,
+      $$ReviewEventsTableFilterComposer,
+      $$ReviewEventsTableOrderingComposer,
+      $$ReviewEventsTableAnnotationComposer,
+      $$ReviewEventsTableCreateCompanionBuilder,
+      $$ReviewEventsTableUpdateCompanionBuilder,
+      (ReviewEvent, $$ReviewEventsTableReferences),
+      ReviewEvent,
+      PrefetchHooks Function({bool recordingId})
     >;
 
 class $AppDatabaseManager {
@@ -1810,4 +2559,6 @@ class $AppDatabaseManager {
       $$OfflineQueueItemsTableTableManager(_db, _db.offlineQueueItems);
   $$RecordingsTableTableManager get recordings =>
       $$RecordingsTableTableManager(_db, _db.recordings);
+  $$ReviewEventsTableTableManager get reviewEvents =>
+      $$ReviewEventsTableTableManager(_db, _db.reviewEvents);
 }
