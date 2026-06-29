@@ -12,6 +12,20 @@ import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/gpa/domain/gpa_review.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
 
+/// One row of today's review queue (FR-1.2.5): the recording, its derived
+/// status, and whether it's 1-day-stale. Inclusion implies membership.
+class QueueItem {
+  const QueueItem({
+    required this.recording,
+    required this.status,
+    required this.isStale,
+  });
+
+  final Recording recording;
+  final RecordingReviewStatus status;
+  final bool isStale;
+}
+
 class ReviewEventRepository {
   ReviewEventRepository(this._db);
 
@@ -48,6 +62,62 @@ class ReviewEventRepository {
       ],
       asOf: asOf,
     );
+  }
+
+  /// Today's review queue (FR-1.2.5): recordings whose active milestone is due
+  /// today or 1-day-stale, sorted most-overdue first. Recordings that are not
+  /// yet due, complete, or ≥2 days stale are excluded. Two queries regardless
+  /// of recording count (recordings + all events), grouped in Dart.
+  Future<List<QueueItem>> todayQueue({required DateTime asOf}) async {
+    final recordings =
+        await (_db.select(_db.recordings)..orderBy([
+              (t) => OrderingTerm.desc(t.createdAt),
+              (t) => OrderingTerm.desc(t.id),
+            ]))
+            .get();
+    if (recordings.isEmpty) return const [];
+
+    final events = await (_db.select(
+      _db.reviewEvents,
+    )..orderBy([(t) => OrderingTerm.asc(t.completedAt)])).get();
+    final byRecording = <int, List<ReviewLogEntry>>{};
+    for (final e in events) {
+      (byRecording[e.recordingId] ??= <ReviewLogEntry>[]).add(
+        ReviewLogEntry(
+          milestoneIndex: e.milestoneIndex,
+          completedAt: e.completedAt,
+        ),
+      );
+    }
+
+    final out = <QueueItem>[];
+    for (final rec in recordings) {
+      final status = computeReviewStatus(
+        createdAt: rec.createdAt,
+        events: byRecording[rec.id] ?? const <ReviewLogEntry>[],
+        asOf: asOf,
+      );
+      final kind = classifyQueueEntry(status, asOf: asOf);
+      if (kind == QueueEntryKind.excluded) continue;
+      out.add(
+        QueueItem(
+          recording: rec,
+          status: status,
+          isStale: kind == QueueEntryKind.stale,
+        ),
+      );
+    }
+
+    // Stale (1-day) first, then by active-milestone dueOn ascending (most
+    // overdue first), then recording createdAt desc for a stable tiebreak.
+    out.sort((a, b) {
+      if (a.isStale != b.isStale) return a.isStale ? -1 : 1;
+      final da = a.status.activeMilestone?.dueOn;
+      final db = b.status.activeMilestone?.dueOn;
+      if (da != null && db != null && da != db) return da.compareTo(db);
+      return b.recording.createdAt.compareTo(a.recording.createdAt);
+    });
+    return out;
   }
 
   /// Auto-append a review event for an 80%-crossing (called by the playback
