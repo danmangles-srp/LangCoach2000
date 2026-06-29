@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/features/audio/application/folder_providers.dart';
 import 'package:rivendell/features/audio/presentation/folder_onboarding_screen.dart';
+import 'package:rivendell/features/audio/presentation/recording_detail_screen.dart';
 import 'package:rivendell/features/audio/presentation/recordings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -33,6 +34,17 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const RecordingsScreen()),
+      GoRoute(
+        // T1.6: tap a recording -> detail + player. A non-numeric id (stale
+        // link) falls back to the library rather than rendering a broken
+        // detail screen.
+        path: '/recordings/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (id == null) return const RecordingsScreen();
+          return RecordingDetailScreen(recordingId: id);
+        },
+      ),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const FolderOnboardingScreen(),

@@ -32,6 +32,12 @@ class RivendellAudioHandler extends BaseAudioHandler with SeekHandler {
         );
       },
     );
+    // The media item is seeded from the stored durationMs (often null — the
+    // indexer reads filesystem metadata only), while just_audio resolves the
+    // real length after setAudioSource. Surface it back onto the media item so
+    // the in-app seek bar (T1.6) + the OS media UI can show progress; without
+    // this the bar would stay empty for the typical recording.
+    _player.durationStream.listen(_onDurationResolved);
   }
 
   final AudioPlayer _player = AudioPlayer();
@@ -68,6 +74,16 @@ class RivendellAudioHandler extends BaseAudioHandler with SeekHandler {
     await _player.stop();
     _currentRecordingId = null;
     await super.stop();
+  }
+
+  /// Patch the resolved duration onto the current media item, once. Re-emits
+  /// the item so the controller (and thus the seek bar) pick up the length the
+  /// engine discovered. No-op if there's no item or it already carries one.
+  void _onDurationResolved(Duration? duration) {
+    if (duration == null) return;
+    final current = mediaItem.value;
+    if (current == null || current.duration != null) return;
+    mediaItem.add(current.copyWith(duration: duration));
   }
 
   /// Re-broadcast the engine's current transport as a session PlaybackState.
