@@ -14,6 +14,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:rivendell/app/app.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
+import 'package:rivendell/features/audio/application/recording_indexer.dart';
+import 'package:rivendell/features/audio/application/recording_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,4 +61,26 @@ Future<void> main() async {
       ),
     ),
   );
+
+  // Re-index on every startup (FR-1.1.1 — subsequent startups reconcile): new
+  // files land, existing rows keep their durationMs via upsert. Fire-and-
+  // forget so it can't delay the first frame; a failure leaves the stale list
+  // and the manual refresh / next startup retries. No-op when no folder is
+  // set (RecordingIndexer short-circuits), so this is safe pre-onboarding.
+  unawaited(
+    initialScan(container).catchError(
+      (Object e, StackTrace st) => FlutterError.reportError(
+        FlutterErrorDetails(exception: e, stack: st),
+      ),
+    ),
+  );
+}
+
+/// Run one library scan against the chosen folder, then drop the cached
+/// recordings list so the home screen re-reads. Shares the root container, so
+/// invalidating here refreshes the widget tree.
+Future<void> initialScan(ProviderContainer container) async {
+  final indexer = await container.read(recordingIndexerProvider.future);
+  await indexer.scanAndStore();
+  container.invalidate(recordingsProvider);
 }

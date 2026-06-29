@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/features/audio/application/folder_providers.dart';
+import 'package:rivendell/features/audio/application/recording_indexer.dart';
+import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/domain/voice_recorder_paths.dart';
 import 'package:rivendell/features/audio/platform/folder_selection_providers.dart';
 
@@ -91,9 +93,22 @@ class FolderOnboardingScreen extends ConsumerWidget {
         );
       }
 
+      // Index the freshly picked folder so the library renders its recordings
+      // on first arrival rather than the empty state. Non-fatal: scanAndStore
+      // degrades to a no-op on channel failure; the manual refresh or the
+      // startup scan recovers.
+      try {
+        final indexer = await ref.read(recordingIndexerProvider.future);
+        await indexer.scanAndStore();
+      } on Object {
+        // Swallow — surface nothing; the next refresh retries.
+      }
+
       // Invalidate the gate so the redirect re-evaluates against the new
-      // folder.
-      ref.invalidate(hasFolderProvider);
+      // folder, and the cached recordings list so it re-reads after the scan.
+      ref
+        ..invalidate(hasFolderProvider)
+        ..invalidate(recordingsProvider);
       if (context.mounted) context.go('/');
     } on Object {
       // Picker or persistence failure: surface a plain-language retry. A
