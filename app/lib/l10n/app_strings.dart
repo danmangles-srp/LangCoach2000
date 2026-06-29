@@ -29,9 +29,13 @@ class AppStrings {
     emptyBody:
         'Point Rivendell at your Samsung Voice Recorder folder and your '
         'recordings will appear here.',
+    emptyHint: 'Tap refresh after picking a folder to index it.',
     loading: 'Loading recordings…',
     errorTitle: "Couldn't load recordings",
     retry: 'Try again',
+    scanTooltip: 'Refresh library',
+    scanFailed: "Couldn't scan that folder.",
+    scannedCountN: 'Indexed {n} recordings.',
     unknownDuration: '—:—',
     unknownFormat: 'audio',
   );
@@ -42,9 +46,13 @@ class AppStrings {
     emptyBody:
         "Rivendell'ni Samsung Voice Recorder jildiga yo'naltiring — "
         'yozuvlaringiz shu yerda paydo bo‘ladi.',
+    emptyHint: 'Jildni tanlagach, yangilash tugmasini bosing.',
     loading: 'Yozuvlar yuklanmoqda…',
     errorTitle: "Yozuvlarni yuklab bo'lmadi",
     retry: 'Qayta urinib ko‘ring',
+    scanTooltip: 'Kutubxonani yangilash',
+    scanFailed: 'Bu jildni skanerlab bo‘lmadi.',
+    scannedCountN: '{n} ta yozuv indekslandi.',
     unknownDuration: '—:—',
     unknownFormat: 'audio',
   );
@@ -55,9 +63,13 @@ class AppStrings {
   String get recordingsTitle => _bundle.recordingsTitle;
   String get emptyTitle => _bundle.emptyTitle;
   String get emptyBody => _bundle.emptyBody;
+  String get emptyHint => _bundle.emptyHint;
   String get loading => _bundle.loading;
   String get errorTitle => _bundle.errorTitle;
   String get retry => _bundle.retry;
+  String get scanTooltip => _bundle.scanTooltip;
+  String get scanFailed => _bundle.scanFailed;
+  String scannedCount(int n) => _bundle.scannedCountN.replaceAll('{n}', '$n');
   String get unknownDuration => _bundle.unknownDuration;
   String get unknownFormat => _bundle.unknownFormat;
 
@@ -76,9 +88,13 @@ class _Bundle {
     required this.recordingsTitle,
     required this.emptyTitle,
     required this.emptyBody,
+    required this.emptyHint,
     required this.loading,
     required this.errorTitle,
     required this.retry,
+    required this.scanTooltip,
+    required this.scanFailed,
+    required this.scannedCountN,
     required this.unknownDuration,
     required this.unknownFormat,
   });
@@ -86,9 +102,13 @@ class _Bundle {
   final String recordingsTitle;
   final String emptyTitle;
   final String emptyBody;
+  final String emptyHint;
   final String loading;
   final String errorTitle;
   final String retry;
+  final String scanTooltip;
+  final String scanFailed;
+  final String scannedCountN;
   final String unknownDuration;
   final String unknownFormat;
 }

@@ -17,12 +17,26 @@ void main() {
       expect(uz.emptyTitle, isNot(en.emptyTitle));
       expect(uz.emptyBody, isNotEmpty);
       expect(uz.emptyBody, isNot(en.emptyBody));
+      expect(uz.emptyHint, isNotEmpty);
+      expect(uz.emptyHint, isNot(en.emptyHint));
       expect(uz.loading, isNotEmpty);
       expect(uz.loading, isNot(en.loading));
       expect(uz.errorTitle, isNotEmpty);
       expect(uz.errorTitle, isNot(en.errorTitle));
       expect(uz.retry, isNotEmpty);
       expect(uz.retry, isNot(en.retry));
+      expect(uz.scanTooltip, isNotEmpty);
+      expect(uz.scanTooltip, isNot(en.scanTooltip));
+      expect(uz.scanFailed, isNotEmpty);
+      expect(uz.scanFailed, isNot(en.scanFailed));
+    });
+
+    test('scannedCount interpolates the number and differs per locale', () {
+      const en = AppStrings(Locale('en'));
+      const uz = AppStrings(Locale('uz'));
+      expect(en.scannedCount(12), contains('12'));
+      expect(uz.scannedCount(12), contains('12'));
+      expect(uz.scannedCount(12), isNot(en.scannedCount(12)));
     });
 
     test('unknown locale falls back to English', () {
