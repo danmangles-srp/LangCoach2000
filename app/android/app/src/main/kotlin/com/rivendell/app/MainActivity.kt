@@ -6,7 +6,7 @@ import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import com.ryanheise.audioservice.AudioServiceActivity
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import kotlin.concurrent.thread
@@ -17,12 +17,14 @@ import kotlin.concurrent.thread
 //   rivendell/folder  :: pickFolder() -> tree URI string (persistable READ)
 //   rivendell/scan    :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
 //
-// Extends [AudioServiceActivity] (itself a [FlutterActivity]) so audio_service
-// can bind its media-session plugin to this activity's engine — needed for
-// background playback + lock-screen controls. SAF's registerForActivityResult
-// still works because AudioServiceActivity extends FragmentActivity via
-// FlutterActivity.
-class MainActivity : AudioServiceActivity() {
+// Extends [AudioServiceFragmentActivity] (a [FlutterFragmentActivity], i.e. an
+// androidx [FragmentActivity] -> [ComponentActivity]) for two reasons:
+//   1. audio_service needs this host so its media-session plugin can bind to
+//      the activity's engine (background playback + lock-screen controls).
+//   2. SAF's [registerForActivityResult] is a [ComponentActivity] API. The
+//      plain [AudioServiceActivity] extends [FlutterActivity] (plain Activity)
+//      where it is unavailable, so the Fragment variant is required.
+class MainActivity : AudioServiceFragmentActivity() {
 
     private companion object {
         const val FOLDER_CHANNEL = "rivendell/folder"
