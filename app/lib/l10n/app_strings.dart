@@ -25,6 +25,8 @@ class AppStrings {
 
   static const _en = _Bundle(
     recordingsTitle: 'Recordings',
+    recordingsDetailTitle: 'Recording',
+    recordingsNotFound: 'This recording is no longer available.',
     emptyTitle: 'No recordings yet',
     emptyBody:
         'Point Rivendell at your Samsung Voice Recorder folder and your '
@@ -38,10 +40,19 @@ class AppStrings {
     scannedCountN: 'Indexed {n} recordings.',
     unknownDuration: '—:—',
     unknownFormat: 'audio',
+    metaDate: 'Recorded',
+    metaDuration: 'Duration',
+    metaSize: 'Size',
+    metaFormat: 'Format',
+    playTooltip: 'Play',
+    pauseTooltip: 'Pause',
+    replayTooltip: 'Replay',
   );
 
   static const _uz = _Bundle(
     recordingsTitle: 'Yozuvlar',
+    recordingsDetailTitle: 'Yozuv',
+    recordingsNotFound: 'Bu yozuv endi mavjud emas.',
     emptyTitle: "Hozircha yozuvlar yo'q",
     emptyBody:
         "Rivendell'ni Samsung Voice Recorder jildiga yo'naltiring — "
@@ -55,12 +66,21 @@ class AppStrings {
     scannedCountN: '{n} ta yozuv indekslandi.',
     unknownDuration: '—:—',
     unknownFormat: 'audio',
+    metaDate: 'Yozilgan',
+    metaDuration: 'Davomiyligi',
+    metaSize: 'Hajmi',
+    metaFormat: 'Format',
+    playTooltip: 'Ijro etish',
+    pauseTooltip: 'To‘xtatish',
+    replayTooltip: 'Qayta ijro',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
   _Bundle get _bundle => locale.languageCode == 'uz' ? _uz : _en;
 
   String get recordingsTitle => _bundle.recordingsTitle;
+  String get recordingsDetailTitle => _bundle.recordingsDetailTitle;
+  String get recordingsNotFound => _bundle.recordingsNotFound;
   String get emptyTitle => _bundle.emptyTitle;
   String get emptyBody => _bundle.emptyBody;
   String get emptyHint => _bundle.emptyHint;
@@ -72,6 +92,13 @@ class AppStrings {
   String scannedCount(int n) => _bundle.scannedCountN.replaceAll('{n}', '$n');
   String get unknownDuration => _bundle.unknownDuration;
   String get unknownFormat => _bundle.unknownFormat;
+  String get metaDate => _bundle.metaDate;
+  String get metaDuration => _bundle.metaDuration;
+  String get metaSize => _bundle.metaSize;
+  String get metaFormat => _bundle.metaFormat;
+  String get playTooltip => _bundle.playTooltip;
+  String get pauseTooltip => _bundle.pauseTooltip;
+  String get replayTooltip => _bundle.replayTooltip;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -86,6 +113,8 @@ class AppStrings {
 class _Bundle {
   const _Bundle({
     required this.recordingsTitle,
+    required this.recordingsDetailTitle,
+    required this.recordingsNotFound,
     required this.emptyTitle,
     required this.emptyBody,
     required this.emptyHint,
@@ -97,9 +126,18 @@ class _Bundle {
     required this.scannedCountN,
     required this.unknownDuration,
     required this.unknownFormat,
+    required this.metaDate,
+    required this.metaDuration,
+    required this.metaSize,
+    required this.metaFormat,
+    required this.playTooltip,
+    required this.pauseTooltip,
+    required this.replayTooltip,
   });
 
   final String recordingsTitle;
+  final String recordingsDetailTitle;
+  final String recordingsNotFound;
   final String emptyTitle;
   final String emptyBody;
   final String emptyHint;
@@ -111,6 +149,13 @@ class _Bundle {
   final String scannedCountN;
   final String unknownDuration;
   final String unknownFormat;
+  final String metaDate;
+  final String metaDuration;
+  final String metaSize;
+  final String metaFormat;
+  final String playTooltip;
+  final String pauseTooltip;
+  final String replayTooltip;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

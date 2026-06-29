@@ -42,6 +42,15 @@ class RecordingRepository {
         .get();
   }
 
+  /// Look up a recording by its row id. The detail screen (T1.6) keys off this
+  /// so a deep link or process-death restore resolves without the list. Returns
+  /// `null` for a stale/deleted id — callers degrade to a "not found" state.
+  Future<Recording?> findById(int id) {
+    return (_db.select(
+      _db.recordings,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
   /// Look up a recording by its stable file path (SAF URI / absolute path).
   Future<Recording?> findByPath(String filePath) {
     return (_db.select(

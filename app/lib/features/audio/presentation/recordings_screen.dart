@@ -1,10 +1,11 @@
 // Recordings list screen (T1.4, M1 story 2). The home route once a folder is
 // chosen. Reads [recordingsProvider] and maps the AsyncValue to premium list /
-// empty / loading / error states. Tap-to-detail lands with T1.6 (player); the
-// tile is intentionally non-interactive here.
+// empty / loading / error states. Tapping a tile pushes the detail + player
+// route (T1.6).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
@@ -115,6 +116,7 @@ class _RecordingTile extends StatelessWidget {
 
     return ListTile(
       leading: const _FormatBadge(),
+      onTap: () => context.push('/recordings/${recording.id}'),
       title: Text(recording.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         [date, if (duration != null) duration, size].join(' · '),

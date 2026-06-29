@@ -21,3 +21,14 @@ final recordingsProvider = FutureProvider<List<Recording>>((ref) async {
   final repo = await ref.watch(recordingRepositoryProvider.future);
   return repo.all();
 });
+
+/// A single recording by row id. Drives the detail screen (T1.6). `family`
+/// caches each id independently; returns `null` for a stale id so the screen
+/// can render a "not found" state instead of throwing.
+final recordingByIdProvider = FutureProvider.family<Recording?, int>((
+  ref,
+  id,
+) async {
+  final repo = await ref.watch(recordingRepositoryProvider.future);
+  return repo.findById(id);
+});
