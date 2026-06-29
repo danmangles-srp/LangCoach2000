@@ -4,6 +4,9 @@
 // smoke-test DB-override pattern: in-memory store, set the folder so the
 // redirect routes home. Overrides are inlined as list literals so the
 // element type (riverpod's unexported Override) is inferred, never named.
+//
+// Home is the review-queue shell (T2.5); the library lives on the second
+// nav tab, so these tests switch to it before asserting on its content.
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +37,13 @@ void main() {
     await RecordingRepository(db).upsertScanned(files);
   }
 
+  // Home opens on the Today tab; switch to Library (offstage under
+  // IndexedStack) so finders see the recordings list.
+  Future<void> openLibrary(WidgetTester tester) async {
+    await tester.tap(find.text('Library'));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('empty state when folder is set but no recordings exist', (
     tester,
   ) async {
@@ -41,6 +51,7 @@ void main() {
     await FolderRepository(KvRepository(db)).setFolder('/svr');
     await tester.pumpWidget(_app(db));
     await tester.pumpAndSettle();
+    await openLibrary(tester);
 
     expect(find.text('No recordings yet'), findsOneWidget);
     expect(find.byIcon(Icons.graphic_eq_rounded), findsWidgets);
@@ -52,6 +63,7 @@ void main() {
     await seedRecordings(db, count: 2);
     await tester.pumpWidget(_app(db));
     await tester.pumpAndSettle();
+    await openLibrary(tester);
 
     expect(find.byType(ListTile), findsNWidgets(2));
     // Both names render; ordering (newest first) is covered by the
@@ -76,6 +88,7 @@ void main() {
     await repo.setDuration(1, durationMs: 65_000);
     await tester.pumpWidget(_app(db));
     await tester.pumpAndSettle();
+    await openLibrary(tester);
 
     // 65_000ms → "1:05" appears in the subtitle.
     expect(find.textContaining('1:05'), findsOneWidget);
@@ -97,6 +110,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await openLibrary(tester);
 
     expect(find.textContaining("Couldn't load"), findsOneWidget);
     expect(find.text('Try again'), findsOneWidget);
@@ -126,6 +140,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await openLibrary(tester);
 
     expect(find.text('Try again'), findsOneWidget);
     await tester.tap(find.text('Try again'));

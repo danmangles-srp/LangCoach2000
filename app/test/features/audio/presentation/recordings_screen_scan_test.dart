@@ -63,6 +63,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Library'));
+    await tester.pumpAndSettle();
 
     expect(find.text('No recordings yet'), findsOneWidget);
 

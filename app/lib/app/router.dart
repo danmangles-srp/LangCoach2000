@@ -7,6 +7,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:rivendell/app/home_shell.dart';
 import 'package:rivendell/features/audio/application/folder_providers.dart';
 import 'package:rivendell/features/audio/presentation/folder_onboarding_screen.dart';
 import 'package:rivendell/features/audio/presentation/recording_detail_screen.dart';
@@ -33,7 +34,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const RecordingsScreen()),
+      GoRoute(path: '/', builder: (context, state) => const HomeShell()),
       GoRoute(
         // T1.6: tap a recording -> detail + player. A non-numeric id (stale
         // link) falls back to the library rather than rendering a broken
