@@ -9,8 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/features/audio/application/folder_providers.dart';
-import 'package:rivendell/features/audio/application/folder_selection_service.dart';
 import 'package:rivendell/features/audio/domain/voice_recorder_paths.dart';
+import 'package:rivendell/features/audio/platform/folder_selection_providers.dart';
 
 class FolderOnboardingScreen extends ConsumerWidget {
   const FolderOnboardingScreen({super.key});

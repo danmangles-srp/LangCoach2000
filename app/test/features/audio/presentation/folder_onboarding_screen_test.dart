@@ -1,6 +1,6 @@
-// Folder onboarding gate + placeholder-picker cancel branch (T1.1 B1).
-// The real SAF picker (B2) is device-verified; this proves the router gate,
-// the screen render, and the null-result path through the placeholder.
+// Folder onboarding gate + cancel branch (T1.1 B1/B2). Runs on a non-Android
+// test host, so the production provider resolves to the placeholder (null),
+// which exercises the cancel path. The real SAF picker is device-verified.
 
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,7 +32,8 @@ void main() {
       // No folder persisted → router redirects '/' → '/onboarding'.
       expect(find.text('Point Rivendell at your recordings'), findsOneWidget);
 
-      // Placeholder picker returns null (B2 wires the real SAF channel).
+      // Non-Android host → placeholder → null (cancel path).
+      await tester.tap(find.text('Choose folder'));
       await tester.tap(find.text('Choose folder'));
       await tester.pumpAndSettle();
       expect(find.text('No folder selected.'), findsOneWidget);
