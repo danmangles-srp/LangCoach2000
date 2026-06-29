@@ -172,4 +172,47 @@ void main() {
       expect(await reviews.eventsFor(id), isEmpty);
     });
   });
+
+  group('statusFor (derivation, T2.3)', () {
+    test('returns null when the recording is gone', () async {
+      expect(await reviews.statusFor(999, asOf: created), isNull);
+    });
+
+    test(
+      'no events -> reached -1, active first milestone, not due on day 0',
+      () async {
+        final id = await seed();
+        final status = await reviews.statusFor(id, asOf: created);
+        if (status == null) fail('expected a status');
+        expect(status.milestoneReached, -1);
+        expect(status.reviewCount, 0);
+        expect(status.activeMilestone?.index, 0);
+        expect(status.activeMilestoneDue, isFalse);
+      },
+    );
+
+    test(
+      'milestone-4 event -> reached 4, active 5 not due on day 30, due day 90',
+      () async {
+        final id = await seed();
+        await reviews.recordReview(
+          id,
+          completedAt: created.add(const Duration(days: 30)),
+        );
+        final at30 = await reviews.statusFor(
+          id,
+          asOf: created.add(const Duration(days: 30)),
+        );
+        expect(at30?.milestoneReached, 4);
+        expect(at30?.activeMilestone?.index, 5);
+        expect(at30?.activeMilestoneDue, isFalse);
+
+        final at90 = await reviews.statusFor(
+          id,
+          asOf: created.add(const Duration(days: 90)),
+        );
+        expect(at90?.activeMilestoneDue, isTrue);
+      },
+    );
+  });
 }
