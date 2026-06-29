@@ -1,11 +1,13 @@
 #!/usr/bin/env sh
 # Standard Gate — the single source of truth for "is this green".
-# codegen -> format -> analyze -> test+coverage -> logic-coverage floor.
+# codegen -> format -> analyze -> test+coverage -> logic-coverage floor
+# -> Android debug build.
 # Identical to the pre-push hook. Run before every push, from anywhere in the repo.
 #
 # The Flutter app directory is auto-detected (override with APP_DIR=<dir>); the
 # coverage floor lives in scripts/check_coverage.dart so it survives app rebuilds.
 # Tune the floor with COVERAGE_MIN=<n> (default 80).
+# Skip the (slow) Android build with SKIP_ANDROID=1 for a fast Dart-only cycle.
 set -e
 
 root="$(git rev-parse --show-toplevel)"
@@ -40,6 +42,18 @@ if [ -n "${COVERAGE_MIN:-}" ]; then
   dart "$root/scripts/check_coverage.dart" coverage/lcov.info --min="$COVERAGE_MIN"
 else
   dart "$root/scripts/check_coverage.dart" coverage/lcov.info
+fi
+
+# 6. Android debug build. The Dart suite can't see native code, so a Kotlin /
+#    manifest / resource regression ships silently without this — the
+#    MainActivity base-class bug (registerForActivityResult on a plain Activity)
+#    got through exactly that way. Builds a single-ABI (arm64) debug APK to keep
+#    it fast while still compiling Kotlin, merging the manifest, and dexing.
+#    Opt out with SKIP_ANDROID=1 for a fast Dart-only cycle.
+if [ -z "${SKIP_ANDROID:-}" ]; then
+  echo "gate: android (debug apk, arm64)"
+  flutter build apk --debug --target-platform android-arm64 \
+    || { echo "gate: android build failed" >&2; exit 1; }
 fi
 
 echo "gate: PASS"
