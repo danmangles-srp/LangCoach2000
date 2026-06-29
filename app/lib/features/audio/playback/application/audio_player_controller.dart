@@ -46,6 +46,11 @@ class AudioPlayerController extends Notifier<PlaybackSnapshot> {
 
   void _attach(AudioPlaybackService service) {
     if (_service == service) return;
+    // Drop the previous subscriptions before re-subscribing — if the service
+    // swapped (provider rebuild), holding the old subs would double-emit into
+    // the new state and leak the prior listeners.
+    _transportSub?.cancel();
+    _mediaItemSub?.cancel();
     _service = service;
     _transportSub = service.playbackState.listen(_onTransport);
     _mediaItemSub = service.mediaItem.listen(_onMediaItem);
