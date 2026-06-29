@@ -69,6 +69,9 @@ void main() {
 
     await tester.tap(find.text('Choose folder'));
     await tester.pumpAndSettle();
+    // Home opens on the Today tab (T2.5); the library is the second tab.
+    await tester.tap(find.text('Library'));
+    await tester.pumpAndSettle();
 
     // Routed home; the auto-scan populated the library.
     expect(find.text('lecture.m4a'), findsOneWidget);

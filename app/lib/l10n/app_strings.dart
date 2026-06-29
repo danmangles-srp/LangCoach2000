@@ -47,6 +47,17 @@ class AppStrings {
     playTooltip: 'Play',
     pauseTooltip: 'Pause',
     replayTooltip: 'Replay',
+    queueNavToday: 'Today',
+    queueNavLibrary: 'Library',
+    queueTitle: "Today's Review Queue",
+    queueEmptyTitle: 'Nothing due today',
+    queueEmptyBody:
+        'You’re all caught up. Recordings due for review will appear '
+        'here on their schedule.',
+    queueStaleBadge: 'Stale',
+    queueDueToday: 'Due today',
+    queueOverdueN: '{n} day overdue',
+    queueNowPlaying: 'Now playing',
   );
 
   static const _uz = _Bundle(
@@ -73,6 +84,17 @@ class AppStrings {
     playTooltip: 'Ijro etish',
     pauseTooltip: 'To‘xtatish',
     replayTooltip: 'Qayta ijro',
+    queueNavToday: 'Bugun',
+    queueNavLibrary: 'Kutubxona',
+    queueTitle: 'Bugungi takrorlash navbati',
+    queueEmptyTitle: 'Bugun takrorlash yo‘q',
+    queueEmptyBody:
+        'Hammasi bajarildi. Takrorlashga zarur yozuvlar jadvali bo‘yicha '
+        'shu yerda paydo bo‘ladi.',
+    queueStaleBadge: 'Muddati o‘tgan',
+    queueDueToday: 'Bugun',
+    queueOverdueN: '{n} kun muddati o‘tgan',
+    queueNowPlaying: 'Ijro etilmoqda',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -99,6 +121,15 @@ class AppStrings {
   String get playTooltip => _bundle.playTooltip;
   String get pauseTooltip => _bundle.pauseTooltip;
   String get replayTooltip => _bundle.replayTooltip;
+  String get queueNavToday => _bundle.queueNavToday;
+  String get queueNavLibrary => _bundle.queueNavLibrary;
+  String get queueTitle => _bundle.queueTitle;
+  String get queueEmptyTitle => _bundle.queueEmptyTitle;
+  String get queueEmptyBody => _bundle.queueEmptyBody;
+  String get queueStaleBadge => _bundle.queueStaleBadge;
+  String get queueDueToday => _bundle.queueDueToday;
+  String queueOverdue(int n) => _bundle.queueOverdueN.replaceAll('{n}', '$n');
+  String get queueNowPlaying => _bundle.queueNowPlaying;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -133,6 +164,15 @@ class _Bundle {
     required this.playTooltip,
     required this.pauseTooltip,
     required this.replayTooltip,
+    required this.queueNavToday,
+    required this.queueNavLibrary,
+    required this.queueTitle,
+    required this.queueEmptyTitle,
+    required this.queueEmptyBody,
+    required this.queueStaleBadge,
+    required this.queueDueToday,
+    required this.queueOverdueN,
+    required this.queueNowPlaying,
   });
 
   final String recordingsTitle;
@@ -156,6 +196,15 @@ class _Bundle {
   final String playTooltip;
   final String pauseTooltip;
   final String replayTooltip;
+  final String queueNavToday;
+  final String queueNavLibrary;
+  final String queueTitle;
+  final String queueEmptyTitle;
+  final String queueEmptyBody;
+  final String queueStaleBadge;
+  final String queueDueToday;
+  final String queueOverdueN;
+  final String queueNowPlaying;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

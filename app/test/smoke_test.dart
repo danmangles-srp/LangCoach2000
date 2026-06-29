@@ -40,8 +40,10 @@ void main() {
     await tester.pumpWidget(hostApp(db: db));
     await tester.pumpAndSettle();
 
-    // Home is the recordings list (T1.4); its AppBar title is localized.
-    expect(find.text('Recordings'), findsOneWidget);
+    // Home is the review-queue shell (T2.5): the Today tab is shown first and
+    // the Library destination is reachable from the bottom nav.
+    expect(find.text("Today's Review Queue"), findsOneWidget);
+    expect(find.text('Library'), findsOneWidget);
   });
 
   testWidgets('Material 3 is enabled', (tester) async {
