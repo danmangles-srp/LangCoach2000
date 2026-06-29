@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/app/router.dart';
+import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class RivendellApp extends ConsumerWidget {
@@ -12,6 +13,9 @@ class RivendellApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep the 80%-review watcher alive for the app's lifetime so background
+    // playback still logs review events (FR-1.2.3, T2.2).
+    ref.watch(reviewProgressWatcherProvider);
     return MaterialApp.router(
       title: 'Rivendell',
       debugShowCheckedModeBanner: false,

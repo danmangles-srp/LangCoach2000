@@ -38,6 +38,14 @@ class RivendellAudioHandler extends BaseAudioHandler with SeekHandler {
     // the in-app seek bar (T1.6) + the OS media UI can show progress; without
     // this the bar would stay empty for the typical recording.
     _player.durationStream.listen(_onDurationResolved);
+    // Periodic position tick -> re-broadcast. just_audio's playbackEventStream
+    // fires only on discrete state changes (play / pause / seek / complete), so
+    // without this the in-app seek bar (T1.6) would freeze during continuous
+    // playback and the 80%-review watcher (T2.2, FR-1.2.3) would never see
+    // progress cross the threshold. positionStream is the Timer-driven source
+    // (~5-8Hz for typical clip lengths); _broadcast re-reads _player.position
+    // each tick, so no payload is needed.
+    _player.positionStream.listen((_) => _broadcast());
   }
 
   final AudioPlayer _player = AudioPlayer();
@@ -89,7 +97,10 @@ class RivendellAudioHandler extends BaseAudioHandler with SeekHandler {
   /// Re-broadcast the engine's current transport as a session PlaybackState.
   // The per-state control set + compact indices are what the system media UI
   // renders; `playing` flips the primary affordance between play and pause.
-  void _broadcast(PlaybackEvent _) {
+  // The event arg is ignored — the engine's current state is read fresh off
+  // [_player] each call — so callers from both the event stream and the
+  // position tick can pass nothing.
+  void _broadcast([PlaybackEvent? _]) {
     final playing = _player.playing;
     playbackState.add(
       playbackState.value.copyWith(
