@@ -40,8 +40,8 @@ void main() {
     await tester.pumpWidget(hostApp(db: db));
     await tester.pumpAndSettle();
 
-    expect(find.text('Rivendell'), findsOneWidget);
-    expect(find.text('M1 — folder ready'), findsOneWidget);
+    // Home is the recordings list (T1.4); its AppBar title is localized.
+    expect(find.text('Recordings'), findsOneWidget);
   });
 
   testWidgets('Material 3 is enabled', (tester) async {
