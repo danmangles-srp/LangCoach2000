@@ -6,22 +6,23 @@ import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import kotlin.concurrent.thread
 
 // Hosts the SAF folder-picker + audio-indexer channels (FR-1.1.1 / FR-1.1.2,
-// T1.1 B2 + T1.2).
+// T1.1 B2 + T1.2) and the background audio service (T1.5, FR-1.1.4).
 //
 //   rivendell/folder  :: pickFolder() -> tree URI string (persistable READ)
 //   rivendell/scan    :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
 //
-// The scan walks the chosen tree's immediate children on a background thread
-// (a 1000-file cursor query must not ANR the platform thread) and filters to
-// supported audio extensions; the per-file document URI is the stable identity
-// the Dart store keys on.
-class MainActivity : FlutterActivity() {
+// Extends [AudioServiceActivity] (itself a [FlutterActivity]) so audio_service
+// can bind its media-session plugin to this activity's engine — needed for
+// background playback + lock-screen controls. SAF's registerForActivityResult
+// still works because AudioServiceActivity extends FragmentActivity via
+// FlutterActivity.
+class MainActivity : AudioServiceActivity() {
 
     private companion object {
         const val FOLDER_CHANNEL = "rivendell/folder"
