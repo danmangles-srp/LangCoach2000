@@ -122,4 +122,69 @@ void main() {
       },
     );
   });
+
+  group('classifyQueueEntry — FR-1.2.5 stale rule', () {
+    // A recording created 2026-03-15 whose active milestone is D+1 (due 03-16)
+    // is the workhorse case; vary asOf to move across the stale window.
+    RecordingReviewStatus freshStatus(DateTime asOf) =>
+        computeReviewStatus(createdAt: created, events: const [], asOf: asOf);
+
+    test('active milestone due today (0 days overdue) -> dueToday', () {
+      // D+1 due 03-16; asOf 03-16 -> due today.
+      expect(
+        classifyQueueEntry(
+          freshStatus(created.add(const Duration(days: 1))),
+          asOf: created.add(const Duration(days: 1)),
+        ),
+        QueueEntryKind.dueToday,
+      );
+    });
+
+    test('1 day overdue -> stale (still in queue, grace window)', () {
+      // asOf 03-17 -> D+1 is 1 day overdue.
+      expect(
+        classifyQueueEntry(
+          freshStatus(created.add(const Duration(days: 2))),
+          asOf: created.add(const Duration(days: 2)),
+        ),
+        QueueEntryKind.stale,
+      );
+    });
+
+    test('2 days overdue -> excluded (stale prompt disappears)', () {
+      // asOf 03-18 -> D+1 is 2 days overdue.
+      expect(
+        classifyQueueEntry(
+          freshStatus(created.add(const Duration(days: 3))),
+          asOf: created.add(const Duration(days: 3)),
+        ),
+        QueueEntryKind.excluded,
+      );
+    });
+
+    test('not yet due (future) -> excluded', () {
+      // asOf 03-15 (creation day) -> D+1 due tomorrow, not yet due.
+      expect(
+        classifyQueueEntry(freshStatus(created), asOf: created),
+        QueueEntryKind.excluded,
+      );
+    });
+
+    test('complete (no active milestone) -> excluded', () {
+      final status = computeReviewStatus(
+        createdAt: created,
+        events: [
+          _event(milestone: 7, at: created.add(const Duration(days: 365))),
+        ],
+        asOf: created.add(const Duration(days: 400)),
+      );
+      expect(
+        classifyQueueEntry(
+          status,
+          asOf: created.add(const Duration(days: 400)),
+        ),
+        QueueEntryKind.excluded,
+      );
+    });
+  });
 }

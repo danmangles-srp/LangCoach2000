@@ -21,6 +21,22 @@ final reviewEventRepositoryProvider = FutureProvider<ReviewEventRepository>(
       ReviewEventRepository(await ref.watch(appDatabaseProvider.future)),
 );
 
+/// Monotonic bump that invalidates anything derived from the review-event log.
+/// The 80% watcher bumps it after a successful auto-append; the manual
+/// correction surface (T2.6) bumps after mark / un-review. Consumers watch this
+/// alongside the repository so the today-queue + per-recording status refresh
+/// without polling or a full Drift stream rebuild.
+class ReviewGeneration extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
+
+final reviewGenerationProvider = NotifierProvider<ReviewGeneration, int>(
+  ReviewGeneration.new,
+);
+
 /// Always-on listener that appends a review event when playback crosses 80%
 /// (FR-1.2.3). The latch ([ReviewProgressGate]) guarantees one append per
 /// upward crossing per recording. Watched once by the app shell so it survives
@@ -34,9 +50,20 @@ final reviewProgressWatcherProvider = Provider<void>((ref) {
     try {
       final repo = await ref.read(reviewEventRepositoryProvider.future);
       await repo.recordReview(recordingId, completedAt: DateTime.now());
+      // A real append changes the queue; bump so live consumers refresh.
+      ref.read(reviewGenerationProvider.notifier).bump();
     } on Object catch (e, st) {
       // A failed append must never break playback — log and swallow.
       ref.read(appLoggerProvider).e(LogTag.db, 'review append failed: $e\n$st');
     }
   });
+});
+
+/// Today's review queue (FR-1.2.5): recordings due today or 1-day-stale, most-
+/// overdue first. `asOf` is now. Watched by the home/queue screen (T2.5).
+/// Rebuilds when the review log changes ([reviewGenerationProvider]).
+final todayQueueProvider = FutureProvider<List<QueueItem>>((ref) async {
+  ref.watch(reviewGenerationProvider);
+  final repo = await ref.watch(reviewEventRepositoryProvider.future);
+  return repo.todayQueue(asOf: DateTime.now());
 });
