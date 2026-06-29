@@ -148,6 +148,54 @@ void main() {
     });
   });
 
+  group('unreviewMilestone (manual undo, T2.6)', () {
+    test('drops the milestone-keyed event, leaving others intact', () async {
+      final id = await seed();
+      await reviews.recordReview(
+        id,
+        completedAt: created.add(const Duration(days: 30)),
+      ); // milestone 4
+      await reviews.recordReview(
+        id,
+        completedAt: created.add(const Duration(days: 30)),
+      ); // bonus (null)
+
+      await reviews.unreviewMilestone(id, milestoneIndex: 4);
+      final events = await reviews.eventsFor(id);
+      expect(events, hasLength(1));
+      expect(events.single.milestoneIndex, isNull); // bonus survives
+    });
+
+    test('no-op when no event exists for that milestone', () async {
+      final id = await seed();
+      await reviews.recordReview(
+        id,
+        completedAt: created.add(const Duration(days: 30)),
+      ); // milestone 4
+      await reviews.unreviewMilestone(id, milestoneIndex: 5);
+      expect(await reviews.eventsFor(id), hasLength(1));
+    });
+
+    test('does not touch other milestones (only the named one)', () async {
+      final id = await seed();
+      await reviews.markReviewed(
+        id,
+        milestoneIndex: 3,
+        completedAt: created.add(const Duration(days: 7)),
+      );
+      await reviews.markReviewed(
+        id,
+        milestoneIndex: 4,
+        completedAt: created.add(const Duration(days: 30)),
+      );
+
+      await reviews.unreviewMilestone(id, milestoneIndex: 3);
+      final events = await reviews.eventsFor(id);
+      expect(events, hasLength(1));
+      expect(events.single.milestoneIndex, 4);
+    });
+  });
+
   group('eventsFor', () {
     test(
       'orders by completedAt ascending regardless of insert order',

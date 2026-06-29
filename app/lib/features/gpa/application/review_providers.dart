@@ -14,6 +14,7 @@ import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
 import 'package:rivendell/features/gpa/domain/review_progress_gate.dart';
+import 'package:rivendell/features/gpa/domain/review_status.dart';
 
 /// Singleton [ReviewEventRepository] over the local store.
 final reviewEventRepositoryProvider = FutureProvider<ReviewEventRepository>(
@@ -67,3 +68,13 @@ final todayQueueProvider = FutureProvider<List<QueueItem>>((ref) async {
   final repo = await ref.watch(reviewEventRepositoryProvider.future);
   return repo.todayQueue(asOf: DateTime.now());
 });
+
+/// Derived review status for one recording (FR-1.2.4), watched by the detail
+/// screen's review-history card + milestone timeline (T2.6). Family on the
+/// recording id; rebuilds when the review log changes.
+final recordingReviewStatusProvider =
+    FutureProvider.family<RecordingReviewStatus?, int>((ref, id) async {
+      ref.watch(reviewGenerationProvider);
+      final repo = await ref.watch(reviewEventRepositoryProvider.future);
+      return repo.statusFor(id, asOf: DateTime.now());
+    });

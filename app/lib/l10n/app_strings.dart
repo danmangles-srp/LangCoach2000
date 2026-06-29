@@ -58,6 +58,15 @@ class AppStrings {
     queueDueToday: 'Due today',
     queueOverdueN: '{n} day overdue',
     queueNowPlaying: 'Now playing',
+    reviewHistoryTitle: 'Review history',
+    reviewLastReviewed: 'Last reviewed',
+    reviewNever: 'Never',
+    reviewMilestoneReached: 'Milestone reached',
+    reviewNoneYet: 'None yet',
+    reviewCountN: '{n} reviews',
+    reviewMarkReviewed: 'Mark reviewed',
+    reviewUndo: 'Undo',
+    reviewDueLabel: 'Due',
   );
 
   static const _uz = _Bundle(
@@ -95,6 +104,15 @@ class AppStrings {
     queueDueToday: 'Bugun',
     queueOverdueN: '{n} kun muddati o‘tgan',
     queueNowPlaying: 'Ijro etilmoqda',
+    reviewHistoryTitle: 'Takrorlash tarixi',
+    reviewLastReviewed: 'So‘nggi takrorlash',
+    reviewNever: 'Hech qachon',
+    reviewMilestoneReached: 'Erishilgan bosqich',
+    reviewNoneYet: 'Hali yo‘q',
+    reviewCountN: '{n} ta takrorlash',
+    reviewMarkReviewed: 'Belgilash',
+    reviewUndo: 'Bekor qilish',
+    reviewDueLabel: 'Muddati',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -130,6 +148,15 @@ class AppStrings {
   String get queueDueToday => _bundle.queueDueToday;
   String queueOverdue(int n) => _bundle.queueOverdueN.replaceAll('{n}', '$n');
   String get queueNowPlaying => _bundle.queueNowPlaying;
+  String get reviewHistoryTitle => _bundle.reviewHistoryTitle;
+  String get reviewLastReviewed => _bundle.reviewLastReviewed;
+  String get reviewNever => _bundle.reviewNever;
+  String get reviewMilestoneReached => _bundle.reviewMilestoneReached;
+  String get reviewNoneYet => _bundle.reviewNoneYet;
+  String reviewCount(int n) => _bundle.reviewCountN.replaceAll('{n}', '$n');
+  String get reviewMarkReviewed => _bundle.reviewMarkReviewed;
+  String get reviewUndo => _bundle.reviewUndo;
+  String get reviewDueLabel => _bundle.reviewDueLabel;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -173,6 +200,15 @@ class _Bundle {
     required this.queueDueToday,
     required this.queueOverdueN,
     required this.queueNowPlaying,
+    required this.reviewHistoryTitle,
+    required this.reviewLastReviewed,
+    required this.reviewNever,
+    required this.reviewMilestoneReached,
+    required this.reviewNoneYet,
+    required this.reviewCountN,
+    required this.reviewMarkReviewed,
+    required this.reviewUndo,
+    required this.reviewDueLabel,
   });
 
   final String recordingsTitle;
@@ -205,6 +241,15 @@ class _Bundle {
   final String queueDueToday;
   final String queueOverdueN;
   final String queueNowPlaying;
+  final String reviewHistoryTitle;
+  final String reviewLastReviewed;
+  final String reviewNever;
+  final String reviewMilestoneReached;
+  final String reviewNoneYet;
+  final String reviewCountN;
+  final String reviewMarkReviewed;
+  final String reviewUndo;
+  final String reviewDueLabel;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

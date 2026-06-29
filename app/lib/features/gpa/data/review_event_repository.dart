@@ -172,6 +172,26 @@ class ReviewEventRepository {
     )..where((t) => t.id.equals(eventId))).go();
   }
 
+  /// Undo the review of [milestoneIndex] for a recording (correction — the
+  /// reviewer tapped "mark reviewed" by mistake, or the engine logged a play
+  /// that didn't really count). Deletes the single milestone-keyed event if one
+  /// exists; no-op otherwise (e.g. bonus / null-milestone plays are left alone,
+  /// and so are events for other milestones). Runs in a transaction so the
+  /// find-then-delete can't race a concurrent append.
+  Future<void> unreviewMilestone(
+    int recordingId, {
+    required int milestoneIndex,
+  }) {
+    return _db.transaction(() async {
+      await (_db.delete(_db.reviewEvents)..where(
+            (t) =>
+                t.recordingId.equals(recordingId) &
+                t.milestoneIndex.equals(milestoneIndex),
+          ))
+          .go();
+    });
+  }
+
   Future<DateTime?> _recordingCreatedAt(int recordingId) async {
     final row = await (_db.select(
       _db.recordings,
