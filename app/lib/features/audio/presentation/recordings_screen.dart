@@ -10,7 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
-import 'package:rivendell/features/audio/domain/audio_format.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -45,19 +44,23 @@ class RecordingsScreen extends ConsumerWidget {
               body: strings.emptyBody,
             );
           }
+          // One DateFormat for the whole list — constructing it per-tile
+          // reallocates the locale's date symbols on every rebuild (1000-file
+          // list × every invalidation). Locale symbols are loaded once in
+          // main (initializeDateFormatting) so this never throws.
+          final dateFormat = DateFormat.yMMMd(
+            Localizations.localeOf(context).toLanguageTag(),
+          );
           return Scrollbar(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: recordings.length,
               separatorBuilder: (context, _) =>
                   const Divider(height: 1, indent: 72),
-              itemBuilder: (context, index) {
-                final locale = Localizations.localeOf(context);
-                return _RecordingTile(
-                  recording: recordings[index],
-                  locale: locale,
-                );
-              },
+              itemBuilder: (context, index) => _RecordingTile(
+                recording: recordings[index],
+                dateFormat: dateFormat,
+              ),
             ),
           );
         },
@@ -67,10 +70,10 @@ class RecordingsScreen extends ConsumerWidget {
 }
 
 class _RecordingTile extends StatelessWidget {
-  const _RecordingTile({required this.recording, required this.locale});
+  const _RecordingTile({required this.recording, required this.dateFormat});
 
   final Recording recording;
-  final Locale locale;
+  final DateFormat dateFormat;
 
   @override
   Widget build(BuildContext context) {
@@ -78,13 +81,11 @@ class _RecordingTile extends StatelessWidget {
     final strings = AppStrings.of(context);
     final format = formatOf(recording);
     final duration = formatDurationMs(recording.durationMs);
-    final date = DateFormat.yMMMd(
-      locale.toLanguageTag(),
-    ).format(recording.createdAt);
+    final date = dateFormat.format(recording.createdAt);
     final size = formatBytes(recording.sizeBytes);
 
     return ListTile(
-      leading: _FormatBadge(format: format),
+      leading: const _FormatBadge(),
       title: Text(recording.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         [date, if (duration != null) duration, size].join(' · '),
@@ -107,9 +108,7 @@ class _RecordingTile extends StatelessWidget {
 }
 
 class _FormatBadge extends StatelessWidget {
-  const _FormatBadge({required this.format});
-
-  final AudioFormat? format;
+  const _FormatBadge();
 
   @override
   Widget build(BuildContext context) {

@@ -9,6 +9,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:rivendell/app/app.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
@@ -16,6 +17,12 @@ import 'package:rivendell/core/queue/platform/queue_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load every shipped locale's date symbols (uz included) so DateFormat on a
+  // non-English device doesn't throw LocaleDataException. intl ships the data;
+  // it just isn't registered until this runs. Cheap one-time parse; cover it
+  // under the native splash. A failure degrades to en defaults, not a crash.
+  await initializeDateFormatting().onError((_, __) => {});
 
   // One container for the widget tree and the queue — never two.
   final container = ProviderContainer();
