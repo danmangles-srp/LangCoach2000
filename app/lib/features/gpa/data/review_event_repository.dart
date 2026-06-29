@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/gpa/domain/gpa_review.dart';
+import 'package:rivendell/features/gpa/domain/review_status.dart';
 
 class ReviewEventRepository {
   ReviewEventRepository(this._db);
@@ -23,6 +24,30 @@ class ReviewEventRepository {
           ..where((t) => t.recordingId.equals(recordingId))
           ..orderBy([(t) => OrderingTerm.asc(t.completedAt)]))
         .get();
+  }
+
+  /// Derived review state for a recording (FR-1.2.4): reached milestone,
+  /// count, last-reviewed, and the active (next-unreached) milestone with its
+  /// due-ness. Returns null when the recording no longer exists. [asOf] is
+  /// usually today.
+  Future<RecordingReviewStatus?> statusFor(
+    int recordingId, {
+    required DateTime asOf,
+  }) async {
+    final createdAt = await _recordingCreatedAt(recordingId);
+    if (createdAt == null) return null;
+    final events = await eventsFor(recordingId);
+    return computeReviewStatus(
+      createdAt: createdAt,
+      events: [
+        for (final e in events)
+          ReviewLogEntry(
+            milestoneIndex: e.milestoneIndex,
+            completedAt: e.completedAt,
+          ),
+      ],
+      asOf: asOf,
+    );
   }
 
   /// Auto-append a review event for an 80%-crossing (called by the playback
