@@ -2,20 +2,31 @@ package com.rivendell.app
 
 import android.content.Intent
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.DocumentsContract.Document
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import kotlin.concurrent.thread
 
-// Hosts the SAF folder-picker channel (FR-1.1.1, T1.1 B2). Launches
-// ACTION_OPEN_DOCUMENT_TREE, takes a persistable READ permission on the chosen
-// tree URI (so indexing survives reboots without re-prompting), and returns the
-// URI string to Dart. A single pending Result is guarded against re-entry.
+// Hosts the SAF folder-picker + audio-indexer channels (FR-1.1.1 / FR-1.1.2,
+// T1.1 B2 + T1.2).
+//
+//   rivendell/folder  :: pickFolder() -> tree URI string (persistable READ)
+//   rivendell/scan    :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
+//
+// The scan walks the chosen tree's immediate children on a background thread
+// (a 1000-file cursor query must not ANR the platform thread) and filters to
+// supported audio extensions; the per-file document URI is the stable identity
+// the Dart store keys on.
 class MainActivity : FlutterActivity() {
 
     private companion object {
-        const val CHANNEL = "rivendell/folder"
+        const val FOLDER_CHANNEL = "rivendell/folder"
+        const val SCAN_CHANNEL = "rivendell/scan"
+        val SUPPORTED_EXT = setOf("m4a", "mp3", "wav")
     }
 
     private var pendingResult: MethodChannel.Result? = null
@@ -42,10 +53,9 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            CHANNEL,
-        ).setMethodCallHandler { call, result ->
+        val messenger = flutterEngine.dartExecutor.binaryMessenger
+
+        MethodChannel(messenger, FOLDER_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "pickFolder" -> {
                     if (pendingResult != null) {
@@ -63,5 +73,81 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        MethodChannel(messenger, SCAN_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "listAudioFiles" -> {
+                    val treeUri = call.argument<String>("treeUri")
+                    if (treeUri == null) {
+                        result.error("BAD_ARGS", "treeUri is required", null)
+                        return@setMethodCallHandler
+                    }
+                    // Cursor I/O off the platform main thread (NFR-2.2.1).
+                    thread(start = true) {
+                        try {
+                            result.success(listAudioFiles(treeUri))
+                        } catch (e: Exception) {
+                            result.error("SCAN_FAILED", e.message, null)
+                        }
+                    }
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /** List supported-audio documents that are direct children of [treeUriStr]. */
+    private fun listAudioFiles(treeUriStr: String): List<Map<String, Any?>> {
+        val treeUri = Uri.parse(treeUriStr)
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+            treeUri,
+            DocumentsContract.getTreeDocumentId(treeUri),
+        ) ?: return emptyList()
+
+        val projection = arrayOf(
+            Document.COLUMN_DOCUMENT_ID,
+            Document.COLUMN_DISPLAY_NAME,
+            Document.COLUMN_SIZE,
+            Document.COLUMN_LAST_MODIFIED,
+        )
+        val out = mutableListOf<Map<String, Any?>>()
+        contentResolver
+            .query(childrenUri, projection, null, null, null)
+            ?.use { cursor ->
+                val idCol = cursor.getColumnIndexOrThrow(Document.COLUMN_DOCUMENT_ID)
+                val nameCol = cursor.getColumnIndexOrThrow(Document.COLUMN_DISPLAY_NAME)
+                val sizeCol = cursor.getColumnIndexOrThrow(Document.COLUMN_SIZE)
+                val modCol = cursor.getColumnIndexOrThrow(Document.COLUMN_LAST_MODIFIED)
+                while (cursor.moveToNext()) {
+                    val docId = cursor.getString(idCol) ?: continue
+                    val name = cursor.getString(nameCol) ?: continue
+                    if (!isSupportedAudio(name)) continue
+                    val size = if (cursor.isNull(sizeCol)) 0L else cursor.getLong(sizeCol)
+                    val modified =
+                        if (cursor.isNull(modCol)) {
+                            System.currentTimeMillis()
+                        } else {
+                            cursor.getLong(modCol)
+                        }
+                    val docUri =
+                        DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
+                            ?: continue
+                    out.add(
+                        mapOf(
+                            "path" to docUri.toString(),
+                            "name" to name,
+                            "size" to size,
+                            "lastModified" to modified,
+                        ),
+                    )
+                }
+            }
+        return out
+    }
+
+    private fun isSupportedAudio(name: String): Boolean {
+        val ext = name.substringAfterLast('.', "").lowercase()
+        return ext in SUPPORTED_EXT
     }
 }

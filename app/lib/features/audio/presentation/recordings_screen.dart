@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
+import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
@@ -20,8 +21,35 @@ class RecordingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
     final async = ref.watch(recordingsProvider);
+
+    Future<void> scan() async {
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        final indexer = await ref.read(recordingIndexerProvider.future);
+        final count = await indexer.scanAndStore();
+        ref.invalidate(recordingsProvider);
+        if (!context.mounted) return;
+        messenger.showSnackBar(
+          SnackBar(content: Text(strings.scannedCount(count))),
+        );
+      } on Object {
+        if (!context.mounted) return;
+        messenger.showSnackBar(SnackBar(content: Text(strings.scanFailed)));
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(strings.recordingsTitle), centerTitle: false),
+      appBar: AppBar(
+        title: Text(strings.recordingsTitle),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            tooltip: strings.scanTooltip,
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: scan,
+          ),
+        ],
+      ),
       body: async.when(
         loading: () => _StatusView(
           icon: Icons.graphic_eq_rounded,
@@ -42,6 +70,7 @@ class RecordingsScreen extends ConsumerWidget {
               icon: Icons.graphic_eq_rounded,
               message: strings.emptyTitle,
               body: strings.emptyBody,
+              hint: strings.emptyHint,
             );
           }
           // One DateFormat for the whole list — constructing it per-tile
@@ -136,12 +165,14 @@ class _StatusView extends StatelessWidget {
     required this.icon,
     required this.message,
     this.body,
+    this.hint,
     this.action,
   });
 
   final IconData icon;
   final String message;
   final String? body;
+  final String? hint;
   final Widget? action;
 
   @override
@@ -166,6 +197,16 @@ class _StatusView extends StatelessWidget {
                 body!,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            if (hint != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                hint!,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
