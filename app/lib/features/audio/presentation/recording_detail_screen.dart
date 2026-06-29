@@ -16,6 +16,9 @@ import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart';
+import 'package:rivendell/features/gpa/application/review_providers.dart';
+import 'package:rivendell/features/gpa/domain/gpa_intervals.dart';
+import 'package:rivendell/features/gpa/domain/review_status.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class RecordingDetailScreen extends ConsumerStatefulWidget {
@@ -164,8 +167,230 @@ class _DetailContent extends ConsumerWidget {
                 .read(audioPlayerControllerProvider.notifier)
                 .togglePlayPause(),
           ),
+          const SizedBox(height: 28),
+          _ReviewHistorySection(recording: recording),
         ],
       ),
+    );
+  }
+}
+
+class _ReviewHistorySection extends ConsumerWidget {
+  const _ReviewHistorySection({required this.recording});
+
+  final Recording recording;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final async = ref.watch(recordingReviewStatusProvider(recording.id));
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (Object _, StackTrace __) => _StatusView(
+        icon: Icons.error_outline_rounded,
+        message: strings.errorTitle,
+      ),
+      data: (status) {
+        if (status == null) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ReviewSummaryCard(status: status, recording: recording),
+            const SizedBox(height: 16),
+            _MilestoneTimeline(recording: recording, status: status),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ReviewSummaryCard extends StatelessWidget {
+  const _ReviewSummaryCard({required this.status, required this.recording});
+
+  final RecordingReviewStatus status;
+  final Recording recording;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
+    final dateFormat = DateFormat.yMMMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final timeline = gpaTimelineFor(createdAt: recording.createdAt);
+
+    final reachedLabel = status.milestoneReached >= 0
+        ? 'D+${timeline[status.milestoneReached].intervalDays}'
+        : strings.reviewNoneYet;
+    final lastLabel = status.lastReviewed != null
+        ? dateFormat.format(status.lastReviewed!)
+        : strings.reviewNever;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          children: [
+            ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.history_rounded,
+                size: 22,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(lastLabel),
+              subtitle: Text(
+                strings.reviewLastReviewed,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.flag_outlined,
+                size: 22,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(reachedLabel),
+              subtitle: Text(
+                strings.reviewMilestoneReached,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            ListTile(
+              dense: true,
+              leading: Icon(
+                Icons.repeat_rounded,
+                size: 22,
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(strings.reviewCount(status.reviewCount)),
+              subtitle: Text(
+                strings.reviewHistoryTitle,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MilestoneTimeline extends ConsumerWidget {
+  const _MilestoneTimeline({required this.recording, required this.status});
+
+  final Recording recording;
+  final RecordingReviewStatus status;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final dateFormat = DateFormat.yMMMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    );
+    final milestones = gpaTimelineFor(createdAt: recording.createdAt);
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          children: [
+            for (final m in milestones)
+              _MilestoneRow(
+                milestone: m,
+                reached: m.index <= status.milestoneReached,
+                isActive: m.index == status.activeMilestone?.index,
+                dueLabel:
+                    '${strings.reviewDueLabel} ${dateFormat.format(m.dueOn)}',
+                onMark: () => _mark(ref, m.index),
+                onUndo: () => _undo(ref, m.index),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _mark(WidgetRef ref, int milestoneIndex) async {
+    final repo = await ref.read(reviewEventRepositoryProvider.future);
+    await repo.markReviewed(
+      recording.id,
+      milestoneIndex: milestoneIndex,
+      completedAt: DateTime.now(),
+    );
+    ref.read(reviewGenerationProvider.notifier).bump();
+  }
+
+  Future<void> _undo(WidgetRef ref, int milestoneIndex) async {
+    final repo = await ref.read(reviewEventRepositoryProvider.future);
+    await repo.unreviewMilestone(recording.id, milestoneIndex: milestoneIndex);
+    ref.read(reviewGenerationProvider.notifier).bump();
+  }
+}
+
+class _MilestoneRow extends StatelessWidget {
+  const _MilestoneRow({
+    required this.milestone,
+    required this.reached,
+    required this.isActive,
+    required this.dueLabel,
+    required this.onMark,
+    required this.onUndo,
+  });
+
+  final GpaMilestone milestone;
+  final bool reached;
+  final bool isActive;
+  final String dueLabel;
+  final VoidCallback onMark;
+  final VoidCallback onUndo;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
+    final colorScheme = theme.colorScheme;
+    final icon = reached
+        ? Icons.check_circle_rounded
+        : (isActive ? Icons.radio_button_checked : Icons.circle_outlined);
+    final iconColor = reached
+        ? colorScheme.primary
+        : (isActive ? colorScheme.primary : colorScheme.outline);
+
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, size: 22, color: iconColor),
+      title: Text(
+        'D+${milestone.intervalDays}',
+        style: theme.textTheme.bodyLarge?.copyWith(
+          fontWeight: isActive || reached ? FontWeight.w600 : null,
+        ),
+      ),
+      subtitle: Text(
+        dueLabel,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: reached
+          ? TextButton(onPressed: onUndo, child: Text(strings.reviewUndo))
+          : TextButton(
+              onPressed: onMark,
+              child: Text(strings.reviewMarkReviewed),
+            ),
     );
   }
 }
