@@ -12,10 +12,13 @@ import 'package:rivendell/core/database/tables/key_values.dart';
 import 'package:rivendell/core/queue/tables/offline_queue.dart';
 import 'package:rivendell/features/audio/data/recordings_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
+import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [KeyValues, OfflineQueueItems, Recordings, ReviewEvents])
+@DriftDatabase(
+  tables: [KeyValues, OfflineQueueItems, Recordings, ReviewEvents, WordLogs],
+)
 class AppDatabase extends _$AppDatabase {
   /// Internal — accepts any executor. Production MUST open through
   /// `openAppDatabase` (SQLCipher key applied); tests through `forTesting`.
@@ -28,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -42,6 +45,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await m.createTable(reviewEvents);
+      }
+      if (from < 5) {
+        await m.createTable(wordLogs);
       }
     },
     beforeOpen: (details) async {

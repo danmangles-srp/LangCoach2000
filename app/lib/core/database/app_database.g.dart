@@ -1489,6 +1489,362 @@ class ReviewEventsCompanion extends UpdateCompanion<ReviewEvent> {
   }
 }
 
+class $WordLogsTable extends WordLogs with TableInfo<$WordLogsTable, WordLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WordLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _recordingIdMeta = const VerificationMeta(
+    'recordingId',
+  );
+  @override
+  late final GeneratedColumn<int> recordingId = GeneratedColumn<int>(
+    'recording_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recordings (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recordingId,
+    kind,
+    body,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'word_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WordLog> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('recording_id')) {
+      context.handle(
+        _recordingIdMeta,
+        recordingId.isAcceptableOrUnknown(
+          data['recording_id']!,
+          _recordingIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recordingIdMeta);
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  WordLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WordLog(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      recordingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recording_id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WordLogsTable createAlias(String alias) {
+    return $WordLogsTable(attachedDatabase, alias);
+  }
+}
+
+class WordLog extends DataClass implements Insertable<WordLog> {
+  final int id;
+
+  /// The recording this artifact belongs to. Cascade-deleted with the
+  /// recording so no orphaned text/images survive a recording delete.
+  final int recordingId;
+  final String kind;
+  final String body;
+  final DateTime createdAt;
+  const WordLog({
+    required this.id,
+    required this.recordingId,
+    required this.kind,
+    required this.body,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['recording_id'] = Variable<int>(recordingId);
+    map['kind'] = Variable<String>(kind);
+    map['body'] = Variable<String>(body);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  WordLogsCompanion toCompanion(bool nullToAbsent) {
+    return WordLogsCompanion(
+      id: Value(id),
+      recordingId: Value(recordingId),
+      kind: Value(kind),
+      body: Value(body),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory WordLog.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WordLog(
+      id: serializer.fromJson<int>(json['id']),
+      recordingId: serializer.fromJson<int>(json['recordingId']),
+      kind: serializer.fromJson<String>(json['kind']),
+      body: serializer.fromJson<String>(json['body']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'recordingId': serializer.toJson<int>(recordingId),
+      'kind': serializer.toJson<String>(kind),
+      'body': serializer.toJson<String>(body),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  WordLog copyWith({
+    int? id,
+    int? recordingId,
+    String? kind,
+    String? body,
+    DateTime? createdAt,
+  }) => WordLog(
+    id: id ?? this.id,
+    recordingId: recordingId ?? this.recordingId,
+    kind: kind ?? this.kind,
+    body: body ?? this.body,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  WordLog copyWithCompanion(WordLogsCompanion data) {
+    return WordLog(
+      id: data.id.present ? data.id.value : this.id,
+      recordingId: data.recordingId.present
+          ? data.recordingId.value
+          : this.recordingId,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      body: data.body.present ? data.body.value : this.body,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WordLog(')
+          ..write('id: $id, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('kind: $kind, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, recordingId, kind, body, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WordLog &&
+          other.id == this.id &&
+          other.recordingId == this.recordingId &&
+          other.kind == this.kind &&
+          other.body == this.body &&
+          other.createdAt == this.createdAt);
+}
+
+class WordLogsCompanion extends UpdateCompanion<WordLog> {
+  final Value<int> id;
+  final Value<int> recordingId;
+  final Value<String> kind;
+  final Value<String> body;
+  final Value<DateTime> createdAt;
+  const WordLogsCompanion({
+    this.id = const Value.absent(),
+    this.recordingId = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.body = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  WordLogsCompanion.insert({
+    this.id = const Value.absent(),
+    required int recordingId,
+    required String kind,
+    required String body,
+    this.createdAt = const Value.absent(),
+  }) : recordingId = Value(recordingId),
+       kind = Value(kind),
+       body = Value(body);
+  static Insertable<WordLog> custom({
+    Expression<int>? id,
+    Expression<int>? recordingId,
+    Expression<String>? kind,
+    Expression<String>? body,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recordingId != null) 'recording_id': recordingId,
+      if (kind != null) 'kind': kind,
+      if (body != null) 'body': body,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  WordLogsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? recordingId,
+    Value<String>? kind,
+    Value<String>? body,
+    Value<DateTime>? createdAt,
+  }) {
+    return WordLogsCompanion(
+      id: id ?? this.id,
+      recordingId: recordingId ?? this.recordingId,
+      kind: kind ?? this.kind,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (recordingId.present) {
+      map['recording_id'] = Variable<int>(recordingId.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WordLogsCompanion(')
+          ..write('id: $id, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('kind: $kind, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1497,6 +1853,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $OfflineQueueItemsTable(this);
   late final $RecordingsTable recordings = $RecordingsTable(this);
   late final $ReviewEventsTable reviewEvents = $ReviewEventsTable(this);
+  late final $WordLogsTable wordLogs = $WordLogsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1506,6 +1863,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     offlineQueueItems,
     recordings,
     reviewEvents,
+    wordLogs,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -1515,6 +1873,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('review_events', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'recordings',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('word_logs', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -1941,6 +2306,25 @@ final class $$RecordingsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$WordLogsTable, List<WordLog>> _wordLogsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.wordLogs,
+    aliasName: 'recordings__id__word_logs__recording_id',
+  );
+
+  $$WordLogsTableProcessedTableManager get wordLogsRefs {
+    final manager = $$WordLogsTableTableManager(
+      $_db,
+      $_db.wordLogs,
+    ).filter((f) => f.recordingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_wordLogsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$RecordingsTableFilterComposer
@@ -2008,6 +2392,31 @@ class $$RecordingsTableFilterComposer
           }) => $$ReviewEventsTableFilterComposer(
             $db: $db,
             $table: $db.reviewEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> wordLogsRefs(
+    Expression<bool> Function($$WordLogsTableFilterComposer f) f,
+  ) {
+    final $$WordLogsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wordLogs,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WordLogsTableFilterComposer(
+            $db: $db,
+            $table: $db.wordLogs,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2127,6 +2536,31 @@ class $$RecordingsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> wordLogsRefs<T extends Object>(
+    Expression<T> Function($$WordLogsTableAnnotationComposer a) f,
+  ) {
+    final $$WordLogsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.wordLogs,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WordLogsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.wordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RecordingsTableTableManager
@@ -2142,7 +2576,7 @@ class $$RecordingsTableTableManager
           $$RecordingsTableUpdateCompanionBuilder,
           (Recording, $$RecordingsTableReferences),
           Recording,
-          PrefetchHooks Function({bool reviewEventsRefs})
+          PrefetchHooks Function({bool reviewEventsRefs, bool wordLogsRefs})
         > {
   $$RecordingsTableTableManager(_$AppDatabase db, $RecordingsTable table)
     : super(
@@ -2203,38 +2637,63 @@ class $$RecordingsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({reviewEventsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (reviewEventsRefs) db.reviewEvents],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (reviewEventsRefs)
-                    await $_getPrefetchedData<
-                      Recording,
-                      $RecordingsTable,
-                      ReviewEvent
-                    >(
-                      currentTable: table,
-                      referencedTable: $$RecordingsTableReferences
-                          ._reviewEventsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$RecordingsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).reviewEventsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.recordingId == item.id,
-                          ),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({reviewEventsRefs = false, wordLogsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (reviewEventsRefs) db.reviewEvents,
+                    if (wordLogsRefs) db.wordLogs,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (reviewEventsRefs)
+                        await $_getPrefetchedData<
+                          Recording,
+                          $RecordingsTable,
+                          ReviewEvent
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RecordingsTableReferences
+                              ._reviewEventsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RecordingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).reviewEventsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.recordingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (wordLogsRefs)
+                        await $_getPrefetchedData<
+                          Recording,
+                          $RecordingsTable,
+                          WordLog
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RecordingsTableReferences
+                              ._wordLogsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RecordingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).wordLogsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.recordingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -2251,7 +2710,7 @@ typedef $$RecordingsTableProcessedTableManager =
       $$RecordingsTableUpdateCompanionBuilder,
       (Recording, $$RecordingsTableReferences),
       Recording,
-      PrefetchHooks Function({bool reviewEventsRefs})
+      PrefetchHooks Function({bool reviewEventsRefs, bool wordLogsRefs})
     >;
 typedef $$ReviewEventsTableCreateCompanionBuilder =
     ReviewEventsCompanion Function({
@@ -2549,6 +3008,317 @@ typedef $$ReviewEventsTableProcessedTableManager =
       ReviewEvent,
       PrefetchHooks Function({bool recordingId})
     >;
+typedef $$WordLogsTableCreateCompanionBuilder =
+    WordLogsCompanion Function({
+      Value<int> id,
+      required int recordingId,
+      required String kind,
+      required String body,
+      Value<DateTime> createdAt,
+    });
+typedef $$WordLogsTableUpdateCompanionBuilder =
+    WordLogsCompanion Function({
+      Value<int> id,
+      Value<int> recordingId,
+      Value<String> kind,
+      Value<String> body,
+      Value<DateTime> createdAt,
+    });
+
+final class $$WordLogsTableReferences
+    extends BaseReferences<_$AppDatabase, $WordLogsTable, WordLog> {
+  $$WordLogsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $RecordingsTable _recordingIdTable(_$AppDatabase db) =>
+      db.recordings.createAlias('word_logs__recording_id__recordings__id');
+
+  $$RecordingsTableProcessedTableManager get recordingId {
+    final $_column = $_itemColumn<int>('recording_id')!;
+
+    final manager = $$RecordingsTableTableManager(
+      $_db,
+      $_db.recordings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recordingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$WordLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $WordLogsTable> {
+  $$WordLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RecordingsTableFilterComposer get recordingId {
+    final $$RecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WordLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WordLogsTable> {
+  $$WordLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RecordingsTableOrderingComposer get recordingId {
+    final $$RecordingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WordLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WordLogsTable> {
+  $$WordLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$RecordingsTableAnnotationComposer get recordingId {
+    final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WordLogsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WordLogsTable,
+          WordLog,
+          $$WordLogsTableFilterComposer,
+          $$WordLogsTableOrderingComposer,
+          $$WordLogsTableAnnotationComposer,
+          $$WordLogsTableCreateCompanionBuilder,
+          $$WordLogsTableUpdateCompanionBuilder,
+          (WordLog, $$WordLogsTableReferences),
+          WordLog,
+          PrefetchHooks Function({bool recordingId})
+        > {
+  $$WordLogsTableTableManager(_$AppDatabase db, $WordLogsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WordLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WordLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WordLogsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> recordingId = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<String> body = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => WordLogsCompanion(
+                id: id,
+                recordingId: recordingId,
+                kind: kind,
+                body: body,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int recordingId,
+                required String kind,
+                required String body,
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => WordLogsCompanion.insert(
+                id: id,
+                recordingId: recordingId,
+                kind: kind,
+                body: body,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WordLogsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({recordingId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (recordingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.recordingId,
+                                referencedTable: $$WordLogsTableReferences
+                                    ._recordingIdTable(db),
+                                referencedColumn: $$WordLogsTableReferences
+                                    ._recordingIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WordLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WordLogsTable,
+      WordLog,
+      $$WordLogsTableFilterComposer,
+      $$WordLogsTableOrderingComposer,
+      $$WordLogsTableAnnotationComposer,
+      $$WordLogsTableCreateCompanionBuilder,
+      $$WordLogsTableUpdateCompanionBuilder,
+      (WordLog, $$WordLogsTableReferences),
+      WordLog,
+      PrefetchHooks Function({bool recordingId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2561,4 +3331,6 @@ class $AppDatabaseManager {
       $$RecordingsTableTableManager(_db, _db.recordings);
   $$ReviewEventsTableTableManager get reviewEvents =>
       $$ReviewEventsTableTableManager(_db, _db.reviewEvents);
+  $$WordLogsTableTableManager get wordLogs =>
+      $$WordLogsTableTableManager(_db, _db.wordLogs);
 }
