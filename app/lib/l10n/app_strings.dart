@@ -56,6 +56,9 @@ class AppStrings {
         'here on their schedule.',
     queueStaleBadge: 'Stale',
     queueDueToday: 'Due today',
+    queueDueTomorrow: 'Due tomorrow',
+    queueUpNextBadge: 'Up next',
+    queueSectionTomorrow: 'Tomorrow',
     queueOverdueN: '{n} day overdue',
     queueNowPlaying: 'Now playing',
     reviewHistoryTitle: 'Review history',
@@ -124,6 +127,9 @@ class AppStrings {
         'shu yerda paydo bo‘ladi.',
     queueStaleBadge: 'Muddati o‘tgan',
     queueDueToday: 'Bugun',
+    queueDueTomorrow: 'Ertaga',
+    queueUpNextBadge: 'Keyingi',
+    queueSectionTomorrow: 'Ertaga',
     queueOverdueN: '{n} kun muddati o‘tgan',
     queueNowPlaying: 'Ijro etilmoqda',
     reviewHistoryTitle: 'Takrorlash tarixi',
@@ -193,6 +199,9 @@ class AppStrings {
   String get queueEmptyBody => _bundle.queueEmptyBody;
   String get queueStaleBadge => _bundle.queueStaleBadge;
   String get queueDueToday => _bundle.queueDueToday;
+  String get queueDueTomorrow => _bundle.queueDueTomorrow;
+  String get queueUpNextBadge => _bundle.queueUpNextBadge;
+  String get queueSectionTomorrow => _bundle.queueSectionTomorrow;
   String queueOverdue(int n) => _bundle.queueOverdueN.replaceAll('{n}', '$n');
   String get queueNowPlaying => _bundle.queueNowPlaying;
   String get reviewHistoryTitle => _bundle.reviewHistoryTitle;
@@ -267,6 +276,9 @@ class _Bundle {
     required this.queueEmptyBody,
     required this.queueStaleBadge,
     required this.queueDueToday,
+    required this.queueDueTomorrow,
+    required this.queueUpNextBadge,
+    required this.queueSectionTomorrow,
     required this.queueOverdueN,
     required this.queueNowPlaying,
     required this.reviewHistoryTitle,
@@ -329,6 +341,9 @@ class _Bundle {
   final String queueEmptyBody;
   final String queueStaleBadge;
   final String queueDueToday;
+  final String queueDueTomorrow;
+  final String queueUpNextBadge;
+  final String queueSectionTomorrow;
   final String queueOverdueN;
   final String queueNowPlaying;
   final String reviewHistoryTitle;

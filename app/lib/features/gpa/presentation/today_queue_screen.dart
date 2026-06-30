@@ -1,7 +1,11 @@
 // Today's review queue screen (T2.5, FR-1.2.5 / M2 AC 3 / NFR-2.4.1). The home
-// surface: reads [todayQueueProvider] and maps the AsyncValue to premium list /
-// empty / loading / error states. Each row is one-tap play (M2 AC 3); a 1-day-
-// stale row carries a badge and sorts to the top (T2.4).
+// surface: reads [warmedQueueProvider] (T7.1) and maps the AsyncValue to a
+// sectioned Today + Tomorrow list. Today holds the strict due-set (incl.
+// 1-day-stale), topped up to a floor of 3 with soonest-next-due "up next" rows
+// so a freshly indexed library isn't empty on day one; Tomorrow is the same
+// shape as a preview. Each row is one-tap play (M2 AC 3). The canonical GPA
+// intervals are never altered by the warm-up — up-next rows are reviewable-
+// early, not rescheduled.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +14,7 @@ import 'package:go_router/go_router.dart';
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
+import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class TodayQueueScreen extends ConsumerWidget {
@@ -18,7 +23,7 @@ class TodayQueueScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
-    final async = ref.watch(todayQueueProvider);
+    final async = ref.watch(warmedQueueProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(strings.queueTitle), centerTitle: false),
@@ -31,13 +36,13 @@ class TodayQueueScreen extends ConsumerWidget {
           icon: Icons.error_outline_rounded,
           message: strings.errorTitle,
           action: FilledButton.tonalIcon(
-            onPressed: () => ref.invalidate(todayQueueProvider),
+            onPressed: () => ref.invalidate(warmedQueueProvider),
             icon: const Icon(Icons.refresh_rounded),
             label: Text(strings.retry),
           ),
         ),
         data: (queue) {
-          if (queue.isEmpty) {
+          if (queue.today.isEmpty && queue.tomorrow.isEmpty) {
             return _StatusView(
               icon: Icons.check_circle_outline_rounded,
               message: strings.queueEmptyTitle,
@@ -45,12 +50,19 @@ class TodayQueueScreen extends ConsumerWidget {
             );
           }
           return Scrollbar(
-            child: ListView.separated(
+            child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: queue.length,
-              separatorBuilder: (context, _) =>
-                  const Divider(height: 1, indent: 72),
-              itemBuilder: (context, index) => _QueueTile(item: queue[index]),
+              children: [
+                _SectionHeader(label: strings.queueNavToday),
+                for (final item in queue.today)
+                  _WarmedTile(item: item, window: _WarmWindow.today),
+                if (queue.tomorrow.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _SectionHeader(label: strings.queueSectionTomorrow),
+                  for (final item in queue.tomorrow)
+                    _WarmedTile(item: item, window: _WarmWindow.tomorrow),
+                ],
+              ],
             ),
           );
         },
@@ -59,10 +71,33 @@ class TodayQueueScreen extends ConsumerWidget {
   }
 }
 
-class _QueueTile extends ConsumerWidget {
-  const _QueueTile({required this.item});
+enum _WarmWindow { today, tomorrow }
 
-  final QueueItem item;
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _WarmedTile extends ConsumerWidget {
+  const _WarmedTile({required this.item, required this.window});
+
+  final WarmedItem item;
+  final _WarmWindow window;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,7 +108,6 @@ class _QueueTile extends ConsumerWidget {
 
     final isCurrent = snap.recordingId == item.recording.id;
     final isPlaying = isCurrent && snap.isPlaying;
-    // One tap (M2 AC 3): toggle if already cued, otherwise cue + play.
     void onTap() {
       final notifier = ref.read(audioPlayerControllerProvider.notifier);
       if (isCurrent) {
@@ -83,12 +117,40 @@ class _QueueTile extends ConsumerWidget {
       }
     }
 
-    final dueLabel = item.isStale
+    final isStale = item.isStale;
+    final isUpNext = item.placement == WarmPlacement.upNext;
+    final dueLabel = isStale
         ? strings.queueOverdue(1)
-        : strings.queueDueToday;
+        : (isUpNext
+              ? strings.queueUpNextBadge
+              : (window == _WarmWindow.tomorrow
+                    ? strings.queueDueTomorrow
+                    : strings.queueDueToday));
     final milestoneLabel = milestone != null
         ? 'D+${milestone.intervalDays}'
         : '';
+
+    Widget? trailing;
+    if (isStale) {
+      trailing = _PillBadge(
+        label: strings.queueStaleBadge,
+        background: theme.colorScheme.errorContainer,
+        foreground: theme.colorScheme.onErrorContainer,
+      );
+    } else if (isUpNext) {
+      trailing = _PillBadge(
+        label: strings.queueUpNextBadge,
+        background: theme.colorScheme.secondaryContainer,
+        foreground: theme.colorScheme.onSecondaryContainer,
+      );
+    } else if (isCurrent) {
+      trailing = Text(
+        strings.queueNowPlaying,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      );
+    }
 
     return ListTile(
       onTap: onTap,
@@ -104,21 +166,12 @@ class _QueueTile extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.bodySmall?.copyWith(
-          color: item.isStale
+          color: isStale
               ? theme.colorScheme.error
               : theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      trailing: item.isStale
-          ? _StaleBadge(label: strings.queueStaleBadge)
-          : (isCurrent
-                ? Text(
-                    strings.queueNowPlaying,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  )
-                : null),
+      trailing: trailing,
     );
   }
 }
@@ -133,7 +186,6 @@ class _Leading extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isError = this.isError;
     return Container(
       width: 40,
       height: 40,
@@ -155,25 +207,30 @@ class _Leading extends StatelessWidget {
   }
 }
 
-class _StaleBadge extends StatelessWidget {
-  const _StaleBadge({required this.label});
+class _PillBadge extends StatelessWidget {
+  const _PillBadge({
+    required this.label,
+    required this.background,
+    required this.foreground,
+  });
 
   final String label;
+  final Color background;
+  final Color foreground;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: theme.colorScheme.errorContainer,
+        color: background,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Text(
           label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onErrorContainer,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: foreground,
             fontWeight: FontWeight.w600,
           ),
         ),

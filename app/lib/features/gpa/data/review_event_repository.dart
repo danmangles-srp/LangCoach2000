@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/gpa/domain/gpa_review.dart';
+import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
 
 /// One row of today's review queue (FR-1.2.5): the recording, its derived
@@ -24,6 +25,30 @@ class QueueItem {
   final Recording recording;
   final RecordingReviewStatus status;
   final bool isStale;
+}
+
+/// One row of a warmed window (T7.1): the recording, its derived status, the
+/// warm-up placement (genuinely due vs. an "up next" top-up), and stale flag.
+class WarmedItem {
+  const WarmedItem({
+    required this.recording,
+    required this.status,
+    required this.placement,
+    required this.isStale,
+  });
+
+  final Recording recording;
+  final RecordingReviewStatus status;
+  final WarmPlacement placement;
+  final bool isStale;
+}
+
+/// Warmed Today + Tomorrow windows (T7.1, M7 AC 1).
+class WarmedQueue {
+  const WarmedQueue({required this.today, required this.tomorrow});
+
+  final List<WarmedItem> today;
+  final List<WarmedItem> tomorrow;
 }
 
 class ReviewEventRepository {
@@ -118,6 +143,67 @@ class ReviewEventRepository {
       return b.recording.createdAt.compareTo(a.recording.createdAt);
     });
     return out;
+  }
+
+  /// Warmed Today + Tomorrow windows (T7.1, M7 AC 1). Loads every recording +
+  /// its derived status, hands the candidate set to the pure [warmUpQueue]
+  /// selector, then maps selections back to recordings. The canonical GPA
+  /// intervals are untouched — top-ups present the soonest-next-due recordings
+  /// as "up next", not a reschedule. Two queries regardless of recording count,
+  /// grouped in Dart (same shape as [todayQueue]).
+  Future<WarmedQueue> warmedQueue({required DateTime asOf}) async {
+    final recordings =
+        await (_db.select(_db.recordings)..orderBy([
+              (t) => OrderingTerm.desc(t.createdAt),
+              (t) => OrderingTerm.desc(t.id),
+            ]))
+            .get();
+    if (recordings.isEmpty) {
+      return const WarmedQueue(today: [], tomorrow: []);
+    }
+
+    final events = await (_db.select(
+      _db.reviewEvents,
+    )..orderBy([(t) => OrderingTerm.asc(t.completedAt)])).get();
+    final byRecording = <int, List<ReviewLogEntry>>{};
+    for (final e in events) {
+      (byRecording[e.recordingId] ??= <ReviewLogEntry>[]).add(
+        ReviewLogEntry(
+          milestoneIndex: e.milestoneIndex,
+          completedAt: e.completedAt,
+        ),
+      );
+    }
+
+    final candidates = <WarmCandidate>[
+      for (final rec in recordings)
+        WarmCandidate(
+          id: rec.id,
+          status: computeReviewStatus(
+            createdAt: rec.createdAt,
+            events: byRecording[rec.id] ?? const <ReviewLogEntry>[],
+            asOf: asOf,
+          ),
+        ),
+    ];
+    final warm = warmUpQueue(all: candidates, asOf: asOf);
+
+    final byId = <int, Recording>{for (final r in recordings) r.id: r};
+    WarmedItem? toItem(WarmSelection s) {
+      final rec = byId[s.candidate.id];
+      if (rec == null) return null; // candidate ids derive from recordings
+      return WarmedItem(
+        recording: rec,
+        status: s.candidate.status,
+        placement: s.placement,
+        isStale: s.isStale,
+      );
+    }
+
+    return WarmedQueue(
+      today: warm.today.map(toItem).whereType<WarmedItem>().toList(),
+      tomorrow: warm.tomorrow.map(toItem).whereType<WarmedItem>().toList(),
+    );
   }
 
   /// Auto-append a review event for an 80%-crossing (called by the playback
