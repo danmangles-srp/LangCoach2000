@@ -138,8 +138,11 @@ void main() {
 
     expect(fake.calls, containsAll(const ['load', 'play']));
     expect(find.text('lecture-42.m4a'), findsOneWidget);
-    expect(find.text('M4A'), findsOneWidget);
-    expect(find.text('Duration'), findsOneWidget);
+    // T7.2: metadata card was trimmed to the date only — the format, size, and
+    // duration chips are gone (duration still shows in the transport row).
+    expect(find.text('M4A'), findsNothing);
+    expect(find.text('Duration'), findsNothing);
+    expect(find.text('Jan 1, 2026'), findsOneWidget);
 
     // Duration resolved from the media item -> slider is shown, maxed at it.
     final slider = tester.widget<Slider>(find.byType(Slider));

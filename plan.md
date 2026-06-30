@@ -282,7 +282,55 @@ the abstract service seams, the offline queue, and the gate green — before any
   via `--dart-define`; enqueue + drain on reconnect. *ACs:* FR-1.5.3, NFR-2.1.3, NFR-2.6.1. *Deps:* T0.3,
   T6.4.
 - **T6.6 — Weekly report scheduler.** `workmanager` periodic worker; dispatch the rendered HTML email
-  weekly; retry/backoff; in-app "last sent / next send" indicator. *ACs:* FR-1.5.3, M6 AC 3. *Deps:* T6.5.
+  weekly; retry/backoff; in-app "last send / next send" indicator. *ACs:* FR-1.5.3, M6 AC 3. *Deps:* T6.5.
+
+---
+
+## Milestone 7: UX & Queue Polish (post-M4 feedback)
+
+**Objective:** Make the app feel alive on day one and remove friction in the
+recording detail flow. These are real-use findings, not new scope — they sharpen
+existing M1–M3 surfaces.
+
+### User stories
+* As a new learner, I want my Today and Tomorrow queues to each show at least 3
+  recordings right after my first sync, so the app is immediately useful (not an
+  empty list on day 1).
+* As a learner viewing a recording, I want the detail screen focused on content
+  (vocab + timeline), not file metadata, and I want the vocab list above the
+  review timeline.
+* As a learner, I want to tap an attached image and pinch-to-zoom it full-screen.
+* As a learner, tapping "mark reviewed" must NOT scroll-jump me to the top of the
+  screen.
+
+### Acceptance criteria
+* After first index, the Today queue shows **≥3** recordings (topped up from the
+  soonest-next-due if the strict-GPA due-today set is smaller); the Tomorrow
+  preview shows **≥3** likewise. The canonical GPA intervals are NOT altered —
+  top-ups are presented as reviewable-early, not rescheduled.
+* The recording detail screen no longer shows duration / size / format chips;
+  the GPA milestone (D+N) list renders **below** the vocab log section.
+* Tapping an attached image opens a full-screen viewer with pinch-zoom
+  (`InteractiveViewer`) and a dismiss affordance.
+* Toggling a milestone's reviewed state preserves the current scroll position
+  (no jump to top).
+
+### Tickets
+- **T7.1 — Queue warm-up top-up.** When the strict due-today queue has fewer
+  than 3, top it up to 3 from the soonest-next-due recordings (reviewable early,
+  badged "up next"); apply the same ≥3 floor to the Tomorrow preview. Pure-Dart
+  selector over the existing GPA derivation — no schema change, no rescheduling.
+  *ACs:* M7 AC 1. *Deps:* T2.4 (today queue + stale rule).
+- **T7.2 — Recording detail layout trim + reorder.** Remove the duration / size
+  / format chips from the detail screen; move the D+N milestone list to render
+  below the vocab log section. *ACs:* M7 AC 2. *Deps:* T1.6, T3.4.
+- **T7.3 — Image full-screen zoom viewer.** Tap an attached word-log image →
+  full-screen `InteractiveViewer` (pinch-zoom, pan, swipe/tap to dismiss).
+  *ACs:* M7 AC 3. *Deps:* T3.3 (image-log attach).
+- **T7.4 — No scroll-jump on mark-reviewed.** Preserve the scroll offset across
+  a reviewed-state toggle on the recording detail / timeline (root-cause the
+  rebuild that resets the offset; keep a stable `ScrollController` / keys).
+  *ACs:* M7 AC 4. *Deps:* T2.6.
 
 ---
 
