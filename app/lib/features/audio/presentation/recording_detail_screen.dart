@@ -12,7 +12,6 @@ import 'package:intl/intl.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
-import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart';
@@ -169,9 +168,9 @@ class _DetailContent extends ConsumerWidget {
                 .togglePlayPause(),
           ),
           const SizedBox(height: 28),
-          _ReviewHistorySection(recording: recording),
-          const SizedBox(height: 28),
           WordLogSection(recordingId: recording.id),
+          const SizedBox(height: 28),
+          _ReviewHistorySection(recording: recording),
         ],
       ),
     );
@@ -187,7 +186,13 @@ class _ReviewHistorySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
     final async = ref.watch(recordingReviewStatusProvider(recording.id));
+    // skipLoadingOnReload: a mark/undo bumps reviewGenerationProvider, which
+    // re-runs this family future. Without this flag the `.when` would flash the
+    // loading branch, collapsing the section height mid-scroll and clamping the
+    // outer SingleChildScrollView offset — the "jumps to top" bug. Keeping the
+    // prior data rendered holds the layout steady across the refresh.
     return async.when(
+      skipLoadingOnReload: true,
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
         child: Center(child: CircularProgressIndicator()),
@@ -410,64 +415,29 @@ class _MetadataCard extends StatelessWidget {
     final dateFormat = DateFormat.yMMMd(
       Localizations.localeOf(context).toLanguageTag(),
     );
-    final fmt = formatOf(recording);
-    final rows = <_MetaRow>[
-      _MetaRow(
-        Icons.calendar_today_rounded,
-        strings.metaDate,
-        dateFormat.format(recording.createdAt),
-      ),
-      _MetaRow(
-        Icons.timer_outlined,
-        strings.metaDuration,
-        formatDurationMs(recording.durationMs) ?? strings.unknownDuration,
-      ),
-      _MetaRow(
-        Icons.save_alt_rounded,
-        strings.metaSize,
-        formatBytes(recording.sizeBytes),
-      ),
-      _MetaRow(
-        Icons.audio_file_outlined,
-        strings.metaFormat,
-        fmt != null ? fmt.name.toUpperCase() : strings.unknownFormat,
-      ),
-    ];
 
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          children: [
-            for (final row in rows)
-              ListTile(
-                dense: true,
-                leading: Icon(
-                  row.icon,
-                  size: 22,
-                  color: theme.colorScheme.primary,
-                ),
-                title: Text(row.value),
-                subtitle: Text(
-                  row.label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-          ],
+        child: ListTile(
+          dense: true,
+          leading: Icon(
+            Icons.calendar_today_rounded,
+            size: 22,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(dateFormat.format(recording.createdAt)),
+          subtitle: Text(
+            strings.metaDate,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );
   }
-}
-
-class _MetaRow {
-  const _MetaRow(this.icon, this.label, this.value);
-  final IconData icon;
-  final String label;
-  final String value;
 }
 
 class _PositionRow extends StatelessWidget {

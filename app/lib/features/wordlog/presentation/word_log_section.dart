@@ -229,18 +229,68 @@ class _Thumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Image.file(
-        file,
-        width: 96,
-        height: 96,
-        fit: BoxFit.cover,
-        errorBuilder: (_, Object __, StackTrace? ___) => Container(
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => _FullScreenImage(file: file),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(
+          file,
           width: 96,
           height: 96,
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          child: const Icon(Icons.broken_image_outlined),
+          fit: BoxFit.cover,
+          errorBuilder: (_, Object __, StackTrace? ___) => Container(
+            width: 96,
+            height: 96,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: const Icon(Icons.broken_image_outlined),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen pinch-zoom viewer for an attached word-log image (T7.3).
+/// `InteractiveViewer` handles pinch-zoom + pan; tap or the app-bar close
+/// button dismisses.
+class _FullScreenImage extends StatelessWidget {
+  const _FullScreenImage({required this.file});
+  final File file;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Center(
+          child: InteractiveViewer(
+            maxScale: 5,
+            child: Image.file(
+              file,
+              errorBuilder: (_, Object __, StackTrace? ___) => const Padding(
+                padding: EdgeInsets.all(32),
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  size: 64,
+                  color: Colors.white54,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
