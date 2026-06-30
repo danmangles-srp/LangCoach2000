@@ -77,6 +77,18 @@ class AppStrings {
     recordNoFolder: 'Pick a Samsung Voice Recorder folder before recording.',
     recordFailed: "Couldn't save the recording. Try again.",
     recordSavedN: 'Saved “{name}”.',
+    wordLogTitle: 'Word log',
+    wordLogTabText: 'Text',
+    wordLogTabImages: 'Images',
+    wordLogAddText: 'Add text log',
+    wordLogEditText: 'Edit text log',
+    wordLogAddImage: 'Add photo',
+    wordLogTextEmpty: 'No text log yet. Paste an English↔Uzbek word list.',
+    wordLogImagesEmpty: 'No photos attached yet.',
+    wordLogTextDialogHint: 'One pair per line: english: uzbek',
+    wordLogSave: 'Save',
+    wordLogCancel: 'Cancel',
+    wordLogAttachFailed: 'Could not attach. Try again.',
   );
 
   static const _uz = _Bundle(
@@ -135,6 +147,19 @@ class AppStrings {
         'Yozib olishdan oldin Samsung Voice Recorder jildini tanlang.',
     recordFailed: 'Yozuvni saqlab bo‘lmadi. Qayta urinib ko‘ring.',
     recordSavedN: '“{name}” saqlandi.',
+    wordLogTitle: 'So‘zlar daftari',
+    wordLogTabText: 'Matn',
+    wordLogTabImages: 'Rasmlar',
+    wordLogAddText: 'Matn qo‘shish',
+    wordLogEditText: 'Matnni tahrirlash',
+    wordLogAddImage: 'Rasm qo‘shish',
+    wordLogTextEmpty:
+        'Hozircha matn yo‘q. Inglizcha↔o‘zbekcha so‘zlar ro‘yxatini qo‘ying.',
+    wordLogImagesEmpty: 'Hozircha birorta rasm biriktirilmagan.',
+    wordLogTextDialogHint: 'Har qatorda bittadan: english: uzbek',
+    wordLogSave: 'Saqlash',
+    wordLogCancel: 'Bekor qilish',
+    wordLogAttachFailed: 'Biriktirib bo‘lmadi. Qayta urinib ko‘ring.',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -189,6 +214,18 @@ class AppStrings {
   String get recordFailed => _bundle.recordFailed;
   String recordSaved(String name) =>
       _bundle.recordSavedN.replaceAll('{name}', name);
+  String get wordLogTitle => _bundle.wordLogTitle;
+  String get wordLogTabText => _bundle.wordLogTabText;
+  String get wordLogTabImages => _bundle.wordLogTabImages;
+  String get wordLogAddText => _bundle.wordLogAddText;
+  String get wordLogEditText => _bundle.wordLogEditText;
+  String get wordLogAddImage => _bundle.wordLogAddImage;
+  String get wordLogTextEmpty => _bundle.wordLogTextEmpty;
+  String get wordLogImagesEmpty => _bundle.wordLogImagesEmpty;
+  String get wordLogTextDialogHint => _bundle.wordLogTextDialogHint;
+  String get wordLogSave => _bundle.wordLogSave;
+  String get wordLogCancel => _bundle.wordLogCancel;
+  String get wordLogAttachFailed => _bundle.wordLogAttachFailed;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -250,6 +287,18 @@ class _Bundle {
     required this.recordNoFolder,
     required this.recordFailed,
     required this.recordSavedN,
+    required this.wordLogTitle,
+    required this.wordLogTabText,
+    required this.wordLogTabImages,
+    required this.wordLogAddText,
+    required this.wordLogEditText,
+    required this.wordLogAddImage,
+    required this.wordLogTextEmpty,
+    required this.wordLogImagesEmpty,
+    required this.wordLogTextDialogHint,
+    required this.wordLogSave,
+    required this.wordLogCancel,
+    required this.wordLogAttachFailed,
   });
 
   final String recordingsTitle;
@@ -300,6 +349,18 @@ class _Bundle {
   final String recordNoFolder;
   final String recordFailed;
   final String recordSavedN;
+  final String wordLogTitle;
+  final String wordLogTabText;
+  final String wordLogTabImages;
+  final String wordLogAddText;
+  final String wordLogEditText;
+  final String wordLogAddImage;
+  final String wordLogTextEmpty;
+  final String wordLogImagesEmpty;
+  final String wordLogTextDialogHint;
+  final String wordLogSave;
+  final String wordLogCancel;
+  final String wordLogAttachFailed;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

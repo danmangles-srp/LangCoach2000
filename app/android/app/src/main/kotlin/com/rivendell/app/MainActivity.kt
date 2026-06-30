@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -40,6 +41,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     }
 
     private var pendingResult: MethodChannel.Result? = null
+    private var pendingPickResult: MethodChannel.Result? = null
 
     private val openTreeLauncher: ActivityResultLauncher<Uri?> =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -63,6 +65,27 @@ class MainActivity : AudioServiceFragmentActivity() {
             } catch (e: SecurityException) {
                 result.error("PERMISSION_FAILED", e.message, null)
             }
+        }
+
+    // Android image picker (FR-1.3.1, T3.4). PickVisualMedia needs no
+    // permission and works on API 26+ via the Play Services photo-picker
+    // backport. The returned URI carries a temporary read grant for this
+    // process, so copyImage can stream it without an extra permission take.
+    private val pickImageLauncher: ActivityResultLauncher<PickVisualMediaRequest> =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            val result = pendingPickResult
+            pendingPickResult = null
+            if (result == null) return@registerForActivityResult
+            if (uri == null) {
+                result.success(null) // user cancelled
+                return@registerForActivityResult
+            }
+            val ext = mimeToExt(contentResolver.getType(uri))
+            if (ext == null) {
+                result.error("UNSUPPORTED", "unsupported image type", null)
+                return@registerForActivityResult
+            }
+            result.success(mapOf("uri" to uri.toString(), "ext" to ext))
         }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -159,6 +182,17 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }
                 }
 
+                "pickImage" -> {
+                    if (pendingPickResult != null) {
+                        result.error("REENTRY", "an image pick is already in flight", null)
+                        return@setMethodCallHandler
+                    }
+                    pendingPickResult = result
+                    pickImageLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                    )
+                }
+
                 else -> result.notImplemented()
             }
         }
@@ -247,6 +281,15 @@ class MainActivity : AudioServiceFragmentActivity() {
         val ext = name.substringAfterLast('.', "").lowercase()
         return ext in SUPPORTED_EXT
     }
+
+    /** Map an image MIME type to a lowercase extension (no dot), or null when
+     *  the type isn't a supported JPG/PNG. */
+    private fun mimeToExt(mime: String?): String? =
+        when (mime) {
+            "image/jpeg" -> "jpg"
+            "image/png" -> "png"
+            else -> null
+        }
 
     /**
      * Stream a picked image's bytes ([sourceUriStr], a content:// URI from the

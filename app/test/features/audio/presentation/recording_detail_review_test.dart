@@ -21,6 +21,7 @@ import 'package:rivendell/features/audio/presentation/recording_detail_screen.da
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
+import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 Recording _rec() => Recording(
@@ -100,6 +101,8 @@ Widget _host({
       recordingByIdProvider(id).overrideWith((ref) async => _rec()),
       recordingReviewStatusProvider(id).overrideWith((ref) async => status),
       reviewEventRepositoryProvider.overrideWith((ref) async => repo),
+      // Word-log panel is out of scope here; isolate it from the store.
+      wordLogsForRecordingProvider(id).overrideWith((ref) async => const []),
     ],
     child: MaterialApp(
       locale: const Locale('en'),

@@ -3,13 +3,16 @@
 // read off the singleton database.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
+import 'package:rivendell/features/wordlog/application/image_log_picker_service.dart';
 import 'package:rivendell/features/wordlog/application/image_log_service.dart';
 import 'package:rivendell/features/wordlog/application/image_log_writer_service.dart';
 import 'package:rivendell/features/wordlog/data/word_log_repository.dart';
+import 'package:rivendell/features/wordlog/platform/saf_image_log_picker_service.dart';
 import 'package:rivendell/features/wordlog/platform/saf_image_writer_service.dart';
 
 /// Singleton [WordLogRepository] over the local store.
@@ -25,6 +28,16 @@ final imageLogClockProvider = Provider<DateTime Function()>(
 
 final imageLogWriterServiceProvider = Provider<ImageLogWriterService>(
   (_) => SafImageWriterService(),
+);
+
+final imageLogPickerServiceProvider = Provider<ImageLogPickerService>(
+  (_) => SafImageLogPickerService(),
+);
+
+/// App documents directory (where images are copied). Resolved once and
+/// cached; the panel joins it with each image's app-relative path.
+final appDocsDirProvider = FutureProvider<String>(
+  (ref) async => (await getApplicationDocumentsDirectory()).path,
 );
 
 /// Singleton [ImageLogService] wiring the writer, repo, and logger together.
