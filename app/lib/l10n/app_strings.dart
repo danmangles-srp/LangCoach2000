@@ -67,6 +67,16 @@ class AppStrings {
     reviewMarkReviewed: 'Mark reviewed',
     reviewUndo: 'Undo',
     reviewDueLabel: 'Due',
+    recordTooltip: 'Record',
+    recordSheetTitle: 'Record',
+    recordStart: 'Record',
+    recordStop: 'Stop',
+    recordSaving: 'Saving…',
+    recordPermissionDenied:
+        'Microphone permission denied. Grant it in system settings to record.',
+    recordNoFolder: 'Pick a Samsung Voice Recorder folder before recording.',
+    recordFailed: "Couldn't save the recording. Try again.",
+    recordSavedN: 'Saved “{name}”.',
   );
 
   static const _uz = _Bundle(
@@ -113,6 +123,18 @@ class AppStrings {
     reviewMarkReviewed: 'Belgilash',
     reviewUndo: 'Bekor qilish',
     reviewDueLabel: 'Muddati',
+    recordTooltip: 'Yozib olish',
+    recordSheetTitle: 'Yozib olish',
+    recordStart: 'Yozib olish',
+    recordStop: 'To‘xtatish',
+    recordSaving: 'Saqlanmoqda…',
+    recordPermissionDenied:
+        'Mikrofon ruxsati rad etildi. Yozib olish uchun sozlamalarda '
+        'ruxsat bering.',
+    recordNoFolder:
+        'Yozib olishdan oldin Samsung Voice Recorder jildini tanlang.',
+    recordFailed: 'Yozuvni saqlab bo‘lmadi. Qayta urinib ko‘ring.',
+    recordSavedN: '“{name}” saqlandi.',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -157,6 +179,16 @@ class AppStrings {
   String get reviewMarkReviewed => _bundle.reviewMarkReviewed;
   String get reviewUndo => _bundle.reviewUndo;
   String get reviewDueLabel => _bundle.reviewDueLabel;
+  String get recordTooltip => _bundle.recordTooltip;
+  String get recordSheetTitle => _bundle.recordSheetTitle;
+  String get recordStart => _bundle.recordStart;
+  String get recordStop => _bundle.recordStop;
+  String get recordSaving => _bundle.recordSaving;
+  String get recordPermissionDenied => _bundle.recordPermissionDenied;
+  String get recordNoFolder => _bundle.recordNoFolder;
+  String get recordFailed => _bundle.recordFailed;
+  String recordSaved(String name) =>
+      _bundle.recordSavedN.replaceAll('{name}', name);
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -209,6 +241,15 @@ class _Bundle {
     required this.reviewMarkReviewed,
     required this.reviewUndo,
     required this.reviewDueLabel,
+    required this.recordTooltip,
+    required this.recordSheetTitle,
+    required this.recordStart,
+    required this.recordStop,
+    required this.recordSaving,
+    required this.recordPermissionDenied,
+    required this.recordNoFolder,
+    required this.recordFailed,
+    required this.recordSavedN,
   });
 
   final String recordingsTitle;
@@ -250,6 +291,15 @@ class _Bundle {
   final String reviewMarkReviewed;
   final String reviewUndo;
   final String reviewDueLabel;
+  final String recordTooltip;
+  final String recordSheetTitle;
+  final String recordStart;
+  final String recordStop;
+  final String recordSaving;
+  final String recordPermissionDenied;
+  final String recordNoFolder;
+  final String recordFailed;
+  final String recordSavedN;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

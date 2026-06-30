@@ -39,6 +39,16 @@ void main() {
       expect(uz.scannedCount(12), isNot(en.scannedCount(12)));
     });
 
+    test('record strings differ per locale and interpolate the name', () {
+      const en = AppStrings(Locale('en'));
+      const uz = AppStrings(Locale('uz'));
+      expect(uz.recordTooltip, isNot(en.recordTooltip));
+      expect(uz.recordStop, isNot(en.recordStop));
+      expect(uz.recordFailed, isNot(en.recordFailed));
+      expect(en.recordSaved('x.m4a'), contains('x.m4a'));
+      expect(uz.recordSaved('x.m4a'), isNot(en.recordSaved('x.m4a')));
+    });
+
     test('unknown locale falls back to English', () {
       const fr = AppStrings(Locale('fr'));
       expect(fr.recordingsTitle, 'Recordings');
