@@ -15,13 +15,14 @@ import kotlin.concurrent.thread
 
 // Hosts the SAF folder-picker + audio-indexer channels (FR-1.1.1 / FR-1.1.2,
 // T1.1 B2 + T1.2), the in-app recorder's folder writer (FR-1.1.3, T2.7), the
-// word-log image writer (FR-1.3.1, T3.3), and the background audio service
-// (T1.5, FR-1.1.4).
+// word-log image writer (FR-1.3.1, T3.3), the background audio service
+// (T1.5, FR-1.1.4), and the AnkiDroid adapter (FR-1.3.3, T4.1).
 //
 //   rivendell/folder   :: pickFolder() -> tree URI string (persistable RW)
 //   rivendell/scan     :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
 //   rivendell/record   :: copyToFolder(treeUri, sourcePath, displayName) -> doc URI
 //   rivendell/wordlog  :: copyImage(sourceUri, destRelativePath) -> void
+//   rivendell/anki     :: isInstalled/ensureDeck/ensureModel/noteExists/addNote
 //
 // Extends [AudioServiceFragmentActivity] (a [FlutterFragmentActivity], i.e. an
 // androidx [FragmentActivity] -> [ComponentActivity]) for two reasons:
@@ -37,11 +38,14 @@ class MainActivity : AudioServiceFragmentActivity() {
         const val SCAN_CHANNEL = "rivendell/scan"
         const val RECORD_CHANNEL = "rivendell/record"
         const val WORDLOG_CHANNEL = "rivendell/wordlog"
+        const val ANKI_CHANNEL = "rivendell/anki"
         val SUPPORTED_EXT = setOf("m4a", "mp3", "wav")
     }
 
     private var pendingResult: MethodChannel.Result? = null
     private var pendingPickResult: MethodChannel.Result? = null
+
+    private val ankiGateway: AnkiGateway by lazy { AnkiGateway(this) }
 
     private val openTreeLauncher: ActivityResultLauncher<Uri?> =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -194,6 +198,75 @@ class MainActivity : AudioServiceFragmentActivity() {
                 }
 
                 else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(messenger, ANKI_CHANNEL).setMethodCallHandler { call, result ->
+            // Every op hits AnkiDroid's content provider — off the main thread.
+            thread(start = true) {
+                try {
+                    when (call.method) {
+                        "isInstalled" -> result.success(ankiGateway.isInstalled())
+
+                        "ensureDeck" -> {
+                            val name = call.argument<String>("name")
+                            if (name == null) {
+                                result.error("BAD_ARGS", "name is required", null)
+                                return@thread
+                            }
+                            result.success(ankiGateway.ensureDeck(name))
+                        }
+
+                        "ensureModel" -> {
+                            val name = call.argument<String>("name")
+                            val fields = call.argument<List<String>>("fields")
+                            val front = call.argument<String>("front")
+                            val back = call.argument<String>("back")
+                            val css = call.argument<String>("css") ?: ""
+                            if (name == null || fields == null || front == null || back == null) {
+                                result.error("BAD_ARGS", "name/fields/front/back required", null)
+                                return@thread
+                            }
+                            result.success(
+                                ankiGateway.ensureModel(name, fields, front, back, css),
+                            )
+                        }
+
+                        "noteExists" -> {
+                            // Dart ints arrive as int32 or int64 depending on
+                            // size; read as Number so both widths decode.
+                            val modelId = call.argument<Number>("modelId")?.toLong()
+                            val firstField = call.argument<String>("firstField")
+                            if (modelId == null || firstField == null) {
+                                result.error("BAD_ARGS", "modelId/firstField required", null)
+                                return@thread
+                            }
+                            result.success(ankiGateway.noteExists(modelId, firstField))
+                        }
+
+                        "addNote" -> {
+                            val deckId = call.argument<Number>("deckId")?.toLong()
+                            val modelId = call.argument<Number>("modelId")?.toLong()
+                            val fields = call.argument<List<String>>("fields")
+                            val tags = call.argument<List<String>>("tags") ?: emptyList()
+                            if (deckId == null || modelId == null || fields == null) {
+                                result.error("BAD_ARGS", "deckId/modelId/fields required", null)
+                                return@thread
+                            }
+                            // null note id = insert failed (not a dupe) → null to Dart.
+                            result.success(ankiGateway.addNote(deckId, modelId, fields, tags))
+                        }
+
+                        else -> result.notImplemented()
+                    }
+                } catch (e: SecurityException) {
+                    // AnkiDroid's READ_WRITE permission not granted (e.g. first run
+                    // before access requested). Surfaced as a typed error so the UI
+                    // can prompt; T4.5 wires the request flow.
+                    result.error("ANKI_NO_ACCESS", e.message, null)
+                } catch (e: Exception) {
+                    result.error("ANKI_FAILED", e.message, null)
+                }
             }
         }
     }

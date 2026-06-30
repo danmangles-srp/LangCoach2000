@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Background audio (FR-1.1.4): keep playback alive while the screen is off,
          and run it as a foreground media service on Android 14+ (API 34). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -10,7 +11,8 @@
     <application
         android:label="Rivendell"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        tools:replace="android:label">
         <activity
             android:name=".MainActivity"
             android:exported="true"
