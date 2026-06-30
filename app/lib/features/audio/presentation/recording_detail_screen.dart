@@ -19,6 +19,7 @@ import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart'
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/domain/gpa_intervals.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
+import 'package:rivendell/features/wordlog/presentation/word_log_section.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class RecordingDetailScreen extends ConsumerStatefulWidget {
@@ -169,6 +170,8 @@ class _DetailContent extends ConsumerWidget {
           ),
           const SizedBox(height: 28),
           _ReviewHistorySection(recording: recording),
+          const SizedBox(height: 28),
+          WordLogSection(recordingId: recording.id),
         ],
       ),
     );

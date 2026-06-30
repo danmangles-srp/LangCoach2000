@@ -19,6 +19,7 @@ import 'package:rivendell/features/audio/playback/domain/media_item_mapper.dart'
 import 'package:rivendell/features/audio/playback/platform/audio_playback_providers.dart';
 import 'package:rivendell/features/audio/presentation/recording_detail_screen.dart';
 import 'package:rivendell/features/gpa/application/review_providers.dart';
+import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 Recording _rec({required int id, int? durationMs}) => Recording(
@@ -103,9 +104,11 @@ Widget _host({
         (ref) async => fake as AudioPlaybackService,
       ),
       recordingByIdProvider(id).overrideWith((ref) => loader()),
-      // These tests exercise the transport; the review-history section is
-      // isolated from the store here (its data layer has its own coverage).
+      // These tests exercise the transport; the review-history + word-log
+      // sections are isolated from the store here (their data layers have
+      // their own coverage).
       recordingReviewStatusProvider(id).overrideWith((ref) async => null),
+      wordLogsForRecordingProvider(id).overrideWith((ref) async => const []),
     ],
     child: MaterialApp(
       locale: const Locale('en'),
