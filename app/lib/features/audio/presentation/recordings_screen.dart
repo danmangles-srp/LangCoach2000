@@ -13,6 +13,7 @@ import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
+import 'package:rivendell/features/audio/recording/presentation/record_sheet.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class RecordingsScreen extends ConsumerWidget {
@@ -39,6 +40,15 @@ class RecordingsScreen extends ConsumerWidget {
       }
     }
 
+    Future<void> record() async {
+      final messenger = ScaffoldMessenger.of(context);
+      final saved = await showRecordSheet(context);
+      if (saved == null || !context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.recordSaved(saved))),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(strings.recordingsTitle),
@@ -50,6 +60,11 @@ class RecordingsScreen extends ConsumerWidget {
             onPressed: scan,
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: strings.recordTooltip,
+        onPressed: record,
+        child: const Icon(Icons.mic_rounded),
       ),
       body: async.when(
         loading: () => _StatusView(

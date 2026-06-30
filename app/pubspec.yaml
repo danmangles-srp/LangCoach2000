@@ -37,6 +37,9 @@ dependencies:
   # just_audio = engine; audio_service = background + lock-screen + focus.
   just_audio: ^0.9.43
   audio_service: ^0.18.17
+  # Microphone capture → temp file (T2.7, FR-1.1.3). AAC/M4A to match the
+  # indexed format; the SAF writer lifts the temp file into the folder.
+  record: ^7.1.1
 
 dev_dependencies:
   flutter_test:

@@ -9,13 +9,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
 import kotlin.concurrent.thread
 
 // Hosts the SAF folder-picker + audio-indexer channels (FR-1.1.1 / FR-1.1.2,
-// T1.1 B2 + T1.2) and the background audio service (T1.5, FR-1.1.4).
+// T1.1 B2 + T1.2), the in-app recorder's folder writer (FR-1.1.3, T2.7), and
+// the background audio service (T1.5, FR-1.1.4).
 //
-//   rivendell/folder  :: pickFolder() -> tree URI string (persistable READ)
+//   rivendell/folder  :: pickFolder() -> tree URI string (persistable RW)
 //   rivendell/scan    :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
+//   rivendell/record  :: copyToFolder(treeUri, sourcePath, displayName) -> doc URI
 //
 // Extends [AudioServiceFragmentActivity] (a [FlutterFragmentActivity], i.e. an
 // androidx [FragmentActivity] -> [ComponentActivity]) for two reasons:
@@ -29,6 +32,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     private companion object {
         const val FOLDER_CHANNEL = "rivendell/folder"
         const val SCAN_CHANNEL = "rivendell/scan"
+        const val RECORD_CHANNEL = "rivendell/record"
         val SUPPORTED_EXT = setOf("m4a", "mp3", "wav")
     }
 
@@ -44,9 +48,13 @@ class MainActivity : AudioServiceFragmentActivity() {
                 return@registerForActivityResult
             }
             try {
+                // READ + WRITE so the in-app recorder (T2.7) can drop captures
+                // into the same folder the indexer reads. READ-only picks made
+                // before this grant landed can't be written; the user re-picks.
                 contentResolver.takePersistableUriPermission(
                     uri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
                 )
                 result.success(uri.toString())
             } catch (e: SecurityException) {
@@ -91,6 +99,35 @@ class MainActivity : AudioServiceFragmentActivity() {
                             result.success(listAudioFiles(treeUri))
                         } catch (e: Exception) {
                             result.error("SCAN_FAILED", e.message, null)
+                        }
+                    }
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(messenger, RECORD_CHANNEL).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "copyToFolder" -> {
+                    val treeUri = call.argument<String>("treeUri")
+                    val sourcePath = call.argument<String>("sourcePath")
+                    val displayName = call.argument<String>("displayName")
+                    if (treeUri == null || sourcePath == null || displayName == null) {
+                        result.error("BAD_ARGS", "treeUri/sourcePath/displayName required", null)
+                        return@setMethodCallHandler
+                    }
+                    // File I/O off the platform main thread.
+                    thread(start = true) {
+                        try {
+                            val docUri = copyToFolder(treeUri, sourcePath, displayName)
+                            if (docUri != null) {
+                                result.success(docUri)
+                            } else {
+                                result.error("COPY_FAILED", "could not create document", null)
+                            }
+                        } catch (e: Exception) {
+                            result.error("COPY_FAILED", e.message, null)
                         }
                     }
                 }
@@ -147,6 +184,38 @@ class MainActivity : AudioServiceFragmentActivity() {
                 }
             }
         return out
+    }
+
+    /**
+     * Create a child document named [displayName] under [treeUriStr] and stream
+     * [sourcePath]'s bytes into it (FR-1.1.3). Returns the new document's URI
+     * so the indexer's next scan picks it up. If a document with the name
+     * already exists SAF appends a suffix; the returned URI is authoritative.
+     */
+    private fun copyToFolder(
+        treeUriStr: String,
+        sourcePath: String,
+        displayName: String,
+    ): String? {
+        val treeUri = Uri.parse(treeUriStr)
+        val parentDoc = DocumentsContract.buildDocumentUriUsingTree(
+            treeUri,
+            DocumentsContract.getTreeDocumentId(treeUri),
+        ) ?: return null
+        val newDoc = DocumentsContract.createDocument(
+            contentResolver,
+            parentDoc,
+            // audio/mp4 is the standard MIME for the .m4a AAC container.
+            "audio/mp4",
+            displayName,
+        ) ?: return null
+
+        File(sourcePath).inputStream().use { input ->
+            contentResolver.openOutputStream(newDoc, "w")?.use { output ->
+                input.copyTo(output)
+            } ?: return null
+        }
+        return newDoc.toString()
     }
 
     private fun isSupportedAudio(name: String): Boolean {

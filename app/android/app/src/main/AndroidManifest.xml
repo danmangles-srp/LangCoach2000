@@ -4,6 +4,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
+    <!-- In-app microphone capture (FR-1.1.3). The `record` plugin requests the
+         runtime permission; this declaration is what makes the grant possible. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="Rivendell"
         android:name="${applicationName}"
