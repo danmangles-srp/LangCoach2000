@@ -14,6 +14,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:rivendell/app/app.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
+import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 
@@ -53,13 +54,16 @@ Future<void> main() async {
   // Boot after runApp so a slow DB open / workmanager init can't delay the
   // first frame (NFR-2.2). Fire-and-forget: a boot failure is non-fatal —
   // items just wait for the next app start — but surface it so it isn't
-  // silently swallowed.
+  // silently swallowed. The ai_image handler is registered BEFORE the worker
+  // starts so the initial online drain already sees it.
   unawaited(
-    bootOfflineQueue(container).catchError(
-      (Object e, StackTrace st) => FlutterError.reportError(
-        FlutterErrorDetails(exception: e, stack: st),
-      ),
-    ),
+    registerAiImageHandler(container)
+        .then((_) => bootOfflineQueue(container))
+        .catchError(
+          (Object e, StackTrace st) => FlutterError.reportError(
+            FlutterErrorDetails(exception: e, stack: st),
+          ),
+        ),
   );
 
   // Re-index on every startup (FR-1.1.1 — subsequent startups reconcile): new

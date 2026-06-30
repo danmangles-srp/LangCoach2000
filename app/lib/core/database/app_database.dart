@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/tables/key_values.dart';
 import 'package:rivendell/core/queue/tables/offline_queue.dart';
+import 'package:rivendell/features/ai_image/data/ai_image_cache_table.dart';
 import 'package:rivendell/features/audio/data/recordings_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
 import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
@@ -17,7 +18,14 @@ import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [KeyValues, OfflineQueueItems, Recordings, ReviewEvents, WordLogs],
+  tables: [
+    KeyValues,
+    OfflineQueueItems,
+    Recordings,
+    ReviewEvents,
+    WordLogs,
+    AiImageCacheItems,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Internal — accepts any executor. Production MUST open through
@@ -31,7 +39,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -48,6 +56,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await m.createTable(wordLogs);
+      }
+      if (from < 6) {
+        await m.createTable(aiImageCacheItems);
       }
     },
     beforeOpen: (details) async {
