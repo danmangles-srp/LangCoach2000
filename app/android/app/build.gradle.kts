@@ -41,3 +41,12 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // AnkiDroid content-provider API (FR-1.3.3, T4.1). The api-v1.1.0 artifact
+    // drags an old kotlin-stdlib; exclude it so the project's Kotlin 2.3.20
+    // stdlib wins (the API itself is Java and needs no kotlin-stdlib).
+    implementation("com.github.ankidroid:Anki-Android:api-v1.1.0") {
+        exclude(group = "org.jetbrains.kotlin")
+    }
+}
