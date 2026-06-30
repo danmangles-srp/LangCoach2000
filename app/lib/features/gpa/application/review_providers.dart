@@ -60,13 +60,15 @@ final reviewProgressWatcherProvider = Provider<void>((ref) {
   });
 });
 
-/// Today's review queue (FR-1.2.5): recordings due today or 1-day-stale, most-
-/// overdue first. `asOf` is now. Watched by the home/queue screen (T2.5).
-/// Rebuilds when the review log changes ([reviewGenerationProvider]).
-final todayQueueProvider = FutureProvider<List<QueueItem>>((ref) async {
+/// Warmed Today + Tomorrow windows (T7.1, M7 AC 1): the strict due-set for each
+/// day, topped up to a floor of 3 from the soonest-next-due recordings (badged
+/// "up next") so a freshly indexed library isn't an empty list on day one.
+/// `asOf` is now. Watched by the home/queue screen. Rebuilds when the review
+/// log changes ([reviewGenerationProvider]).
+final warmedQueueProvider = FutureProvider<WarmedQueue>((ref) async {
   ref.watch(reviewGenerationProvider);
   final repo = await ref.watch(reviewEventRepositoryProvider.future);
-  return repo.todayQueue(asOf: DateTime.now());
+  return repo.warmedQueue(asOf: DateTime.now());
 });
 
 /// Derived review status for one recording (FR-1.2.4), watched by the detail
