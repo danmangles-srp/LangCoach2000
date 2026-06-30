@@ -53,4 +53,9 @@ void main() {
   test('schema version is set', () {
     expect(db.schemaVersion, greaterThanOrEqualTo(1));
   });
+
+  test('word_logs table exists on a fresh database (T3.1)', () async {
+    // onCreate creates all tables; the new word_logs table must be present.
+    await db.customSelect('SELECT count(*) AS n FROM word_logs').getSingle();
+  });
 }
