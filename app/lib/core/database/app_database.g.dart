@@ -1845,6 +1845,283 @@ class WordLogsCompanion extends UpdateCompanion<WordLog> {
   }
 }
 
+class $AiImageCacheItemsTable extends AiImageCacheItems
+    with TableInfo<$AiImageCacheItemsTable, AiImageCacheItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiImageCacheItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _uzbekWordMeta = const VerificationMeta(
+    'uzbekWord',
+  );
+  @override
+  late final GeneratedColumn<String> uzbekWord = GeneratedColumn<String>(
+    'uzbek_word',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relativePathMeta = const VerificationMeta(
+    'relativePath',
+  );
+  @override
+  late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
+    'relative_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [uzbekWord, relativePath, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_image_cache_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiImageCacheItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('uzbek_word')) {
+      context.handle(
+        _uzbekWordMeta,
+        uzbekWord.isAcceptableOrUnknown(data['uzbek_word']!, _uzbekWordMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uzbekWordMeta);
+    }
+    if (data.containsKey('relative_path')) {
+      context.handle(
+        _relativePathMeta,
+        relativePath.isAcceptableOrUnknown(
+          data['relative_path']!,
+          _relativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativePathMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => const {};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {uzbekWord},
+  ];
+  @override
+  AiImageCacheItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiImageCacheItem(
+      uzbekWord: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uzbek_word'],
+      )!,
+      relativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relative_path'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AiImageCacheItemsTable createAlias(String alias) {
+    return $AiImageCacheItemsTable(attachedDatabase, alias);
+  }
+}
+
+class AiImageCacheItem extends DataClass
+    implements Insertable<AiImageCacheItem> {
+  final String uzbekWord;
+  final String relativePath;
+  final DateTime createdAt;
+  const AiImageCacheItem({
+    required this.uzbekWord,
+    required this.relativePath,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['uzbek_word'] = Variable<String>(uzbekWord);
+    map['relative_path'] = Variable<String>(relativePath);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  AiImageCacheItemsCompanion toCompanion(bool nullToAbsent) {
+    return AiImageCacheItemsCompanion(
+      uzbekWord: Value(uzbekWord),
+      relativePath: Value(relativePath),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AiImageCacheItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiImageCacheItem(
+      uzbekWord: serializer.fromJson<String>(json['uzbekWord']),
+      relativePath: serializer.fromJson<String>(json['relativePath']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'uzbekWord': serializer.toJson<String>(uzbekWord),
+      'relativePath': serializer.toJson<String>(relativePath),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  AiImageCacheItem copyWith({
+    String? uzbekWord,
+    String? relativePath,
+    DateTime? createdAt,
+  }) => AiImageCacheItem(
+    uzbekWord: uzbekWord ?? this.uzbekWord,
+    relativePath: relativePath ?? this.relativePath,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  AiImageCacheItem copyWithCompanion(AiImageCacheItemsCompanion data) {
+    return AiImageCacheItem(
+      uzbekWord: data.uzbekWord.present ? data.uzbekWord.value : this.uzbekWord,
+      relativePath: data.relativePath.present
+          ? data.relativePath.value
+          : this.relativePath,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiImageCacheItem(')
+          ..write('uzbekWord: $uzbekWord, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(uzbekWord, relativePath, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiImageCacheItem &&
+          other.uzbekWord == this.uzbekWord &&
+          other.relativePath == this.relativePath &&
+          other.createdAt == this.createdAt);
+}
+
+class AiImageCacheItemsCompanion extends UpdateCompanion<AiImageCacheItem> {
+  final Value<String> uzbekWord;
+  final Value<String> relativePath;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const AiImageCacheItemsCompanion({
+    this.uzbekWord = const Value.absent(),
+    this.relativePath = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiImageCacheItemsCompanion.insert({
+    required String uzbekWord,
+    required String relativePath,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : uzbekWord = Value(uzbekWord),
+       relativePath = Value(relativePath);
+  static Insertable<AiImageCacheItem> custom({
+    Expression<String>? uzbekWord,
+    Expression<String>? relativePath,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (uzbekWord != null) 'uzbek_word': uzbekWord,
+      if (relativePath != null) 'relative_path': relativePath,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiImageCacheItemsCompanion copyWith({
+    Value<String>? uzbekWord,
+    Value<String>? relativePath,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AiImageCacheItemsCompanion(
+      uzbekWord: uzbekWord ?? this.uzbekWord,
+      relativePath: relativePath ?? this.relativePath,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (uzbekWord.present) {
+      map['uzbek_word'] = Variable<String>(uzbekWord.value);
+    }
+    if (relativePath.present) {
+      map['relative_path'] = Variable<String>(relativePath.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiImageCacheItemsCompanion(')
+          ..write('uzbekWord: $uzbekWord, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1854,6 +2131,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RecordingsTable recordings = $RecordingsTable(this);
   late final $ReviewEventsTable reviewEvents = $ReviewEventsTable(this);
   late final $WordLogsTable wordLogs = $WordLogsTable(this);
+  late final $AiImageCacheItemsTable aiImageCacheItems =
+      $AiImageCacheItemsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1864,6 +2143,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     recordings,
     reviewEvents,
     wordLogs,
+    aiImageCacheItems,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3319,6 +3599,183 @@ typedef $$WordLogsTableProcessedTableManager =
       WordLog,
       PrefetchHooks Function({bool recordingId})
     >;
+typedef $$AiImageCacheItemsTableCreateCompanionBuilder =
+    AiImageCacheItemsCompanion Function({
+      required String uzbekWord,
+      required String relativePath,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$AiImageCacheItemsTableUpdateCompanionBuilder =
+    AiImageCacheItemsCompanion Function({
+      Value<String> uzbekWord,
+      Value<String> relativePath,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$AiImageCacheItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $AiImageCacheItemsTable> {
+  $$AiImageCacheItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get uzbekWord => $composableBuilder(
+    column: $table.uzbekWord,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiImageCacheItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiImageCacheItemsTable> {
+  $$AiImageCacheItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get uzbekWord => $composableBuilder(
+    column: $table.uzbekWord,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiImageCacheItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiImageCacheItemsTable> {
+  $$AiImageCacheItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get uzbekWord =>
+      $composableBuilder(column: $table.uzbekWord, builder: (column) => column);
+
+  GeneratedColumn<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$AiImageCacheItemsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiImageCacheItemsTable,
+          AiImageCacheItem,
+          $$AiImageCacheItemsTableFilterComposer,
+          $$AiImageCacheItemsTableOrderingComposer,
+          $$AiImageCacheItemsTableAnnotationComposer,
+          $$AiImageCacheItemsTableCreateCompanionBuilder,
+          $$AiImageCacheItemsTableUpdateCompanionBuilder,
+          (
+            AiImageCacheItem,
+            BaseReferences<
+              _$AppDatabase,
+              $AiImageCacheItemsTable,
+              AiImageCacheItem
+            >,
+          ),
+          AiImageCacheItem,
+          PrefetchHooks Function()
+        > {
+  $$AiImageCacheItemsTableTableManager(
+    _$AppDatabase db,
+    $AiImageCacheItemsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiImageCacheItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiImageCacheItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiImageCacheItemsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> uzbekWord = const Value.absent(),
+                Value<String> relativePath = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiImageCacheItemsCompanion(
+                uzbekWord: uzbekWord,
+                relativePath: relativePath,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String uzbekWord,
+                required String relativePath,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiImageCacheItemsCompanion.insert(
+                uzbekWord: uzbekWord,
+                relativePath: relativePath,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiImageCacheItemsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiImageCacheItemsTable,
+      AiImageCacheItem,
+      $$AiImageCacheItemsTableFilterComposer,
+      $$AiImageCacheItemsTableOrderingComposer,
+      $$AiImageCacheItemsTableAnnotationComposer,
+      $$AiImageCacheItemsTableCreateCompanionBuilder,
+      $$AiImageCacheItemsTableUpdateCompanionBuilder,
+      (
+        AiImageCacheItem,
+        BaseReferences<
+          _$AppDatabase,
+          $AiImageCacheItemsTable,
+          AiImageCacheItem
+        >,
+      ),
+      AiImageCacheItem,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3333,4 +3790,6 @@ class $AppDatabaseManager {
       $$ReviewEventsTableTableManager(_db, _db.reviewEvents);
   $$WordLogsTableTableManager get wordLogs =>
       $$WordLogsTableTableManager(_db, _db.wordLogs);
+  $$AiImageCacheItemsTableTableManager get aiImageCacheItems =>
+      $$AiImageCacheItemsTableTableManager(_db, _db.aiImageCacheItems);
 }
