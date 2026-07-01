@@ -102,8 +102,8 @@ class _TaskTile extends ConsumerWidget {
         ),
       ),
       confirmDismiss: (_) async {
-        final repo = await ref.read(taskRepositoryProvider.future);
-        await repo.delete(task.id);
+        final commands = await ref.read(taskCommandsProvider.future);
+        await commands.delete(task.id);
         ref.invalidate(tasksProvider);
         return true;
       },
@@ -112,8 +112,8 @@ class _TaskTile extends ConsumerWidget {
         leading: Checkbox(
           value: task.completed,
           onChanged: (value) async {
-            final repo = await ref.read(taskRepositoryProvider.future);
-            await repo.setCompleted(task.id, completed: value ?? false);
+            final commands = await ref.read(taskCommandsProvider.future);
+            await commands.setCompleted(task.id, completed: value ?? false);
             ref.invalidate(tasksProvider);
           },
         ),
@@ -255,15 +255,15 @@ Future<void> _createOrEditTask(
     builder: (dialogContext) => _TaskFormDialog(existing: existing),
   );
   if (draft == null) return;
-  final repo = await ref.read(taskRepositoryProvider.future);
+  final commands = await ref.read(taskCommandsProvider.future);
   if (existing == null) {
-    await repo.create(
+    await commands.create(
       title: draft.title,
       description: draft.description,
       dueDate: draft.dueDate,
     );
   } else {
-    await repo.update(
+    await commands.update(
       existing.id,
       title: draft.title,
       description: draft.description,

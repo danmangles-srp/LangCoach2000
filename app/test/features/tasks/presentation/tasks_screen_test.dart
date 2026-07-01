@@ -11,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/features/tasks/application/fake_task_notification_gateway.dart';
+import 'package:rivendell/features/tasks/application/task_providers.dart';
 import 'package:rivendell/features/tasks/data/task_repository.dart';
 import 'package:rivendell/features/tasks/presentation/tasks_screen.dart';
 import 'package:rivendell/l10n/app_strings.dart';
@@ -18,7 +20,14 @@ import 'package:rivendell/l10n/app_strings.dart';
 ProviderContainer _container() {
   final db = AppDatabase.forTesting(NativeDatabase.memory());
   final container = ProviderContainer(
-    overrides: [appDatabaseProvider.overrideWith((ref) async => db)],
+    overrides: [
+      appDatabaseProvider.overrideWith((ref) async => db),
+      // Mutations route through TaskCommands → the gateway; the real plugin
+      // can't run without a device, so swap in the recording fake.
+      taskNotificationGatewayProvider.overrideWith(
+        (_) => FakeTaskNotificationGateway(),
+      ),
+    ],
   );
   addTearDown(container.dispose);
   addTearDown(db.close);

@@ -45,6 +45,15 @@ dependencies:
   # collision-free without stripping diacritics.
   http: ^1.2.0
   crypto: ^3.0.3
+  # Scheduled task reminders that fire when the app is closed (T5.3, FR-1.4.2).
+  # flutter_local_notifications = display + AlarmManager-backed scheduling; the
+  # transitive timezone package converts a local fire instant to a TZ instant
+  # without a separate flutter_timezone dependency.
+  flutter_local_notifications: ^22.0.1
+  # timezone is a transitive dep of flutter_local_notifications but the gateway
+  # imports it directly to convert a local fire instant to a TZDateTime, so it
+  # is declared here too (T5.3).
+  timezone: ^0.11.1
 
 dev_dependencies:
   flutter_test:
