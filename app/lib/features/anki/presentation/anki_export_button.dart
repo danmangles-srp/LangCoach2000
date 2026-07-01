@@ -9,8 +9,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:rivendell/core/logging/app_logger.dart';
+import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/features/anki/application/anki_export_providers.dart';
 import 'package:rivendell/features/anki/application/anki_export_service.dart';
 import 'package:rivendell/features/anki/application/anki_providers.dart';
@@ -39,8 +42,16 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
   _Phase _phase = _Phase.idle;
   AnkiExportResult? _result;
 
+  /// The underlying failure message when [_phase] is error. Surfaced (was
+  /// swallowed) so a blind "Send failed" becomes diagnosable — the usual cause
+  /// is AnkiDroid API permission not granted to Rivendell.
+  String? _errorDetail;
+
   Future<void> _send() async {
-    setState(() => _phase = _Phase.busy);
+    setState(() {
+      _phase = _Phase.busy;
+      _errorDetail = null;
+    });
     try {
       final installed = await ref.read(ankiGatewayProvider).isInstalled();
       if (!installed) {
@@ -76,14 +87,29 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
           _phase = _Phase.done;
         });
       }
-    } on Object catch (_) {
+    } on Object catch (e, st) {
+      final detail = _describe(e);
+      ref.read(appLoggerProvider).e(LogTag.anki, 'export failed: $detail\n$st');
       if (mounted) {
         setState(() {
           _result = null;
+          _errorDetail = detail;
           _phase = _Phase.error;
         });
       }
     }
+  }
+
+  /// Reduce a thrown error to a short, user-visible message. PlatformException
+  /// carries the Kotlin-side detail in [PlatformException.message]; fall back
+  /// to the code, then toString.
+  String _describe(Object error) {
+    if (error is PlatformException) {
+      final msg = error.message;
+      if (msg != null && msg.isNotEmpty) return msg;
+      return error.code;
+    }
+    return error.toString();
   }
 
   void _showNotInstalledDialog() {
@@ -190,6 +216,18 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
               ),
             ],
           ),
+          if (_errorDetail != null) ...[
+            const SizedBox(height: 4),
+            // Selectable so the user can copy the real cause (often "AnkiDroid
+            // API permission not granted" — fixable in AnkiDroid → Settings →
+            // API) into a bug report.
+            SelectableText(
+              _errorDetail!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ],
     );
