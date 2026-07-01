@@ -13,6 +13,7 @@ import 'package:rivendell/core/queue/tables/offline_queue.dart';
 import 'package:rivendell/features/ai_image/data/ai_image_cache_table.dart';
 import 'package:rivendell/features/audio/data/recordings_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
+import 'package:rivendell/features/tasks/data/tasks_table.dart';
 import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
 
 part 'app_database.g.dart';
@@ -25,6 +26,7 @@ part 'app_database.g.dart';
     ReviewEvents,
     WordLogs,
     AiImageCacheItems,
+    Tasks,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -39,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -59,6 +61,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 6) {
         await m.createTable(aiImageCacheItems);
+      }
+      if (from < 7) {
+        await m.createTable(tasks);
       }
     },
     beforeOpen: (details) async {
