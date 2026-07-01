@@ -11,6 +11,7 @@ import 'package:rivendell/app/home_shell.dart';
 import 'package:rivendell/features/audio/application/folder_providers.dart';
 import 'package:rivendell/features/audio/presentation/folder_onboarding_screen.dart';
 import 'package:rivendell/features/audio/presentation/recording_detail_screen.dart';
+import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/audio/presentation/recordings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -38,12 +39,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         // T1.6: tap a recording -> detail + player. A non-numeric id (stale
         // link) falls back to the library rather than rendering a broken
-        // detail screen.
+        // detail screen. The optional `extra` carries the peer-id list +
+        // launch source (T8.2) so the detail can auto-advance on completion;
+        // null (deep link / restore) disables auto-advance.
         path: '/recordings/:id',
         builder: (context, state) {
           final id = int.tryParse(state.pathParameters['id'] ?? '');
           if (id == null) return const RecordingsScreen();
-          return RecordingDetailScreen(recordingId: id);
+          final extra = state.extra;
+          final nav = extra is RecordingNavContext ? extra : null;
+          return RecordingDetailScreen(recordingId: id, navContext: nav);
         },
       ),
       GoRoute(

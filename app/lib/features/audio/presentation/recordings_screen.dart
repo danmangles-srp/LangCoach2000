@@ -13,6 +13,7 @@ import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
+import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/audio/recording/presentation/record_sheet.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -96,6 +97,12 @@ class RecordingsScreen extends ConsumerWidget {
           final dateFormat = DateFormat.yMMMd(
             Localizations.localeOf(context).toLanguageTag(),
           );
+          // T8.2: peer list for library launches — auto-advance goes to the
+          // preceding row per the user's rule.
+          final nav = RecordingNavContext(
+            peerIds: [for (final r in recordings) r.id],
+            source: RecordingLaunchSource.library,
+          );
           return Scrollbar(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 8),
@@ -105,6 +112,7 @@ class RecordingsScreen extends ConsumerWidget {
               itemBuilder: (context, index) => _RecordingTile(
                 recording: recordings[index],
                 dateFormat: dateFormat,
+                navContext: nav,
               ),
             ),
           );
@@ -115,10 +123,15 @@ class RecordingsScreen extends ConsumerWidget {
 }
 
 class _RecordingTile extends StatelessWidget {
-  const _RecordingTile({required this.recording, required this.dateFormat});
+  const _RecordingTile({
+    required this.recording,
+    required this.dateFormat,
+    required this.navContext,
+  });
 
   final Recording recording;
   final DateFormat dateFormat;
+  final RecordingNavContext navContext;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +144,8 @@ class _RecordingTile extends StatelessWidget {
 
     return ListTile(
       leading: const _FormatBadge(),
-      onTap: () => context.push('/recordings/${recording.id}'),
+      onTap: () =>
+          context.push('/recordings/${recording.id}', extra: navContext),
       title: Text(recording.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(
         [date, if (duration != null) duration, size].join(' · '),

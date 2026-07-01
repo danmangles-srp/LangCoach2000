@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
+import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
 import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
@@ -49,18 +50,35 @@ class TodayQueueScreen extends ConsumerWidget {
               body: strings.queueEmptyBody,
             );
           }
+          // T8.2: peer order for auto-advance is today then tomorrow, matching
+          // the visual list. Shared by every tile.
+          final nav = RecordingNavContext(
+            peerIds: [
+              for (final item in queue.today) item.recording.id,
+              for (final item in queue.tomorrow) item.recording.id,
+            ],
+            source: RecordingLaunchSource.queue,
+          );
           return Scrollbar(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 _SectionHeader(label: strings.queueNavToday),
                 for (final item in queue.today)
-                  _WarmedTile(item: item, window: _WarmWindow.today),
+                  _WarmedTile(
+                    item: item,
+                    window: _WarmWindow.today,
+                    navContext: nav,
+                  ),
                 if (queue.tomorrow.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _SectionHeader(label: strings.queueSectionTomorrow),
                   for (final item in queue.tomorrow)
-                    _WarmedTile(item: item, window: _WarmWindow.tomorrow),
+                    _WarmedTile(
+                      item: item,
+                      window: _WarmWindow.tomorrow,
+                      navContext: nav,
+                    ),
                 ],
               ],
             ),
@@ -94,10 +112,15 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _WarmedTile extends ConsumerWidget {
-  const _WarmedTile({required this.item, required this.window});
+  const _WarmedTile({
+    required this.item,
+    required this.window,
+    required this.navContext,
+  });
 
   final WarmedItem item;
   final _WarmWindow window;
+  final RecordingNavContext navContext;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,14 +131,11 @@ class _WarmedTile extends ConsumerWidget {
 
     final isCurrent = snap.recordingId == item.recording.id;
     final isPlaying = isCurrent && snap.isPlaying;
-    void onTap() {
-      final notifier = ref.read(audioPlayerControllerProvider.notifier);
-      if (isCurrent) {
-        notifier.togglePlayPause();
-      } else {
-        notifier.loadAndPlay(item.recording);
-      }
-    }
+    // T8.1: tap opens the detail page (auto-plays on open); popping returns to
+    // the queue. The now-playing badge still reflects transport state on
+    // return.
+    void onTap() =>
+        context.push('/recordings/${item.recording.id}', extra: navContext);
 
     final isStale = item.isStale;
     final isUpNext = item.placement == WarmPlacement.upNext;
@@ -154,7 +174,6 @@ class _WarmedTile extends ConsumerWidget {
 
     return ListTile(
       onTap: onTap,
-      onLongPress: () => context.push('/recordings/${item.recording.id}'),
       leading: _Leading(isPlaying: isPlaying, isError: snap.isError),
       title: Text(
         item.recording.name,

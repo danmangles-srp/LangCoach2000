@@ -1,7 +1,8 @@
 // TodayQueueScreen widget test (T2.5 / T7.1). Presentation is coverage-excluded,
 // so this guards wiring + l10n + the empty / error / populated branches rather
-// than chasing coverage. The one-tap play path is exercised on-device (see PR
-// "How to verify"); the AsyncValue→widget mapping mirrors RecordingsScreen.
+// than chasing coverage. The tap-opens-detail path (T8.1) is exercised
+// on-device (see PR "How to verify"); the AsyncValue→widget mapping mirrors
+// RecordingsScreen.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
