@@ -20,6 +20,7 @@ import 'package:rivendell/features/audio/presentation/recording_nav_context.dart
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/domain/gpa_intervals.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
+import 'package:rivendell/features/settings/application/settings_providers.dart';
 import 'package:rivendell/features/wordlog/presentation/word_log_section.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -66,12 +67,13 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
   }
 
   /// T8.2: on natural completion, cue + navigate to the next recording per the
-  /// peer context. No-op without context, at end-of-list, or after a manual
+  /// peer context. No-op without context, at end-of-list, after a manual
   /// replay (the controller flips back to playing, so isCompleted is
-  /// transient).
+  /// transient), or when the user has disabled auto-advance (settings toggle).
   void _onCompletion(PlaybackSnapshot? prev, PlaybackSnapshot next) {
     final nav = widget.navContext;
     if (nav == null) return;
+    if (!ref.read(appSettingsProvider).autoAdvanceNext) return;
     if (next.recordingId != widget.recordingId) return;
     final wasCompleted = prev?.isCompleted ?? false;
     if (!next.isCompleted || wasCompleted || _advanced) return;
@@ -156,12 +158,15 @@ class _DetailContent extends ConsumerWidget {
     final snap = ref.watch(audioPlayerControllerProvider);
     final theme = Theme.of(context);
 
-    final totalMs = snap.duration.inMilliseconds;
+    // The snapshot is global; on a fresh navigate (auto-advance, deep link) the
+    // engine still holds the previous recording until load completes. Until the
+    // snapshot's recordingId is this row's, treat position as 0 and disable the
+    // slider so it never reflects a stale transport (UX feedback item 1).
+    final isCurrent = snap.recordingId == recording.id;
+    final totalMs = isCurrent ? snap.duration.inMilliseconds : 0;
     final showSlider = totalMs > 0;
-    final posMs = (dragMs ?? snap.position.inMilliseconds).clamp(
-      0,
-      showSlider ? totalMs : 1,
-    );
+    final posMs = (dragMs ?? (isCurrent ? snap.position.inMilliseconds : 0))
+        .clamp(0, showSlider ? totalMs : 1);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),

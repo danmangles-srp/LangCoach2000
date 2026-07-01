@@ -137,6 +137,15 @@ class AppStrings {
     coachPickVocab: 'Pick vocab logs',
     coachNRecordingsN: '{n} recordings',
     coachNVocabN: '{n} vocab',
+    settingsTitle: 'Settings',
+    settingsTooltip: 'Settings',
+    settingsAutoAdvanceTitle: 'Auto-advance to next recording',
+    settingsAutoAdvanceSubtitle:
+        'When a recording finishes in the review queue, jump to the next one.',
+    settingsThemeTitle: 'Theme',
+    settingsThemeSystem: 'System',
+    settingsThemeLight: 'Light',
+    settingsThemeDark: 'Dark',
   );
 
   static const _uz = _Bundle(
@@ -257,6 +266,15 @@ class AppStrings {
     coachPickVocab: 'Lug‘atni tanlash',
     coachNRecordingsN: '{n} yozuv',
     coachNVocabN: '{n} lug‘at',
+    settingsTitle: 'Sozlamalar',
+    settingsTooltip: 'Sozlamalar',
+    settingsAutoAdvanceTitle: 'Keyingi yozuvga avtomatik o‘tish',
+    settingsAutoAdvanceSubtitle:
+        'Navbatdagi yozuv tugagach, keyingisiga o‘tiladi.',
+    settingsThemeTitle: 'Mavzu',
+    settingsThemeSystem: 'Tizim',
+    settingsThemeLight: 'Yorug‘',
+    settingsThemeDark: 'Qorong‘i',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -367,6 +385,15 @@ class AppStrings {
   String coachNRecordings(int n) =>
       _bundle.coachNRecordingsN.replaceAll('{n}', '$n');
   String coachNVocab(int n) => _bundle.coachNVocabN.replaceAll('{n}', '$n');
+
+  String get settingsTitle => _bundle.settingsTitle;
+  String get settingsTooltip => _bundle.settingsTooltip;
+  String get settingsAutoAdvanceTitle => _bundle.settingsAutoAdvanceTitle;
+  String get settingsAutoAdvanceSubtitle => _bundle.settingsAutoAdvanceSubtitle;
+  String get settingsThemeTitle => _bundle.settingsThemeTitle;
+  String get settingsThemeSystem => _bundle.settingsThemeSystem;
+  String get settingsThemeLight => _bundle.settingsThemeLight;
+  String get settingsThemeDark => _bundle.settingsThemeDark;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -481,6 +508,14 @@ class _Bundle {
     required this.coachPickVocab,
     required this.coachNRecordingsN,
     required this.coachNVocabN,
+    required this.settingsTitle,
+    required this.settingsTooltip,
+    required this.settingsAutoAdvanceTitle,
+    required this.settingsAutoAdvanceSubtitle,
+    required this.settingsThemeTitle,
+    required this.settingsThemeSystem,
+    required this.settingsThemeLight,
+    required this.settingsThemeDark,
   });
 
   final String recordingsTitle;
@@ -584,6 +619,14 @@ class _Bundle {
   final String coachPickVocab;
   final String coachNRecordingsN;
   final String coachNVocabN;
+  final String settingsTitle;
+  final String settingsTooltip;
+  final String settingsAutoAdvanceTitle;
+  final String settingsAutoAdvanceSubtitle;
+  final String settingsThemeTitle;
+  final String settingsThemeSystem;
+  final String settingsThemeLight;
+  final String settingsThemeDark;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
