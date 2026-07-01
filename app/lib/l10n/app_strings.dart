@@ -122,6 +122,21 @@ class AppStrings {
     taskDelete: 'Delete',
     taskOverdue: 'Overdue',
     taskDueOnN: 'Due {date}',
+    coachTitle: 'Coach Bank',
+    coachEmptyTitle: 'No notes yet',
+    coachEmptyBody:
+        'Save conversation topics, questions, and scripts, then pin the '
+        'recordings and vocab you’ll cover.',
+    coachAdd: 'Add note',
+    coachFieldBody: 'Script',
+    coachRecordings: 'Recordings',
+    coachVocab: 'Vocab',
+    coachAttach: 'Attach',
+    coachNone: 'None',
+    coachPickRecordings: 'Pick recordings',
+    coachPickVocab: 'Pick vocab logs',
+    coachNRecordingsN: '{n} recordings',
+    coachNVocabN: '{n} vocab',
   );
 
   static const _uz = _Bundle(
@@ -227,6 +242,21 @@ class AppStrings {
     taskDelete: 'O‘chirish',
     taskOverdue: 'Muddati o‘tgan',
     taskDueOnN: 'Muddati: {date}',
+    coachTitle: 'Murabbiy banki',
+    coachEmptyTitle: 'Hali yozuvlar yo‘q',
+    coachEmptyBody:
+        'Suhbat mavzulari, savollar va ssenariylarni saqlang — so‘ng ko‘rib '
+        'chiqadigan yozuv va lug‘atni biriktiring.',
+    coachAdd: 'Yozuv qo‘shish',
+    coachFieldBody: 'Ssenariy',
+    coachRecordings: 'Yozuvlar',
+    coachVocab: 'Lug‘at',
+    coachAttach: 'Biriktirish',
+    coachNone: 'Yo‘q',
+    coachPickRecordings: 'Yozuvlarni tanlash',
+    coachPickVocab: 'Lug‘atni tanlash',
+    coachNRecordingsN: '{n} yozuv',
+    coachNVocabN: '{n} lug‘at',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -322,6 +352,21 @@ class AppStrings {
   String get taskOverdue => _bundle.taskOverdue;
   String taskDueOn(String date) =>
       _bundle.taskDueOnN.replaceAll('{date}', date);
+
+  String get coachTitle => _bundle.coachTitle;
+  String get coachEmptyTitle => _bundle.coachEmptyTitle;
+  String get coachEmptyBody => _bundle.coachEmptyBody;
+  String get coachAdd => _bundle.coachAdd;
+  String get coachFieldBody => _bundle.coachFieldBody;
+  String get coachRecordings => _bundle.coachRecordings;
+  String get coachVocab => _bundle.coachVocab;
+  String get coachAttach => _bundle.coachAttach;
+  String get coachNone => _bundle.coachNone;
+  String get coachPickRecordings => _bundle.coachPickRecordings;
+  String get coachPickVocab => _bundle.coachPickVocab;
+  String coachNRecordings(int n) =>
+      _bundle.coachNRecordingsN.replaceAll('{n}', '$n');
+  String coachNVocab(int n) => _bundle.coachNVocabN.replaceAll('{n}', '$n');
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -423,6 +468,19 @@ class _Bundle {
     required this.taskDelete,
     required this.taskOverdue,
     required this.taskDueOnN,
+    required this.coachTitle,
+    required this.coachEmptyTitle,
+    required this.coachEmptyBody,
+    required this.coachAdd,
+    required this.coachFieldBody,
+    required this.coachRecordings,
+    required this.coachVocab,
+    required this.coachAttach,
+    required this.coachNone,
+    required this.coachPickRecordings,
+    required this.coachPickVocab,
+    required this.coachNRecordingsN,
+    required this.coachNVocabN,
   });
 
   final String recordingsTitle;
@@ -513,6 +571,19 @@ class _Bundle {
   final String taskDelete;
   final String taskOverdue;
   final String taskDueOnN;
+  final String coachTitle;
+  final String coachEmptyTitle;
+  final String coachEmptyBody;
+  final String coachAdd;
+  final String coachFieldBody;
+  final String coachRecordings;
+  final String coachVocab;
+  final String coachAttach;
+  final String coachNone;
+  final String coachPickRecordings;
+  final String coachPickVocab;
+  final String coachNRecordingsN;
+  final String coachNVocabN;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

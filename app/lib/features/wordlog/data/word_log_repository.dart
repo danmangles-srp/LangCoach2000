@@ -46,6 +46,18 @@ class WordLogRepository {
         .getSingleOrNull();
   }
 
+  /// Every text vocab log, newest first. Drives the Coach Bank attach picker
+  /// (FR-1.4.3) — distinct from [allForRecording], which is per-recording.
+  Future<List<WordLog>> allTextLogs() {
+    return (_db.select(_db.wordLogs)
+          ..where((t) => t.kind.equals('text'))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
+          ]))
+        .get();
+  }
+
   /// Attach a notebook photo. [path] is app-relative (the image was copied
   /// into app data by T3.3). Returns the new row. Append-only.
   Future<WordLog> addImage(int recordingId, {required String path}) {
