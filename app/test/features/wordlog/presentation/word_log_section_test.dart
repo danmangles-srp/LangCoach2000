@@ -47,7 +47,10 @@ Widget _host(ProviderContainer container, {required int recordingId}) {
       ],
       home: Scaffold(
         body: SingleChildScrollView(
-          child: WordLogSection(recordingId: recordingId),
+          child: WordLogSection(
+            recordingId: recordingId,
+            recordingName: 'lecture.m4a',
+          ),
         ),
       ),
     ),

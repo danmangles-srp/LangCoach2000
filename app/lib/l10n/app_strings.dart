@@ -92,6 +92,21 @@ class AppStrings {
     wordLogSave: 'Save',
     wordLogCancel: 'Cancel',
     wordLogAttachFailed: 'Could not attach. Try again.',
+    ankiSend: 'Send to Anki',
+    ankiSending: 'Sending…',
+    ankiRetry: 'Retry',
+    ankiNotInstalledTitle: 'AnkiDroid not installed',
+    ankiNotInstalledBody:
+        'Install AnkiDroid (com.ichi2.anki) from Google Play, then reopen '
+        'this recording and send again.',
+    ankiSendFailed: 'Send failed. Try again.',
+    ankiAddedN: 'Added: {n}',
+    ankiSkippedN: 'Skipped: {n}',
+    ankiFailedN: 'Failed: {n}',
+    ankiPendingN: 'Queued images: {n}',
+    ankiPendingHint:
+        'Queued images generate on reconnect and attach on your next send.',
+    ankiGotIt: 'Got it',
   );
 
   static const _uz = _Bundle(
@@ -166,6 +181,22 @@ class AppStrings {
     wordLogSave: 'Saqlash',
     wordLogCancel: 'Bekor qilish',
     wordLogAttachFailed: 'Biriktirib bo‘lmadi. Qayta urinib ko‘ring.',
+    ankiSend: "Anki'ga yuborish",
+    ankiSending: 'Yuborilmoqda…',
+    ankiRetry: 'Qayta urinish',
+    ankiNotInstalledTitle: 'AnkiDroid o‘rnatilmagan',
+    ankiNotInstalledBody:
+        "Google Play'dan AnkiDroid (com.ichi2.anki) o‘rnating, so‘ng yozuvni "
+        'qaytaring va yuboring.',
+    ankiSendFailed: 'Yuborib bo‘lmadi. Qayta urinib ko‘ring.',
+    ankiAddedN: 'Qo‘shildi: {n}',
+    ankiSkippedN: 'O‘tkazib yuborildi: {n}',
+    ankiFailedN: 'Muvaffaqiyatsiz: {n}',
+    ankiPendingN: 'Navbatdagi rasmlar: {n}',
+    ankiPendingHint:
+        'Navbatdagi rasmlar aloqada tiklanganda yaratiladi va keyingi '
+        'yuborishda biriktiriladi.',
+    ankiGotIt: 'Tushunarli',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -235,6 +266,18 @@ class AppStrings {
   String get wordLogSave => _bundle.wordLogSave;
   String get wordLogCancel => _bundle.wordLogCancel;
   String get wordLogAttachFailed => _bundle.wordLogAttachFailed;
+  String get ankiSend => _bundle.ankiSend;
+  String get ankiSending => _bundle.ankiSending;
+  String get ankiRetry => _bundle.ankiRetry;
+  String get ankiNotInstalledTitle => _bundle.ankiNotInstalledTitle;
+  String get ankiNotInstalledBody => _bundle.ankiNotInstalledBody;
+  String get ankiSendFailed => _bundle.ankiSendFailed;
+  String ankiAdded(int n) => _bundle.ankiAddedN.replaceAll('{n}', '$n');
+  String ankiSkipped(int n) => _bundle.ankiSkippedN.replaceAll('{n}', '$n');
+  String ankiFailed(int n) => _bundle.ankiFailedN.replaceAll('{n}', '$n');
+  String ankiPending(int n) => _bundle.ankiPendingN.replaceAll('{n}', '$n');
+  String get ankiPendingHint => _bundle.ankiPendingHint;
+  String get ankiGotIt => _bundle.ankiGotIt;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -311,6 +354,18 @@ class _Bundle {
     required this.wordLogSave,
     required this.wordLogCancel,
     required this.wordLogAttachFailed,
+    required this.ankiSend,
+    required this.ankiSending,
+    required this.ankiRetry,
+    required this.ankiNotInstalledTitle,
+    required this.ankiNotInstalledBody,
+    required this.ankiSendFailed,
+    required this.ankiAddedN,
+    required this.ankiSkippedN,
+    required this.ankiFailedN,
+    required this.ankiPendingN,
+    required this.ankiPendingHint,
+    required this.ankiGotIt,
   });
 
   final String recordingsTitle;
@@ -376,6 +431,18 @@ class _Bundle {
   final String wordLogSave;
   final String wordLogCancel;
   final String wordLogAttachFailed;
+  final String ankiSend;
+  final String ankiSending;
+  final String ankiRetry;
+  final String ankiNotInstalledTitle;
+  final String ankiNotInstalledBody;
+  final String ankiSendFailed;
+  final String ankiAddedN;
+  final String ankiSkippedN;
+  final String ankiFailedN;
+  final String ankiPendingN;
+  final String ankiPendingHint;
+  final String ankiGotIt;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
