@@ -63,6 +63,10 @@ class RecordingsScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        // HomeShell mounts this FAB alongside the Tasks tab's add FAB in an
+        // IndexedStack; both default-tagged FABs would collide on Hero. Unique
+        // tag keeps them distinct.
+        heroTag: 'recordings-record',
         tooltip: strings.recordTooltip,
         onPressed: record,
         child: const Icon(Icons.mic_rounded),
