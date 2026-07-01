@@ -12,6 +12,9 @@ import 'package:rivendell/core/database/tables/key_values.dart';
 import 'package:rivendell/core/queue/tables/offline_queue.dart';
 import 'package:rivendell/features/ai_image/data/ai_image_cache_table.dart';
 import 'package:rivendell/features/audio/data/recordings_table.dart';
+import 'package:rivendell/features/coach/data/coach_note_recordings_table.dart';
+import 'package:rivendell/features/coach/data/coach_note_word_logs_table.dart';
+import 'package:rivendell/features/coach/data/coach_notes_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
 import 'package:rivendell/features/tasks/data/tasks_table.dart';
 import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
@@ -27,6 +30,9 @@ part 'app_database.g.dart';
     WordLogs,
     AiImageCacheItems,
     Tasks,
+    CoachNotes,
+    CoachNoteRecordings,
+    CoachNoteWordLogs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -41,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -64,6 +70,14 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         await m.createTable(tasks);
+      }
+      if (from < 8) {
+        // Coach Bank (FR-1.4.3): notes + the two join tables that map them to
+        // recordings and vocab logs. Order matters — the join tables reference
+        // coach_notes, so it must exist first.
+        await m.createTable(coachNotes);
+        await m.createTable(coachNoteRecordings);
+        await m.createTable(coachNoteWordLogs);
       }
     },
     beforeOpen: (details) async {
