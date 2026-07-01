@@ -107,6 +107,9 @@ class AppStrings {
     ankiPendingHint:
         'Queued images generate on reconnect and attach on your next send.',
     ankiGotIt: 'Got it',
+    ankiPermissionHint:
+        'Rivendell needs AnkiDroid API access. Open AnkiDroid → Settings → '
+        'Advanced → API → allow Rivendell, then retry.',
     tasksTitle: 'Tasks',
     tasksEmptyTitle: 'No tasks yet',
     tasksEmptyBody:
@@ -236,6 +239,9 @@ class AppStrings {
         'Navbatdagi rasmlar aloqada tiklanganda yaratiladi va keyingi '
         'yuborishda biriktiriladi.',
     ankiGotIt: 'Tushunarli',
+    ankiPermissionHint:
+        "Rivendell'ga AnkiDroid API ruxsati kerak. AnkiDroid'da: Sozlamalar → "
+        "Qo‘shimcha → API → Rivendell'ga ruxsat bering, so‘ng qayta urining.",
     tasksTitle: 'Vazifalar',
     tasksEmptyTitle: 'Hozircha vazifalar yo‘q',
     tasksEmptyBody:
@@ -356,6 +362,7 @@ class AppStrings {
   String ankiPending(int n) => _bundle.ankiPendingN.replaceAll('{n}', '$n');
   String get ankiPendingHint => _bundle.ankiPendingHint;
   String get ankiGotIt => _bundle.ankiGotIt;
+  String get ankiPermissionHint => _bundle.ankiPermissionHint;
   String get tasksTitle => _bundle.tasksTitle;
   String get tasksEmptyTitle => _bundle.tasksEmptyTitle;
   String get tasksEmptyBody => _bundle.tasksEmptyBody;
@@ -482,6 +489,7 @@ class _Bundle {
     required this.ankiPendingN,
     required this.ankiPendingHint,
     required this.ankiGotIt,
+    required this.ankiPermissionHint,
     required this.tasksTitle,
     required this.tasksEmptyTitle,
     required this.tasksEmptyBody,
@@ -593,6 +601,7 @@ class _Bundle {
   final String ankiPendingN;
   final String ankiPendingHint;
   final String ankiGotIt;
+  final String ankiPermissionHint;
   final String tasksTitle;
   final String tasksEmptyTitle;
   final String tasksEmptyBody;
