@@ -107,6 +107,21 @@ class AppStrings {
     ankiPendingHint:
         'Queued images generate on reconnect and attach on your next send.',
     ankiGotIt: 'Got it',
+    tasksTitle: 'Tasks',
+    tasksEmptyTitle: 'No tasks yet',
+    tasksEmptyBody:
+        'Add an exercise or goal — e.g. “Memorize Yor-Yor” — with an optional '
+        'due date.',
+    tasksAdd: 'Add task',
+    taskFieldTitle: 'Title',
+    taskFieldDescription: 'Notes (optional)',
+    taskFieldDueDate: 'Due date',
+    taskNoDate: 'No date',
+    taskClearDate: 'Clear date',
+    taskSave: 'Save',
+    taskDelete: 'Delete',
+    taskOverdue: 'Overdue',
+    taskDueOnN: 'Due {date}',
   );
 
   static const _uz = _Bundle(
@@ -197,6 +212,21 @@ class AppStrings {
         'Navbatdagi rasmlar aloqada tiklanganda yaratiladi va keyingi '
         'yuborishda biriktiriladi.',
     ankiGotIt: 'Tushunarli',
+    tasksTitle: 'Vazifalar',
+    tasksEmptyTitle: 'Hozircha vazifalar yo‘q',
+    tasksEmptyBody:
+        'Mashq yoki maqsad qo‘shing — masalan, “Yor-Yor ni yod oling” — '
+        'ixtiyoriy muddat bilan.',
+    tasksAdd: 'Vazifa qo‘shish',
+    taskFieldTitle: 'Sarlavha',
+    taskFieldDescription: 'Izoh (ixtiyoriy)',
+    taskFieldDueDate: 'Muddati',
+    taskNoDate: 'Sanasiz',
+    taskClearDate: 'Sanani olib tashlash',
+    taskSave: 'Saqlash',
+    taskDelete: 'O‘chirish',
+    taskOverdue: 'Muddati o‘tgan',
+    taskDueOnN: 'Muddati: {date}',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -278,6 +308,20 @@ class AppStrings {
   String ankiPending(int n) => _bundle.ankiPendingN.replaceAll('{n}', '$n');
   String get ankiPendingHint => _bundle.ankiPendingHint;
   String get ankiGotIt => _bundle.ankiGotIt;
+  String get tasksTitle => _bundle.tasksTitle;
+  String get tasksEmptyTitle => _bundle.tasksEmptyTitle;
+  String get tasksEmptyBody => _bundle.tasksEmptyBody;
+  String get tasksAdd => _bundle.tasksAdd;
+  String get taskFieldTitle => _bundle.taskFieldTitle;
+  String get taskFieldDescription => _bundle.taskFieldDescription;
+  String get taskFieldDueDate => _bundle.taskFieldDueDate;
+  String get taskNoDate => _bundle.taskNoDate;
+  String get taskClearDate => _bundle.taskClearDate;
+  String get taskSave => _bundle.taskSave;
+  String get taskDelete => _bundle.taskDelete;
+  String get taskOverdue => _bundle.taskOverdue;
+  String taskDueOn(String date) =>
+      _bundle.taskDueOnN.replaceAll('{date}', date);
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -366,6 +410,19 @@ class _Bundle {
     required this.ankiPendingN,
     required this.ankiPendingHint,
     required this.ankiGotIt,
+    required this.tasksTitle,
+    required this.tasksEmptyTitle,
+    required this.tasksEmptyBody,
+    required this.tasksAdd,
+    required this.taskFieldTitle,
+    required this.taskFieldDescription,
+    required this.taskFieldDueDate,
+    required this.taskNoDate,
+    required this.taskClearDate,
+    required this.taskSave,
+    required this.taskDelete,
+    required this.taskOverdue,
+    required this.taskDueOnN,
   });
 
   final String recordingsTitle;
@@ -443,6 +500,19 @@ class _Bundle {
   final String ankiPendingN;
   final String ankiPendingHint;
   final String ankiGotIt;
+  final String tasksTitle;
+  final String tasksEmptyTitle;
+  final String tasksEmptyBody;
+  final String tasksAdd;
+  final String taskFieldTitle;
+  final String taskFieldDescription;
+  final String taskFieldDueDate;
+  final String taskNoDate;
+  final String taskClearDate;
+  final String taskSave;
+  final String taskDelete;
+  final String taskOverdue;
+  final String taskDueOnN;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
