@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
+import 'package:rivendell/core/logging/app_logger.dart';
+import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
 import 'package:rivendell/features/wordlog/domain/supported_image_format.dart';
 import 'package:rivendell/features/wordlog/domain/vocab_parser.dart';
@@ -223,12 +225,12 @@ class _ImagesBody extends ConsumerWidget {
   }
 }
 
-class _Thumb extends StatelessWidget {
+class _Thumb extends ConsumerWidget {
   const _Thumb({required this.file});
   final File file;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute<void>(
@@ -243,12 +245,14 @@ class _Thumb extends StatelessWidget {
           width: 96,
           height: 96,
           fit: BoxFit.cover,
-          errorBuilder: (_, Object __, StackTrace? ___) => Container(
-            width: 96,
-            height: 96,
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: const Icon(Icons.broken_image_outlined),
-          ),
+          errorBuilder: (_, Object error, StackTrace? ___) {
+            // T8.3: the stored path resolves under the same base dir the DB +
+            // AI cache use (those work), so a decode failure here is a real
+            // on-device copy/byte issue — log the resolved path + existence so
+            // it's diagnosable, and show a clearer tile than a bare icon.
+            _logRenderFailure(ref, file, error);
+            return _BrokenThumb(error: error);
+          },
         ),
       ),
     );
@@ -258,12 +262,12 @@ class _Thumb extends StatelessWidget {
 /// Full-screen pinch-zoom viewer for an attached word-log image (T7.3).
 /// `InteractiveViewer` handles pinch-zoom + pan; tap or the app-bar close
 /// button dismisses.
-class _FullScreenImage extends StatelessWidget {
+class _FullScreenImage extends ConsumerWidget {
   const _FullScreenImage({required this.file});
   final File file;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -281,17 +285,68 @@ class _FullScreenImage extends StatelessWidget {
             maxScale: 5,
             child: Image.file(
               file,
-              errorBuilder: (_, Object __, StackTrace? ___) => const Padding(
-                padding: EdgeInsets.all(32),
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  size: 64,
-                  color: Colors.white54,
-                ),
-              ),
+              errorBuilder: (_, Object error, StackTrace? ___) {
+                _logRenderFailure(ref, file, error);
+                return const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: 64,
+                    color: Colors.white54,
+                  ),
+                );
+              },
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+void _logRenderFailure(WidgetRef ref, File file, Object error) {
+  ref
+      .read(appLoggerProvider)
+      .e(
+        LogTag.wordlog,
+        'image render failed: path=${file.path} '
+        'exists=${file.existsSync()} error=$error',
+      );
+}
+
+class _BrokenThumb extends StatelessWidget {
+  const _BrokenThumb({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 96,
+      height: 96,
+      color: theme.colorScheme.surfaceContainerHighest,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.broken_image_outlined,
+            size: 26,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "couldn't load",
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

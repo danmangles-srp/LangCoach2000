@@ -27,21 +27,27 @@ class _HomeShellState extends State<HomeShell> {
         index: _index,
         children: const [TodayQueueScreen(), RecordingsScreen()],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.event_available_rounded),
-            selectedIcon: const Icon(Icons.event_available_rounded),
-            label: strings.queueNavToday,
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.library_music_rounded),
-            selectedIcon: const Icon(Icons.library_music_rounded),
-            label: strings.queueNavLibrary,
-          ),
-        ],
+      // T8.4: lift the nav bar above Android's system navigation buttons. The
+      // nav bar consumes the bottom inset; the Scaffold already keeps the body
+      // (the IndexedStack) above this region.
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: (i) => setState(() => _index = i),
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.event_available_rounded),
+              selectedIcon: const Icon(Icons.event_available_rounded),
+              label: strings.queueNavToday,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.library_music_rounded),
+              selectedIcon: const Icon(Icons.library_music_rounded),
+              label: strings.queueNavLibrary,
+            ),
+          ],
+        ),
       ),
     );
   }

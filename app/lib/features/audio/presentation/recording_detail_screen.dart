@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
@@ -15,6 +16,7 @@ import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart';
+import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/domain/gpa_intervals.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
@@ -22,9 +24,16 @@ import 'package:rivendell/features/wordlog/presentation/word_log_section.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class RecordingDetailScreen extends ConsumerStatefulWidget {
-  const RecordingDetailScreen({required this.recordingId, super.key});
+  const RecordingDetailScreen({
+    required this.recordingId,
+    this.navContext,
+    super.key,
+  });
 
   final int recordingId;
+
+  /// Peer context for auto-advance on completion (T8.2). Null disables it.
+  final RecordingNavContext? navContext;
 
   @override
   ConsumerState<RecordingDetailScreen> createState() =>
@@ -35,6 +44,10 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
   /// True once we've asked the controller to cue this recording. Guards the
   /// auto-play-on-open behavior so a rebuild doesn't restart playback.
   bool _loadStarted = false;
+
+  /// True once we've auto-advanced off this recording. Stops a repeated
+  /// completion emission from triggering a second replace.
+  bool _advanced = false;
 
   /// Slider position while the user is dragging, in ms. `null` = follow the
   /// live transport position. Buffering the drag stops the slider fighting the
@@ -52,9 +65,26 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
     ref.read(audioPlayerControllerProvider.notifier).loadAndPlay(recording);
   }
 
+  /// T8.2: on natural completion, cue + navigate to the next recording per the
+  /// peer context. No-op without context, at end-of-list, or after a manual
+  /// replay (the controller flips back to playing, so isCompleted is
+  /// transient).
+  void _onCompletion(PlaybackSnapshot? prev, PlaybackSnapshot next) {
+    final nav = widget.navContext;
+    if (nav == null) return;
+    if (next.recordingId != widget.recordingId) return;
+    final wasCompleted = prev?.isCompleted ?? false;
+    if (!next.isCompleted || wasCompleted || _advanced) return;
+    final nextId = nav.nextAfter(widget.recordingId);
+    if (nextId == null) return; // last in the list — leave it completed
+    _advanced = true;
+    context.replace('/recordings/$nextId', extra: nav);
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    ref.listen<PlaybackSnapshot>(audioPlayerControllerProvider, _onCompletion);
     final async = ref.watch(recordingByIdProvider(widget.recordingId));
     // Title resolves to the file name once the row lands; a generic label
     // covers loading / error / not-found so the app bar never goes blank.
@@ -67,35 +97,41 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
       appBar: AppBar(
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       ),
-      body: async.when(
-        loading: () => _StatusView(
-          icon: Icons.graphic_eq_rounded,
-          message: strings.loading,
-        ),
-        error: (Object e, StackTrace st) => _StatusView(
-          icon: Icons.error_outline_rounded,
-          message: strings.errorTitle,
-        ),
-        data: (recording) {
-          if (recording == null) {
-            return _StatusView(
-              icon: Icons.help_outline_rounded,
-              message: strings.recordingsNotFound,
+      // T8.4: keep content above Android's system navigation bar (edge-to-edge
+      // is forced at targetSdk 35). The AppBar owns the top inset; bottom is
+      // SafeArea's default.
+      body: SafeArea(
+        top: false,
+        child: async.when(
+          loading: () => _StatusView(
+            icon: Icons.graphic_eq_rounded,
+            message: strings.loading,
+          ),
+          error: (Object e, StackTrace st) => _StatusView(
+            icon: Icons.error_outline_rounded,
+            message: strings.errorTitle,
+          ),
+          data: (recording) {
+            if (recording == null) {
+              return _StatusView(
+                icon: Icons.help_outline_rounded,
+                message: strings.recordingsNotFound,
+              );
+            }
+            _maybeAutoPlay(recording);
+            return _DetailContent(
+              recording: recording,
+              dragMs: _dragMs,
+              onDrag: (ms) => setState(() => _dragMs = ms),
+              onDragEnd: (ms) {
+                setState(() => _dragMs = null);
+                ref
+                    .read(audioPlayerControllerProvider.notifier)
+                    .seek(Duration(milliseconds: ms));
+              },
             );
-          }
-          _maybeAutoPlay(recording);
-          return _DetailContent(
-            recording: recording,
-            dragMs: _dragMs,
-            onDrag: (ms) => setState(() => _dragMs = ms),
-            onDragEnd: (ms) {
-              setState(() => _dragMs = null);
-              ref
-                  .read(audioPlayerControllerProvider.notifier)
-                  .seek(Duration(milliseconds: ms));
-            },
-          );
-        },
+          },
+        ),
       ),
     );
   }

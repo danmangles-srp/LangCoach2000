@@ -334,6 +334,64 @@ existing M1–M3 surfaces.
 
 ---
 
+## Milestone 8: Playback-flow & safe-area fixes (post-M7 feedback)
+
+**Objective:** Four real-use findings from the playback + library flow. The first
+three tighten how the queue, the player, and attached images behave; the fourth
+fixes the app drawing under Android's system navigation bar. No new scope — these
+sharpen M1–M3 surfaces (and one is a platform/edge-to-edge bug).
+
+### User stories
+* As a learner in the review queue, I want tapping a recording to open its full
+  detail page (not just start inline playback), and to land back on the queue
+  when I leave.
+* As a listener, when a recording finishes I want the next one to start
+  automatically — the next item in the queue if I launched from the queue, or
+  the preceding recording in my library list otherwise.
+* As a learner, I want an attached notebook photo to render as the image, both
+  as the thumbnail and in the full-screen viewer (today it shows a placeholder).
+* As a user, I want the app's UI to stop at Android's system navigation buttons,
+  not slide underneath them.
+
+### Acceptance criteria
+* Tapping a queue row pushes the recording detail route (which auto-plays); the
+  inline long-press shortcut is removed. Popping the detail returns to the queue
+  at the same scroll position.
+* On natural playback completion the detail advances to the next recording:
+  next-in-queue (today then tomorrow order) when launched from the queue, or the
+  preceding library row otherwise. No advance at the end of the available list;
+  manual replay still works.
+* An attached word-log image renders its bytes (thumbnail + full-screen); when
+  the file is missing/corrupt the tile reports a clear, diagnosable state.
+* With `targetSdk` 35 forcing edge-to-edge, the home shell's bottom nav and the
+  detail screen's content sit above the system navigation bar (no content drawn
+  under the 3 buttons).
+
+### Tickets
+- **T8.1 — Queue tap opens detail.** `_WarmedTile.onTap` pushes the detail route
+  (carrying queue peer-context — see T8.2); drop the long-press navigation and
+  the inline play-on-tap (the detail auto-plays on open). *ACs:* M8 AC 1.
+  *Deps:* T1.6.
+- **T8.2 — Auto-advance on completion.** Carry an ordered peer-id list + a
+  launch source (`queue` / `library`) to the detail route via go_router `extra`.
+  The detail screen watches the player snapshot; on the transition to
+  `isCompleted` it advances: queue → next id in queue order; library → preceding
+  id in the list. Advance re-places the route with the same peer-context so the
+  chain continues; manual replay and end-of-list are handled. *ACs:* M8 AC 2.
+  *Deps:* T1.5, T1.6.
+- **T8.3 — Word-log image render.** The stored app-relative path already resolves
+  under the same base the DB + AI cache use (verified — those work), so the
+  thumbnail/full-screen `Image.file` failure is diagnosed rather than guessed at:
+  log the resolved path + existence under the `wordlog` tag, and replace the bare
+  broken-image icon with a clear "couldn't load" tile. Re-attach + share the log
+  to root-cause the on-device copy/decode failure. *ACs:* M8 AC 3. *Deps:* T3.3.
+- **T8.4 — Android safe-area.** Enable `SystemUiMode.edgeToEdge` in `main` so the
+  system-bar insets are exposed, then ensure the home shell's `NavigationBar` and
+  the detail screen's body sit above the bottom inset (`SafeArea`). *ACs:* M8 AC 4.
+  *Deps:* T2.5 (home shell), T1.6.
+
+---
+
 ## Open questions for the user
 
 These are deferred, not blocking M0–M1. Surface them when their milestone approaches:

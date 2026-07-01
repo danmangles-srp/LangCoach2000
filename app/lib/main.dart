@@ -8,6 +8,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -20,6 +21,18 @@ import 'package:rivendell/features/audio/application/recording_providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // T8.4: targetSdk 35 forces edge-to-edge (UI drawn behind the status + nav
+  // bars). Opt in explicitly so the system-bar insets flow into MediaQuery,
+  // then let SafeArea (home shell nav bar, detail body) lift content above
+  // them.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      statusBarColor: Colors.transparent,
+    ),
+  );
 
   // Load every shipped locale's date symbols (uz included) so DateFormat on a
   // non-English device doesn't throw LocaleDataException. intl ships the data;
