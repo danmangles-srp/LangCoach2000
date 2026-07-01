@@ -7,6 +7,12 @@
 /// The single deck Rivendell exports into.
 const String ankiDeckName = 'Rivendell';
 
+/// Tag for Type 2 (image→Uzbek) notes. These are word-level — one card per
+/// Uzbek word, shared across recordings because the AI image is cached per
+/// word — so they carry no recording tag. The `:` nests them under
+/// `rivendell` in Anki's browser.
+const String ankiType2Tag = 'rivendell:type2';
+
 /// Turn a recording's file name into a safe Anki tag.
 ///
 /// "My Lecture 3.m4a" → "My_Lecture_3.m4a". Whitespace runs collapse to a

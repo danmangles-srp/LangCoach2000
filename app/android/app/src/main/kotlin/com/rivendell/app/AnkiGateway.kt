@@ -2,6 +2,7 @@ package com.rivendell.app
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.Uri
 import com.ichi2.anki.api.AddContentApi
 
 // Thin Kotlin wrapper over AnkiDroid's [AddContentApi] (FR-1.3.3, T4.1). Resolves
@@ -65,6 +66,18 @@ class AnkiGateway(private val context: Context) {
         fields: List<String>,
         tags: List<String>,
     ): Long? = api.addNote(modelId, deckId, fields.toTypedArray(), tags.toSet())
+
+    /**
+     * Import an image into AnkiDroid's media collection (T4.4, FR-1.3.4).
+     * [fileUri] must be readable by AnkiDroid — the caller exposes a FileProvider
+     * content URI and grants read permission to com.ichi2.anki. [preferredName]
+     * is the base filename (no extension) AnkiDroid stores the media under.
+     * Returns the formatted `<img src="...">` field string to drop into a note,
+     * or null if AnkiDroid could not import the media (retryable — the cached
+     * image is unaffected, so a later export re-tries).
+     */
+    fun addMedia(fileUri: Uri, preferredName: String): String? =
+        api.addMediaFromUri(fileUri, preferredName, "image")
 
     private companion object {
         const val ANKI_PACKAGE = "com.ichi2.anki"

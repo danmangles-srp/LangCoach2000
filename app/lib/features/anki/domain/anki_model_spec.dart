@@ -47,12 +47,16 @@ const ankiType1Model = AnkiModelSpec(
   backTemplate: '{{FrontSide}}\n<hr id=answer>\n\n{{Uzbek}}',
 );
 
-/// Type 2 — concept-image card. Front shows the AI image, back reveals the
-/// Uzbek word. The Image field holds a stored-filename Anki media reference
-/// (populated by T4.4 once an image is cached).
+/// Type 2 — concept-image card. Front shows the AI concept image, back reveals
+/// the Uzbek word. The Image field holds the FULL formatted media tag returned
+/// by AnkiDroid's `addMediaFromUri` (an `<img src="...">` string), so the front
+/// template renders it verbatim with no extra wrapping. Uzbek is the first
+/// field so the export service dedupes on the word (one card per Uzbek word,
+/// shared across recordings — the image is cached per word) via
+/// AnkiGateway.hasNoteWithFirstField.
 const ankiType2Model = AnkiModelSpec(
   name: 'Rivendell: Image→Uzbek',
-  fields: ['Image', 'Uzbek'],
-  frontTemplate: '<img src="{{Image}}">',
+  fields: ['Uzbek', 'Image'],
+  frontTemplate: '{{Image}}',
   backTemplate: '{{FrontSide}}\n<hr id=answer>\n\n{{Uzbek}}',
 );

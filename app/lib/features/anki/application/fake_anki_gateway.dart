@@ -20,6 +20,11 @@ class FakeAnkiGateway implements AnkiGateway {
   /// Every note accepted (non-null), in insertion order.
   final List<AcceptedNote> notes = [];
 
+  /// Per-relativePath media results the fake will return from [addMedia]. A
+  /// path absent from the map (or mapped to null) simulates an AnkiDroid import
+  /// failure. The value is the formatted field string a real gateway returns.
+  final Map<String, String?> mediaResults = {};
+
   @override
   Future<bool> isInstalled() async => true;
 
@@ -73,6 +78,14 @@ class FakeAnkiGateway implements AnkiGateway {
       ),
     );
     return id;
+  }
+
+  @override
+  Future<String?> addMedia({
+    required String relativePath,
+    required String preferredName,
+  }) async {
+    return mediaResults[relativePath];
   }
 }
 

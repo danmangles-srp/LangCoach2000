@@ -16,7 +16,7 @@ void main() {
     });
 
     test('Type 2 maps Image front → Uzbek back', () {
-      expect(ankiType2Model.fields, ['Image', 'Uzbek']);
+      expect(ankiType2Model.fields, ['Uzbek', 'Image']);
       expect(ankiType2Model.frontTemplate, contains('{{Image}}'));
       expect(ankiType2Model.backTemplate, contains('{{Uzbek}}'));
     });
