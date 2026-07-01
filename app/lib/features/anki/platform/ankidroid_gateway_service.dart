@@ -70,4 +70,15 @@ class AnkiDroidGatewayService implements AnkiGateway {
       'tags': tags.toList(),
     });
   }
+
+  @override
+  Future<String?> addMedia({
+    required String relativePath,
+    required String preferredName,
+  }) async {
+    return _channel.invokeMethod<String>('addMedia', {
+      'relativePath': relativePath,
+      'preferredName': preferredName,
+    });
+  }
 }

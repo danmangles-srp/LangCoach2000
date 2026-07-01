@@ -7,6 +7,7 @@ import android.provider.DocumentsContract.Document
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -22,7 +23,7 @@ import kotlin.concurrent.thread
 //   rivendell/scan     :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
 //   rivendell/record   :: copyToFolder(treeUri, sourcePath, displayName) -> doc URI
 //   rivendell/wordlog  :: copyImage(sourceUri, destRelativePath) -> void
-//   rivendell/anki     :: isInstalled/ensureDeck/ensureModel/noteExists/addNote
+//   rivendell/anki     :: isInstalled/ensureDeck/ensureModel/noteExists/addNote/addMedia
 //
 // Extends [AudioServiceFragmentActivity] (a [FlutterFragmentActivity], i.e. an
 // androidx [FragmentActivity] -> [ComponentActivity]) for two reasons:
@@ -39,6 +40,8 @@ class MainActivity : AudioServiceFragmentActivity() {
         const val RECORD_CHANNEL = "rivendell/record"
         const val WORDLOG_CHANNEL = "rivendell/wordlog"
         const val ANKI_CHANNEL = "rivendell/anki"
+        const val ANKI_PACKAGE = "com.ichi2.anki"
+        const val FILE_PROVIDER_AUTHORITY_SUFFIX = ".fileprovider"
         val SUPPORTED_EXT = setOf("m4a", "mp3", "wav")
     }
 
@@ -257,6 +260,27 @@ class MainActivity : AudioServiceFragmentActivity() {
                             result.success(ankiGateway.addNote(deckId, modelId, fields, tags))
                         }
 
+                        "addMedia" -> {
+                            // T4.4: import a cached AI image into AnkiDroid's
+                            // media collection. relativePath is app-relative
+                            // under filesDir (where the ai_image cache writes);
+                            // expose it via a FileProvider content URI + a read
+                            // grant to AnkiDroid, then let AddContentApi import.
+                            val relativePath = call.argument<String>("relativePath")
+                            val preferredName = call.argument<String>("preferredName")
+                            if (relativePath == null || preferredName == null) {
+                                result.error(
+                                    "BAD_ARGS",
+                                    "relativePath/preferredName required",
+                                    null,
+                                )
+                                return@thread
+                            }
+                            result.success(
+                                addMediaToAnki(relativePath, preferredName),
+                            )
+                        }
+
                         else -> result.notImplemented()
                     }
                 } catch (e: SecurityException) {
@@ -348,6 +372,36 @@ class MainActivity : AudioServiceFragmentActivity() {
             } ?: return null
         }
         return newDoc.toString()
+    }
+
+    /**
+     * Import the cached AI image at [relativePath] (app-relative under filesDir)
+     * into AnkiDroid's media collection (FR-1.3.4, T4.4). Exposes the file via a
+     * FileProvider content URI, grants AnkiDroid a temporary read grant, then
+     * asks AddContentApi to import it under [preferredName]. Returns the
+     * formatted `<img src="...">` field string, or null if the file is missing
+     * or AnkiDroid refused the import (retryable).
+     */
+    private fun addMediaToAnki(relativePath: String, preferredName: String): String? {
+        val file = File(filesDir, relativePath)
+        if (!file.exists()) return null
+        val authority = "$packageName$FILE_PROVIDER_AUTHORITY_SUFFIX"
+        val uri = FileProvider.getUriForFile(this, authority, file) ?: return null
+        grantUriPermission(
+            ANKI_PACKAGE,
+            uri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+        )
+        return try {
+            ankiGateway.addMedia(uri, preferredName)
+        } finally {
+            // Drop the read grant once AnkiDroid has copied the bytes.
+            try {
+                revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: SecurityException) {
+                // best-effort cleanup; nothing to act on.
+            }
+        }
     }
 
     private fun isSupportedAudio(name: String): Boolean {

@@ -8,6 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rivendell/core/logging/app_logger.dart';
+import 'package:rivendell/features/ai_image/application/fake_ai_image_service.dart';
 import 'package:rivendell/features/anki/application/anki_export_service.dart';
 import 'package:rivendell/features/anki/application/fake_anki_gateway.dart';
 import 'package:rivendell/features/anki/domain/anki_model_spec.dart';
@@ -16,14 +17,17 @@ import 'package:rivendell/features/wordlog/domain/vocab_pair.dart';
 
 void main() {
   late FakeAnkiGateway gateway;
+  late FakeAiImageService aiImages;
   late RecordingSink sink;
   late AnkiExportService service;
 
   setUp(() {
     gateway = FakeAnkiGateway();
+    aiImages = FakeAiImageService();
     sink = RecordingSink();
     service = AnkiExportService(
       gateway: gateway,
+      aiImageService: aiImages,
       logger: AppLogger(sink: sink),
     );
   });
@@ -101,6 +105,7 @@ void main() {
     final flaky = _RejectingGateway(rejectsAfter: 1);
     final flakyService = AnkiExportService(
       gateway: flaky,
+      aiImageService: FakeAiImageService(),
       logger: AppLogger(sink: sink),
     );
 
@@ -135,6 +140,106 @@ void main() {
     // Deck name constant is shared between the service and this test via the
     // domain module, so a rename there flips both.
     expect(gateway.decksCreated.single, ankiDeckName);
+  });
+
+  group('exportType2 (T4.4)', () {
+    test('resolves the Rivendell deck and the Type 2 model once', () async {
+      await service.exportType2(pairs: pairs());
+
+      expect(gateway.decksCreated, ['Rivendell']);
+      expect(gateway.modelsCreated, [ankiType2Model.name]);
+    });
+
+    test(
+      'a word without a cached image is enqueued and deferred (pending)',
+      () async {
+        final result = await service.exportType2(
+          pairs: pairs([('hello', 'salom')]),
+        );
+
+        expect(result.pending, 1);
+        expect(result.added, 0);
+        expect(result.skipped, 0);
+        expect(result.failed, 0);
+        // No card yet, and generation was requested.
+        expect(gateway.notes, isEmpty);
+        expect(aiImages.enqueued, ['salom']);
+      },
+    );
+
+    test(
+      'cached image imported; note carries the <img> field + type2 tag',
+      () async {
+        await aiImages.generateNow('salom'); // seeds ai_images/fake_salom.png
+        gateway.mediaResults['ai_images/fake_salom.png'] =
+            '<img src="rivendell_fake_salom.png" />';
+
+        final result = await service.exportType2(
+          pairs: pairs([('hello', 'salom')]),
+        );
+
+        expect(result.added, 1);
+        expect(result.pending, 0);
+        expect(gateway.notes.single.fields, [
+          'salom',
+          '<img src="rivendell_fake_salom.png" />',
+        ]);
+        expect(gateway.notes.single.tags, {ankiType2Tag});
+      },
+    );
+
+    test('is idempotent: re-exporting a cached word skips the card', () async {
+      await aiImages.generateNow('salom');
+      gateway.mediaResults['ai_images/fake_salom.png'] = '<img src="x.png" />';
+
+      await service.exportType2(pairs: pairs([('hello', 'salom')]));
+      final second = await service.exportType2(
+        pairs: pairs([('hello', 'salom')]),
+      );
+
+      expect(second.added, 0);
+      expect(second.skipped, 1);
+      expect(gateway.notes.length, 1); // still one card
+    });
+
+    test(
+      'a null media import is a retryable failure, not a skip or a card',
+      () async {
+        await aiImages.generateNow('salom'); // cached path present
+        // No mediaResults entry → gateway.addMedia returns null.
+
+        final result = await service.exportType2(
+          pairs: pairs([('hello', 'salom')]),
+        );
+
+        expect(result.failed, 1);
+        expect(result.added, 0);
+        expect(result.skipped, 0);
+        expect(gateway.notes, isEmpty);
+      },
+    );
+
+    test('mixed run: cached added, uncached pending, dupe skipped', () async {
+      await aiImages.generateNow('salom'); // cached
+      gateway.mediaResults['ai_images/fake_salom.png'] = '<img src="a.png" />';
+
+      // First pass: salom added.
+      await service.exportType2(
+        pairs: pairs([('hello', 'salom'), ('bye', 'xayr')]),
+      );
+      // Second pass: salom (dupe), rahmat (uncached → pending).
+      final result = await service.exportType2(
+        pairs: pairs([
+          ('hello', 'salom'), // dupe
+          ('thanks', 'rahmat'), // no image yet
+        ]),
+      );
+
+      expect(result.skipped, 1);
+      expect(result.pending, 1);
+      expect(result.added, 0);
+      expect(aiImages.enqueued, contains('rahmat'));
+    });
   });
 }
 

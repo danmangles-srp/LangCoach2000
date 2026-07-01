@@ -40,4 +40,19 @@ abstract class AnkiGateway {
     required List<String> fields,
     required Set<String> tags,
   });
+
+  /// Add an image to AnkiDroid's media collection and return the formatted
+  /// field string to drop into a note (`<img src="...">`), or null on failure.
+  ///
+  /// [relativePath] is app-relative under the documents dir (where the AI image
+  /// cache writes, e.g. `ai_images/<sha1>.png`); the platform side resolves it
+  /// against `filesDir` and exposes it to AnkiDroid via a FileProvider content
+  /// URI with a read grant. [preferredName] is the base filename (no
+  /// extension) AnkiDroid stores the media under. Returns null when AnkiDroid
+  /// can't import the media — callers treat that as a retryable failure (the
+  /// image is still cached, so a later export re-tries the attach).
+  Future<String?> addMedia({
+    required String relativePath,
+    required String preferredName,
+  });
 }
