@@ -14,15 +14,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
+import 'package:rivendell/features/anki/presentation/anki_export_button.dart';
 import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
 import 'package:rivendell/features/wordlog/domain/supported_image_format.dart';
 import 'package:rivendell/features/wordlog/domain/vocab_parser.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class WordLogSection extends ConsumerStatefulWidget {
-  const WordLogSection({required this.recordingId, super.key});
+  const WordLogSection({
+    required this.recordingId,
+    required this.recordingName,
+    super.key,
+  });
 
   final int recordingId;
+
+  /// File name used as the Type 1 Anki tag (FR-1.3.3). Required so the export
+  /// button labels its notes without re-fetching the recording.
+  final String recordingName;
 
   @override
   ConsumerState<WordLogSection> createState() => _WordLogSectionState();
@@ -63,6 +72,7 @@ class _WordLogSectionState extends ConsumerState<WordLogSection> {
             else
               _TextBody(
                 recordingId: widget.recordingId,
+                recordingName: widget.recordingName,
                 body: textLog?.body ?? '',
               ),
           ],
@@ -122,9 +132,14 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _TextBody extends ConsumerWidget {
-  const _TextBody({required this.recordingId, required this.body});
+  const _TextBody({
+    required this.recordingId,
+    required this.recordingName,
+    required this.body,
+  });
 
   final int recordingId;
+  final String recordingName;
   final String body;
 
   @override
@@ -167,6 +182,8 @@ class _TextBody extends ConsumerWidget {
             label: Text(strings.wordLogEditText),
           ),
         ),
+        const SizedBox(height: 4),
+        AnkiExportButton(recordingName: recordingName, pairs: pairs),
       ],
     );
   }

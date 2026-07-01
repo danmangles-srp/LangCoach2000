@@ -204,7 +204,10 @@ class _DetailContent extends ConsumerWidget {
                 .togglePlayPause(),
           ),
           const SizedBox(height: 28),
-          WordLogSection(recordingId: recording.id),
+          WordLogSection(
+            recordingId: recording.id,
+            recordingName: recording.name,
+          ),
           const SizedBox(height: 28),
           _ReviewHistorySection(recording: recording),
         ],
