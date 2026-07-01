@@ -101,8 +101,8 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
   }
 
   /// Reduce a thrown error to a short, user-visible message. PlatformException
-  /// carries the Kotlin-side detail in [PlatformException.message]; fall back
-  /// to the code, then toString.
+  /// carries the Kotlin-side detail in PlatformException.message; fall back to
+  /// the code, then toString.
   String _describe(Object error) {
     if (error is PlatformException) {
       final msg = error.message;
@@ -110,6 +110,20 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
       return error.code;
     }
     return error.toString();
+  }
+
+  /// The surfaced error looks like AnkiDroid refusing the content-provider
+  /// query for lack of the READ_WRITE_DATABASE permission grant. Drives the
+  /// actionable hint (the usual cause is granting Rivendell in AnkiDroid's API
+  /// settings, or the manifest permission not yet declared on the installed
+  /// build).
+  bool get _looksLikePermissionError {
+    final d = _errorDetail;
+    if (d == null) return false;
+    final lower = d.toLowerCase();
+    return lower.contains('permission not granted') ||
+        lower.contains('read_write_database') ||
+        lower.contains('securityexception');
   }
 
   void _showNotInstalledDialog() {
@@ -218,11 +232,18 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
           ),
           if (_errorDetail != null) ...[
             const SizedBox(height: 4),
-            // Selectable so the user can copy the real cause (often "AnkiDroid
-            // API permission not granted" — fixable in AnkiDroid → Settings →
-            // API) into a bug report.
+            // Selectable so the user can copy the real cause into a bug report.
             SelectableText(
               _errorDetail!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          if (_looksLikePermissionError) ...[
+            const SizedBox(height: 6),
+            Text(
+              strings.ankiPermissionHint,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
