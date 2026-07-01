@@ -114,5 +114,7 @@ void main() {
 
     expect(find.text('Send failed. Try again.'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
+    // The underlying cause is surfaced (selectable), not swallowed.
+    expect(find.textContaining('Bad state: boom'), findsOneWidget);
   });
 }
