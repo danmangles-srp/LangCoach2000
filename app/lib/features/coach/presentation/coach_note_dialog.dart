@@ -90,9 +90,7 @@ class _CoachNoteDialogState extends ConsumerState<_CoachNoteDialog> {
     final recordings = async.value ?? const <Recording>[];
     final chosen = await _showMultiSelect(
       title: AppStrings.of(context).coachPickRecordings,
-      options: [
-        for (final r in recordings) (id: r.id, label: r.name),
-      ],
+      options: [for (final r in recordings) (id: r.id, label: r.name)],
       selected: _recordingIds,
     );
     if (chosen != null) {
@@ -109,9 +107,7 @@ class _CoachNoteDialogState extends ConsumerState<_CoachNoteDialog> {
     final logs = async.value ?? const <WordLog>[];
     final chosen = await _showMultiSelect(
       title: AppStrings.of(context).coachPickVocab,
-      options: [
-        for (final l in logs) (id: l.id, label: l.body),
-      ],
+      options: [for (final l in logs) (id: l.id, label: l.body)],
       selected: _wordLogIds,
     );
     if (chosen != null) {

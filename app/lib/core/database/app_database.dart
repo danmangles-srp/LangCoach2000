@@ -16,6 +16,7 @@ import 'package:rivendell/features/coach/data/coach_note_recordings_table.dart';
 import 'package:rivendell/features/coach/data/coach_note_word_logs_table.dart';
 import 'package:rivendell/features/coach/data/coach_notes_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
+import 'package:rivendell/features/metrics/data/metrics_events_table.dart';
 import 'package:rivendell/features/tasks/data/tasks_table.dart';
 import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
 
@@ -33,6 +34,7 @@ part 'app_database.g.dart';
     CoachNotes,
     CoachNoteRecordings,
     CoachNoteWordLogs,
+    MetricsEvents,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -47,7 +49,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -78,6 +80,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(coachNotes);
         await m.createTable(coachNoteRecordings);
         await m.createTable(coachNoteWordLogs);
+      }
+      if (from < 9) {
+        // Engagement metrics ledger (FR-1.5.1). Append-only increments; the
+        // two derivable metrics (journaling output, completed queue items)
+        // stay in their source tables and are not duplicated here.
+        await m.createTable(metricsEvents);
       }
     },
     beforeOpen: (details) async {

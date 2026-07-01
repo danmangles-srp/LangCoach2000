@@ -6,12 +6,16 @@
 // CTA when AnkiDroid is absent, and keeps the offline image-generation queue
 // visible (pending count + reconnect hint, NFR-2.1.3).
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/features/anki/application/anki_export_providers.dart';
 import 'package:rivendell/features/anki/application/anki_export_service.dart';
 import 'package:rivendell/features/anki/application/anki_providers.dart';
+import 'package:rivendell/features/metrics/application/metrics_providers.dart';
+import 'package:rivendell/features/metrics/domain/metric_kind.dart';
 import 'package:rivendell/features/wordlog/domain/vocab_pair.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -50,10 +54,21 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
         pairs: widget.pairs,
       );
       final type2 = await service.exportType2(pairs: widget.pairs);
+      final added = type1.added + type2.added;
+      // FR-1.5.1: count newly added cards as flashcards reviewed. Fire-and-
+      // forget — a metrics miss must never block or surface in the export UI.
+      if (added > 0) {
+        unawaited(
+          ref
+              .read(metricsRepositoryProvider.future)
+              .then((m) => m.record(MetricKind.flashcardsReviewed, added))
+              .catchError((Object _) {}),
+        );
+      }
       if (mounted) {
         setState(() {
           _result = AnkiExportResult(
-            added: type1.added + type2.added,
+            added: added,
             skipped: type1.skipped + type2.skipped,
             failed: type1.failed + type2.failed,
             pending: type2.pending,
