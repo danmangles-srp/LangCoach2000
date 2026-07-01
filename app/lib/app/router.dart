@@ -13,6 +13,7 @@ import 'package:rivendell/features/audio/presentation/folder_onboarding_screen.d
 import 'package:rivendell/features/audio/presentation/recording_detail_screen.dart';
 import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/audio/presentation/recordings_screen.dart';
+import 'package:rivendell/features/settings/presentation/settings_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -54,6 +55,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const FolderOnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
   );

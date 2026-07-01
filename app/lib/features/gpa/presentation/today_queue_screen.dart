@@ -27,7 +27,17 @@ class TodayQueueScreen extends ConsumerWidget {
     final async = ref.watch(warmedQueueProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.queueTitle), centerTitle: false),
+      appBar: AppBar(
+        title: Text(strings.queueTitle),
+        centerTitle: false,
+        actions: [
+          IconButton(
+            tooltip: strings.settingsTooltip,
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/settings'),
+          ),
+        ],
+      ),
       body: async.when(
         loading: () => _StatusView(
           icon: Icons.event_repeat_rounded,
