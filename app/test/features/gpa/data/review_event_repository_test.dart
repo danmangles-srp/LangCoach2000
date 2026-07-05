@@ -212,6 +212,40 @@ void main() {
     );
   });
 
+  group('eventTimestamps (T6.2 metric source)', () {
+    test('returns completedAts in [from, until), oldest first', () async {
+      final id = await seed();
+      final day30 = created.add(const Duration(days: 30));
+      final day90 = created.add(const Duration(days: 90));
+      await reviews.recordReview(id, completedAt: day90);
+      await reviews.recordReview(id, completedAt: day30);
+      // day30 first, day90 second — and the null bonus event below stays.
+      await reviews.recordReview(id, completedAt: day30);
+
+      final ts = await reviews.eventTimestamps(DateTime(2026), DateTime(2027));
+      expect(ts, hasLength(3));
+      final sorted = [...ts]..sort();
+      expect(ts, orderedEquals(sorted));
+      expect(ts.first, day30);
+      expect(ts.last, day90);
+    });
+
+    test('half-open: an event exactly at `until` is excluded', () async {
+      final id = await seed();
+      final day1 = created.add(const Duration(days: 1));
+      await reviews.recordReview(id, completedAt: day1);
+      final until = day1.add(const Duration(days: 1));
+      expect(await reviews.eventTimestamps(day1, until), hasLength(1));
+      expect(
+        await reviews.eventTimestamps(
+          until,
+          until.add(const Duration(days: 1)),
+        ),
+        isEmpty,
+      );
+    });
+  });
+
   group('cascade', () {
     test('events are removed when the recording row is deleted', () async {
       final id = await seed();

@@ -58,6 +58,28 @@ class WordLogRepository {
         .get();
   }
 
+  /// createdAts of every text log in [from, until), oldest first (T6.2 metric
+  /// source for "Journaling Output"). Half-open: a log stamped exactly at
+  /// [until] belongs to the next bucket. Image logs are excluded.
+  Future<List<DateTime>> textLogTimestamps(DateTime from, DateTime until) {
+    final rows =
+        (_db.selectOnly(_db.wordLogs)
+              ..addColumns([_db.wordLogs.createdAt])
+              ..where(
+                _db.wordLogs.kind.equals('text') &
+                    _db.wordLogs.createdAt.isBiggerOrEqualValue(from) &
+                    _db.wordLogs.createdAt.isSmallerThanValue(until),
+              )
+              ..orderBy([OrderingTerm.asc(_db.wordLogs.createdAt)]))
+            .get();
+    return rows.then((r) {
+      return [
+        for (final e in r)
+          if (e.read(_db.wordLogs.createdAt) case final DateTime v) v,
+      ];
+    });
+  }
+
   /// Attach a notebook photo. [path] is app-relative (the image was copied
   /// into app data by T3.3). Returns the new row. Append-only.
   Future<WordLog> addImage(int recordingId, {required String path}) {

@@ -63,6 +63,28 @@ class ReviewEventRepository {
         .get();
   }
 
+  /// completedAts of every review event in [from, until), oldest first (T6.2
+  /// metric source for "Completed Queue items"). Half-open: an event stamped
+  /// exactly at [until] belongs to the next bucket. Includes null-milestone
+  /// bonus plays — they still represent real engagement.
+  Future<List<DateTime>> eventTimestamps(DateTime from, DateTime until) {
+    final rows =
+        (_db.selectOnly(_db.reviewEvents)
+              ..addColumns([_db.reviewEvents.completedAt])
+              ..where(
+                _db.reviewEvents.completedAt.isBiggerOrEqualValue(from) &
+                    _db.reviewEvents.completedAt.isSmallerThanValue(until),
+              )
+              ..orderBy([OrderingTerm.asc(_db.reviewEvents.completedAt)]))
+            .get();
+    return rows.then((r) {
+      return [
+        for (final e in r)
+          if (e.read(_db.reviewEvents.completedAt) case final DateTime v) v,
+      ];
+    });
+  }
+
   /// Derived review state for a recording (FR-1.2.4): reached milestone,
   /// count, last-reviewed, and the active (next-unreached) milestone with its
   /// due-ness. Returns null when the recording no longer exists. [asOf] is
