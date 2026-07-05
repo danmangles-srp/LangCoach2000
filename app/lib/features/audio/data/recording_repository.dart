@@ -101,6 +101,30 @@ class RecordingRepository {
       RecordingsCompanion(durationMs: Value(durationMs)),
     );
   }
+
+  /// Update a recording's display name and file path atomically (T10.4). The
+  /// SAF file rename returns a new document URI (the URI stem can change on
+  /// rename), so both columns move together to keep the next rescan keyed on
+  /// the new path instead of re-adding the row.
+  Future<void> updateNameAndPath(
+    int id, {
+    required String name,
+    required String filePath,
+  }) {
+    return (_db.update(_db.recordings)..where((t) => t.id.equals(id))).write(
+      RecordingsCompanion(name: Value(name), filePath: Value(filePath)),
+    );
+  }
+
+  /// Delete a recording row by id (T10.5). Schema FKs cascade — this single
+  /// delete also drops the recording's `review_events`, `word_logs`, and
+  /// coach-bank join rows (`coach_note_recordings`, and
+  /// `coach_note_word_logs` via the word-log cascade). Image *files* under
+  /// app-private storage are cleaned up by the management service before this
+  /// runs; the audio file in the Samsung folder is deleted by it too.
+  Future<int> deleteById(int id) {
+    return (_db.delete(_db.recordings)..where((t) => t.id.equals(id))).go();
+  }
 }
 
 /// Decode a stored recording's `format` text back to the typed enum.

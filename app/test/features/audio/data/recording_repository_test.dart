@@ -194,6 +194,117 @@ void main() {
     });
   });
 
+  group('updateNameAndPath', () {
+    test(
+      'writes both columns atomically and preserves id + duration',
+      () async {
+        await repo.upsertScanned([
+          ScannedFile(
+            path: 'content://tree/a',
+            name: 'a.m4a',
+            createdAt: DateTime(2026),
+            sizeBytes: 1,
+            format: AudioFormat.m4a,
+          ),
+        ]);
+        final rec = await repo.findByPath('content://tree/a');
+        if (rec == null) fail('seed recording missing');
+        await repo.setDuration(rec.id, durationMs: 99_000);
+
+        await repo.updateNameAndPath(
+          rec.id,
+          name: 'Lesson 1.m4a',
+          filePath: 'content://tree/lesson-1',
+        );
+
+        final updated = await repo.findById(rec.id);
+        expect(updated?.id, rec.id); // id stable
+        expect(updated?.name, 'Lesson 1.m4a');
+        expect(updated?.filePath, 'content://tree/lesson-1');
+        expect(updated?.durationMs, 99_000); // untouched
+        // The old path no longer resolves — no duplicate row.
+        expect(await repo.findByPath('content://tree/a'), isNull);
+        expect(await repo.all(), hasLength(1));
+      },
+    );
+
+    test('is a no-op (0 rows) for an unknown id', () async {
+      // Drift's update().write returns 0 affected rows for a non-matching id;
+      // the call still completes without error.
+      await repo.updateNameAndPath(
+        9999,
+        name: 'ghost.m4a',
+        filePath: 'content://tree/ghost',
+      );
+      expect(await repo.all(), isEmpty);
+    });
+  });
+
+  group('deleteById', () {
+    test('removes the row and returns 1', () async {
+      await repo.upsertScanned([
+        ScannedFile(
+          path: 'content://tree/a',
+          name: 'a.m4a',
+          createdAt: DateTime(2026),
+          sizeBytes: 1,
+          format: AudioFormat.m4a,
+        ),
+      ]);
+      final rec = await repo.findByPath('content://tree/a');
+      if (rec == null) fail('seed recording missing');
+
+      final removed = await repo.deleteById(rec.id);
+      expect(removed, 1);
+      expect(await repo.findById(rec.id), isNull);
+      expect(await repo.all(), isEmpty);
+    });
+
+    test('cascades to review_events + word_logs (FKs)', () async {
+      // Insert a recording, then a review event + a word log keyed on it.
+      await repo.upsertScanned([
+        ScannedFile(
+          path: 'content://tree/a',
+          name: 'a.m4a',
+          createdAt: DateTime(2026),
+          sizeBytes: 1,
+          format: AudioFormat.m4a,
+        ),
+      ]);
+      final rec = await repo.findByPath('content://tree/a');
+      if (rec == null) fail('seed recording missing');
+      await db
+          .into(db.reviewEvents)
+          .insert(
+            ReviewEventsCompanion.insert(
+              recordingId: rec.id,
+              completedAt: DateTime(2026),
+            ),
+          );
+      await db
+          .into(db.wordLogs)
+          .insert(
+            WordLogsCompanion.insert(
+              recordingId: rec.id,
+              kind: 'text',
+              body: 'hello: salom',
+            ),
+          );
+
+      final removed = await repo.deleteById(rec.id);
+      expect(removed, 1);
+      // Children dropped by the cascade.
+      final events = await db.select(db.reviewEvents).get();
+      final logs = await db.select(db.wordLogs).get();
+      expect(events, isEmpty);
+      expect(logs, isEmpty);
+    });
+
+    test('returns 0 for an unknown id', () async {
+      expect(await repo.deleteById(9999), 0);
+    });
+  });
+
   group('formatOf', () {
     Recording row({String format = 'm4a'}) => Recording(
       id: 1,

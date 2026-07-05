@@ -27,23 +27,21 @@ class QueueItem {
   final bool isStale;
 }
 
-/// One row of a warmed window (T7.1): the recording, its derived status, the
-/// warm-up placement (genuinely due vs. an "up next" top-up), and stale flag.
+/// One row of a queue window (T7.1, strict-only per T10.1): the recording, its
+/// derived status, and the stale flag (1-day-stale today rows only).
 class WarmedItem {
   const WarmedItem({
     required this.recording,
     required this.status,
-    required this.placement,
     required this.isStale,
   });
 
   final Recording recording;
   final RecordingReviewStatus status;
-  final WarmPlacement placement;
   final bool isStale;
 }
 
-/// Warmed Today + Tomorrow windows (T7.1, M7 AC 1).
+/// Strict Today + Tomorrow windows (T7.1, M7 AC 1 amended by M10 AC4–5).
 class WarmedQueue {
   const WarmedQueue({required this.today, required this.tomorrow});
 
@@ -195,7 +193,6 @@ class ReviewEventRepository {
       return WarmedItem(
         recording: rec,
         status: s.candidate.status,
-        placement: s.placement,
         isStale: s.isStale,
       );
     }

@@ -15,7 +15,6 @@ import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart'
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
 import 'package:rivendell/features/gpa/domain/gpa_intervals.dart';
-import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
 import 'package:rivendell/features/gpa/presentation/today_queue_screen.dart';
 import 'package:rivendell/l10n/app_strings.dart';
@@ -85,28 +84,28 @@ void main() {
     expect(find.text('Try again'), findsOneWidget);
   });
 
-  testWidgets('a warmed today list renders the Today section + up-next badge', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      _host(
-        WarmedQueue(
-          today: [
-            WarmedItem(
-              recording: _rec(1, 'lecture-1.m4a'),
-              status: _status(),
-              placement: WarmPlacement.upNext,
-              isStale: false,
-            ),
-          ],
-          tomorrow: const [],
+  testWidgets(
+    'a strict-due today row renders the Today section + D+1 subtitle',
+    (tester) async {
+      await tester.pumpWidget(
+        _host(
+          WarmedQueue(
+            today: [
+              WarmedItem(
+                recording: _rec(1, 'lecture-1.m4a'),
+                status: _status(),
+                isStale: false,
+              ),
+            ],
+            tomorrow: const [],
+          ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Today'), findsOneWidget); // section header
-    expect(find.text('lecture-1.m4a'), findsOneWidget);
-    expect(find.text('Up next'), findsOneWidget); // up-next badge + subtitle
-  });
+      expect(find.text('Today'), findsOneWidget); // section header
+      expect(find.text('lecture-1.m4a'), findsOneWidget);
+      expect(find.text('D+2 · Due today'), findsOneWidget); // milestone + due
+    },
+  );
 }

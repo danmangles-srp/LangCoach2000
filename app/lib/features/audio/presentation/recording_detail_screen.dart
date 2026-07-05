@@ -55,6 +55,10 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
   /// engine's position stream mid-seek.
   int? _dragMs;
 
+  /// True while a rename or delete is in flight — disables the menu so the
+  /// user can't fire a second op against a half-mutated row.
+  bool _busy = false;
+
   void _maybeAutoPlay(Recording recording) {
     if (_loadStarted) return;
     _loadStarted = true;
@@ -83,6 +87,132 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
     context.replace('/recordings/$nextId', extra: nav);
   }
 
+  Future<void> _onMenuSelect(String value, Recording rec) async {
+    if (value == 'rename') {
+      await _showRenameDialog(rec);
+    } else if (value == 'delete') {
+      await _showDeleteDialog(rec);
+    }
+  }
+
+  Future<void> _showRenameDialog(Recording rec) async {
+    final strings = AppStrings.of(context);
+    // Seed with the base name (no extension) so the user edits a clean value.
+    final initial = rec.name.contains('.')
+        ? rec.name.substring(0, rec.name.lastIndexOf('.'))
+        : rec.name;
+    final controller = TextEditingController(text: initial)
+      ..selection = TextSelection(baseOffset: 0, extentOffset: initial.length);
+    final submitted = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(strings.renameDialogTitle),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: strings.recordNameLabel,
+            hintText: strings.recordNameHint,
+          ),
+          textCapitalization: TextCapitalization.sentences,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (v) => Navigator.of(dialogContext).pop(v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(strings.wordLogCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+            child: Text(strings.wordLogSave),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (submitted == null) return;
+    if (!mounted) return;
+    await _runManagement(
+      () async {
+        final mgmt = await ref.read(recordingManagementProvider.future);
+        return mgmt.renameRecording(rec.id, submitted);
+      },
+      onFail: () => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.renameFailed))),
+    );
+  }
+
+  Future<void> _showDeleteDialog(Recording rec) async {
+    final strings = AppStrings.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(strings.deleteDialogTitle),
+        content: Text(strings.deleteDialogBody(rec.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(strings.wordLogCancel),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(strings.recordingMenuDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!mounted) return;
+    final removed = await _runManagement(
+      () async {
+        final mgmt = await ref.read(recordingManagementProvider.future);
+        return mgmt.deleteRecording(rec.id);
+      },
+      onFail: () => ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.deleteFailed))),
+    );
+    if (!mounted) return;
+    // A successful delete drops this row — leave the detail screen.
+    if (removed == true) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go('/');
+      }
+    }
+  }
+
+  /// Runs a management op under the busy guard. Returns the op's result, or
+  /// null if the provider threw. Always clears the busy flag + invalidates the
+  /// recording caches so the UI reflects any mutation on the next build.
+  Future<Object?> _runManagement(
+    Future<Object?> Function() op, {
+    required void Function() onFail,
+  }) async {
+    setState(() => _busy = true);
+    Object? result;
+    try {
+      result = await op();
+    } on Object {
+      onFail();
+      result = null;
+    } finally {
+      ref
+        ..invalidate(recordingsProvider)
+        ..invalidate(recordingByIdProvider(widget.recordingId))
+        ..invalidate(recordingReviewStatusProvider(widget.recordingId));
+      ref.read(reviewGenerationProvider.notifier).bump();
+      if (mounted) setState(() => _busy = false);
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
@@ -94,10 +224,49 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
       data: (r) => r?.name ?? strings.recordingsDetailTitle,
       orElse: () => strings.recordingsDetailTitle,
     );
+    // The row is only actionable once it has landed; null during loading /
+    // not-found. Renaming or deleting a stale id is a no-op in the service,
+    // but hiding the menu in those states is clearer UX.
+    final currentRecording = async.maybeWhen(
+      data: (r) => r,
+      orElse: () => null,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          if (currentRecording != null)
+            PopupMenuButton<String>(
+              enabled: !_busy,
+              onSelected: (v) => _onMenuSelect(v, currentRecording),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'rename',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.edit_outlined),
+                      const SizedBox(width: 12),
+                      Text(strings.recordingMenuRename),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(strings.recordingMenuDelete),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
       // T8.4: keep content above Android's system navigation bar (edge-to-edge
       // is forced at targetSdk 35). The AppBar owns the top inset; bottom is

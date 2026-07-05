@@ -26,7 +26,10 @@ import 'package:rivendell/features/gpa/application/review_providers.dart';
 class RecorderController extends Notifier<RecordingState> {
   Timer? _tick;
   String? _pendingPath;
-  String? _pendingName;
+  // Base name (no extension) stamped when capture started. The user can edit
+  // this via the sheet's name field; stop() sanitizes it into the final
+  // filename (T10.3).
+  String? _pendingBaseName;
   Stopwatch? _stopwatch;
   bool _recordingActive = false;
   // Captured at start() so onDispose can release the mic without touching Ref
@@ -81,10 +84,12 @@ class RecorderController extends Notifier<RecordingState> {
       return;
     }
 
-    final name = buildRecordingFileName(recordedAt: _now());
+    final now = _now();
+    final baseName = defaultRecordingBaseName(recordedAt: now);
+    final tempName = buildRecordingFileName(recordedAt: now);
     final dir = await ref.read(recorderTempDirProvider.future);
-    _pendingName = name;
-    final path = '$dir/$name';
+    _pendingBaseName = baseName;
+    final path = '$dir/$tempName';
     final ok = await _recorder.start(path: path);
     if (!ok) {
       _logger.e(LogTag.record, 'recorder.start returned false');
@@ -101,13 +106,17 @@ class RecorderController extends Notifier<RecordingState> {
         state = state.copyWith(elapsed: sw.elapsed);
       }
     });
-    state = const RecordingState(phase: RecordPhase.recording);
-    _logger.i(LogTag.record, 'recording started → $name');
+    state = RecordingState(phase: RecordPhase.recording, defaultName: baseName);
+    _logger.i(LogTag.record, 'recording started → $tempName');
   }
 
   /// Stop, save into the designated folder, and rescan. Transitions to idle on
   /// success (clearing [lastSavedName] first, then setting it).
-  Future<void> stop() async {
+  ///
+  /// [name] is the user-edited base name (no extension) from the sheet's name
+  /// field (T10.3). It is sanitized; if null/blank/unsafe the stamped default
+  /// is used so a save never fails on a bad name.
+  Future<void> stop({String? name}) async {
     if (!state.isRecording) return;
     _tick?.cancel();
     _tick = null;
@@ -118,10 +127,11 @@ class RecorderController extends Notifier<RecordingState> {
 
     final tempPath = await _recorder.stop();
     final recordedPath = tempPath ?? _pendingPath;
-    final saveName = _pendingName;
+    final saveName = saveRecordingFileName(baseName: name, recordedAt: _now());
+    final stampedBase = _pendingBaseName;
     _pendingPath = null;
-    _pendingName = null;
-    if (recordedPath == null || saveName == null) {
+    _pendingBaseName = null;
+    if (recordedPath == null || stampedBase == null) {
       _logger.e(LogTag.record, 'recorder.stop returned no path');
       _fail('stop');
       return;

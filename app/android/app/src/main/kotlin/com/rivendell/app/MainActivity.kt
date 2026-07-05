@@ -165,6 +165,43 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }
                 }
 
+                "renameDocument" -> {
+                    val docUri = call.argument<String>("docUri")
+                    val displayName = call.argument<String>("displayName")
+                    if (docUri == null || displayName == null) {
+                        result.error("BAD_ARGS", "docUri/displayName required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(start = true) {
+                        try {
+                            val newUri = renameDocument(docUri, displayName)
+                            if (newUri != null) {
+                                result.success(newUri)
+                            } else {
+                                result.error("RENAME_FAILED", "could not rename document", null)
+                            }
+                        } catch (e: Exception) {
+                            result.error("RENAME_FAILED", e.message, null)
+                        }
+                    }
+                }
+
+                "deleteDocument" -> {
+                    val docUri = call.argument<String>("docUri")
+                    if (docUri == null) {
+                        result.error("BAD_ARGS", "docUri required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(start = true) {
+                        try {
+                            val removed = deleteDocument(docUri)
+                            result.success(removed)
+                        } catch (e: Exception) {
+                            result.error("DELETE_FAILED", e.message, null)
+                        }
+                    }
+                }
+
                 else -> result.notImplemented()
             }
         }
@@ -372,6 +409,34 @@ class MainActivity : AudioServiceFragmentActivity() {
             } ?: return null
         }
         return newDoc.toString()
+    }
+
+    /**
+     * Rename the SAF document at [docUriStr] to [displayName], returning the new
+     * document URI (T10.4). SAF may change the URI stem even when the name
+     * matches (e.g. a collision suffix), so the returned URI is authoritative.
+     */
+    private fun renameDocument(
+        docUriStr: String,
+        displayName: String,
+    ): String? {
+        val docUri = Uri.parse(docUriStr)
+        val renamed = DocumentsContract.renameDocument(
+            contentResolver,
+            docUri,
+            displayName,
+        ) ?: return null
+        return renamed.toString()
+    }
+
+    /**
+     * Delete the SAF document at [docUriStr] (T10.5). Returns true if a row was
+     * removed, false if the file was already gone. Throws on permission/IO
+     * failure so the caller can surface it.
+     */
+    private fun deleteDocument(docUriStr: String): Boolean {
+        val docUri = Uri.parse(docUriStr)
+        return DocumentsContract.deleteDocument(contentResolver, docUri)
     }
 
     /**
