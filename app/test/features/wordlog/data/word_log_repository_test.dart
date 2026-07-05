@@ -108,6 +108,43 @@ void main() {
     });
   });
 
+  group('textLogTimestamps (T6.2 metric source)', () {
+    test(
+      'returns createdAts of text logs in [from, until), oldest first',
+      () async {
+        final id = await seed();
+        await wordLogs.setTextLog(id, body: 'a: a');
+        final id2 = await seed(path: '/svr/two.m4a');
+        await wordLogs.setTextLog(id2, body: 'b: b');
+
+        final all = await wordLogs.textLogTimestamps(
+          DateTime(2020),
+          DateTime(2030),
+        );
+        expect(all, hasLength(2));
+        final sorted = [...all]..sort();
+        expect(all, orderedEquals(sorted));
+      },
+    );
+
+    test('half-open: an empty future window returns nothing', () async {
+      expect(
+        await wordLogs.textLogTimestamps(DateTime(2030), DateTime(2030, 1, 2)),
+        isEmpty,
+      );
+    });
+
+    test('ignores image logs', () async {
+      final id = await seed();
+      await wordLogs.setTextLog(id, body: 't: t');
+      await wordLogs.addImage(id, path: 'images/note.jpg');
+      expect(
+        await wordLogs.textLogTimestamps(DateTime(2020), DateTime(2030)),
+        hasLength(1),
+      );
+    });
+  });
+
   group('FK cascade', () {
     test('deleting a recording drops its word log', () async {
       final id = await seed();
