@@ -9,7 +9,6 @@ import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
-import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
 
 void main() {
   late AppDatabase db;
@@ -376,7 +375,7 @@ void main() {
     });
   });
 
-  group('warmedQueue (T7.1, M7 AC 1)', () {
+  group('warmedQueue (T7.1, strict-only per T10.1 / M10 AC4–5)', () {
     // Created 2026-03-15: D+1 due 03-16, D+2 due 03-17, D+4 due 03-19.
     test('empty store -> empty today + tomorrow', () async {
       final q = await reviews.warmedQueue(asOf: created);
@@ -385,72 +384,52 @@ void main() {
     });
 
     test(
-      'day-one library warms Today from the due-tomorrow items (core AC 1)',
+      'day-one library (all due tomorrow): Today empty, all in Tomorrow',
       () async {
         // Five recordings indexed today (asOf = created). Every active
-        // milestone is D+1, due tomorrow. Strict today is empty, so the
-        // selector warms Today from the upcoming set to the floor of 3.
+        // milestone is D+1, due tomorrow. Strict Today is empty (no top-up);
+        // Tomorrow holds all 5 strict-due rows.
         for (var i = 1; i <= 5; i++) {
           await seed(path: '/r$i.m4a', name: 'r$i', createdAt: created);
         }
         final q = await reviews.warmedQueue(asOf: created);
-        expect(q.today, hasLength(3));
-        expect(
-          q.today.every((w) => w.placement == WarmPlacement.upNext),
-          isTrue,
-        );
-        // The two not consumed by today survive as genuinely-due tomorrow rows.
-        expect(q.tomorrow, hasLength(2));
-        expect(
-          q.tomorrow.every((w) => w.placement == WarmPlacement.due),
-          isTrue,
-        );
-        // No recording appears in both windows.
-        final todayIds = q.today.map((w) => w.recording.id).toSet();
-        final tomorrowIds = q.tomorrow.map((w) => w.recording.id).toSet();
-        expect(todayIds.intersection(tomorrowIds), isEmpty);
+        expect(q.today, isEmpty);
+        expect(q.tomorrow, hasLength(5));
       },
     );
 
-    test(
-      'single due-today recording with no upcoming pool stays as-is in today',
-      () async {
-        // One recording created 03-15, asOf 03-16: D+1 due today. No other
-        // recordings to top up from, so today holds just the one due row.
-        await seed();
-        final q = await reviews.warmedQueue(
-          asOf: created.add(const Duration(days: 1)),
-        );
-        expect(q.today, hasLength(1));
-        expect(q.today.single.placement, WarmPlacement.due);
-        expect(q.today.single.isStale, isFalse);
-        expect(q.tomorrow, isEmpty);
-      },
-    );
+    test('single due-today recording lands in Today only', () async {
+      // One recording created 03-15, asOf 03-16: D+1 due today.
+      await seed();
+      final q = await reviews.warmedQueue(
+        asOf: created.add(const Duration(days: 1)),
+      );
+      expect(q.today, hasLength(1));
+      expect(q.today.single.isStale, isFalse);
+      expect(q.tomorrow, isEmpty);
+    });
 
     test(
-      'due-today is topped up from future recordings; tomorrow gets rest',
+      'due-today + due-tomorrow split strictly across the windows',
       () async {
         // asOf 03-16.
         // rec a created 03-15: D+1 due 03-16 = today (strict).
-        // recs b/c/d created 03-16: D+1 due 03-17 = tomorrow (upcoming).
+        // recs b/c/d created 03-16: D+1 due 03-17 = tomorrow (strict).
         await seed(path: '/a.m4a', name: 'a', createdAt: created);
         final asOf = created.add(const Duration(days: 1));
         await seed(path: '/b.m4a', name: 'b', createdAt: asOf);
         await seed(path: '/c.m4a', name: 'c', createdAt: asOf);
         await seed(path: '/d.m4a', name: 'd', createdAt: asOf);
         final q = await reviews.warmedQueue(asOf: asOf);
-        // Today: the due row + two up-next top-ups = 3.
-        expect(q.today, hasLength(3));
-        final aRow = q.today.firstWhere((w) => w.recording.name == 'a');
-        expect(aRow.placement, WarmPlacement.due);
-        final upNext = q.today.where(
-          (w) => w.placement == WarmPlacement.upNext,
-        );
-        expect(upNext, hasLength(2));
-        // Tomorrow holds the one upcoming not consumed by today, genuinely due.
-        expect(q.tomorrow, hasLength(1));
-        expect(q.tomorrow.single.placement, WarmPlacement.due);
+        // Today: only the one strict-due row (no top-up).
+        expect(q.today, hasLength(1));
+        expect(q.today.single.recording.name, 'a');
+        // Tomorrow: all three strict-due-tomorrow rows.
+        expect(q.tomorrow, hasLength(3));
+        // No recording appears in both windows.
+        final todayIds = q.today.map((w) => w.recording.id).toSet();
+        final tomorrowIds = q.tomorrow.map((w) => w.recording.id).toSet();
+        expect(todayIds.intersection(tomorrowIds), isEmpty);
       },
     );
 

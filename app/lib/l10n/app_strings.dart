@@ -57,7 +57,6 @@ class AppStrings {
     queueStaleBadge: 'Stale',
     queueDueToday: 'Due today',
     queueDueTomorrow: 'Due tomorrow',
-    queueUpNextBadge: 'Up next',
     queueSectionTomorrow: 'Tomorrow',
     queueOverdueN: '{n} day overdue',
     queueNowPlaying: 'Now playing',
@@ -75,11 +74,22 @@ class AppStrings {
     recordStart: 'Record',
     recordStop: 'Stop',
     recordSaving: 'Saving…',
+    recordNameLabel: 'Name',
+    recordNameHint: 'Leave blank for a timestamped name',
     recordPermissionDenied:
         'Microphone permission denied. Grant it in system settings to record.',
     recordNoFolder: 'Pick a Samsung Voice Recorder folder before recording.',
     recordFailed: "Couldn't save the recording. Try again.",
     recordSavedN: 'Saved “{name}”.',
+    recordingMenuRename: 'Rename',
+    recordingMenuDelete: 'Delete',
+    renameDialogTitle: 'Rename recording',
+    renameFailed: "Couldn't rename. Try again.",
+    deleteDialogTitle: 'Delete recording?',
+    deleteDialogBodyN:
+        'Delete “{name}”? This removes the audio file and all its vocab '
+        'and review data.',
+    deleteFailed: "Couldn't delete. Try again.",
     wordLogTitle: 'Word log',
     wordLogTabText: 'Text',
     wordLogTabImages: 'Images',
@@ -185,7 +195,6 @@ class AppStrings {
     queueStaleBadge: 'Muddati o‘tgan',
     queueDueToday: 'Bugun',
     queueDueTomorrow: 'Ertaga',
-    queueUpNextBadge: 'Keyingi',
     queueSectionTomorrow: 'Ertaga',
     queueOverdueN: '{n} kun muddati o‘tgan',
     queueNowPlaying: 'Ijro etilmoqda',
@@ -203,6 +212,8 @@ class AppStrings {
     recordStart: 'Yozib olish',
     recordStop: 'To‘xtatish',
     recordSaving: 'Saqlanmoqda…',
+    recordNameLabel: 'Nomi',
+    recordNameHint: 'Bo‘sh qoldirsangiz vaqt belgili nom',
     recordPermissionDenied:
         'Mikrofon ruxsati rad etildi. Yozib olish uchun sozlamalarda '
         'ruxsat bering.',
@@ -210,6 +221,15 @@ class AppStrings {
         'Yozib olishdan oldin Samsung Voice Recorder jildini tanlang.',
     recordFailed: 'Yozuvni saqlab bo‘lmadi. Qayta urinib ko‘ring.',
     recordSavedN: '“{name}” saqlandi.',
+    recordingMenuRename: 'Nomini o‘zgartirish',
+    recordingMenuDelete: 'O‘chirish',
+    renameDialogTitle: 'Yozuv nomini o‘zgartirish',
+    renameFailed: 'Nomini o‘zgartirib bo‘lmadi. Qayta urinib ko‘ring.',
+    deleteDialogTitle: 'Yozuvni o‘chiraymi?',
+    deleteDialogBodyN:
+        '“{name}” o‘chirilsinmi? Audio fayl va barcha so‘z/takrorlash '
+        'ma’lumotlari olib tashlanadi.',
+    deleteFailed: 'O‘chirib bo‘lmadi. Qayta urinib ko‘ring.',
     wordLogTitle: 'So‘zlar daftari',
     wordLogTabText: 'Matn',
     wordLogTabImages: 'Rasmlar',
@@ -315,7 +335,6 @@ class AppStrings {
   String get queueStaleBadge => _bundle.queueStaleBadge;
   String get queueDueToday => _bundle.queueDueToday;
   String get queueDueTomorrow => _bundle.queueDueTomorrow;
-  String get queueUpNextBadge => _bundle.queueUpNextBadge;
   String get queueSectionTomorrow => _bundle.queueSectionTomorrow;
   String queueOverdue(int n) => _bundle.queueOverdueN.replaceAll('{n}', '$n');
   String get queueNowPlaying => _bundle.queueNowPlaying;
@@ -333,11 +352,21 @@ class AppStrings {
   String get recordStart => _bundle.recordStart;
   String get recordStop => _bundle.recordStop;
   String get recordSaving => _bundle.recordSaving;
+  String get recordNameLabel => _bundle.recordNameLabel;
+  String get recordNameHint => _bundle.recordNameHint;
   String get recordPermissionDenied => _bundle.recordPermissionDenied;
   String get recordNoFolder => _bundle.recordNoFolder;
   String get recordFailed => _bundle.recordFailed;
   String recordSaved(String name) =>
       _bundle.recordSavedN.replaceAll('{name}', name);
+  String get recordingMenuRename => _bundle.recordingMenuRename;
+  String get recordingMenuDelete => _bundle.recordingMenuDelete;
+  String get renameDialogTitle => _bundle.renameDialogTitle;
+  String get renameFailed => _bundle.renameFailed;
+  String get deleteDialogTitle => _bundle.deleteDialogTitle;
+  String deleteDialogBody(String name) =>
+      _bundle.deleteDialogBodyN.replaceAll('{name}', name);
+  String get deleteFailed => _bundle.deleteFailed;
   String get wordLogTitle => _bundle.wordLogTitle;
   String get wordLogTabText => _bundle.wordLogTabText;
   String get wordLogTabImages => _bundle.wordLogTabImages;
@@ -443,7 +472,6 @@ class _Bundle {
     required this.queueStaleBadge,
     required this.queueDueToday,
     required this.queueDueTomorrow,
-    required this.queueUpNextBadge,
     required this.queueSectionTomorrow,
     required this.queueOverdueN,
     required this.queueNowPlaying,
@@ -461,10 +489,19 @@ class _Bundle {
     required this.recordStart,
     required this.recordStop,
     required this.recordSaving,
+    required this.recordNameLabel,
+    required this.recordNameHint,
     required this.recordPermissionDenied,
     required this.recordNoFolder,
     required this.recordFailed,
     required this.recordSavedN,
+    required this.recordingMenuRename,
+    required this.recordingMenuDelete,
+    required this.renameDialogTitle,
+    required this.renameFailed,
+    required this.deleteDialogTitle,
+    required this.deleteDialogBodyN,
+    required this.deleteFailed,
     required this.wordLogTitle,
     required this.wordLogTabText,
     required this.wordLogTabImages,
@@ -555,7 +592,6 @@ class _Bundle {
   final String queueStaleBadge;
   final String queueDueToday;
   final String queueDueTomorrow;
-  final String queueUpNextBadge;
   final String queueSectionTomorrow;
   final String queueOverdueN;
   final String queueNowPlaying;
@@ -573,10 +609,19 @@ class _Bundle {
   final String recordStart;
   final String recordStop;
   final String recordSaving;
+  final String recordNameLabel;
+  final String recordNameHint;
   final String recordPermissionDenied;
   final String recordNoFolder;
   final String recordFailed;
   final String recordSavedN;
+  final String recordingMenuRename;
+  final String recordingMenuDelete;
+  final String renameDialogTitle;
+  final String renameFailed;
+  final String deleteDialogTitle;
+  final String deleteDialogBodyN;
+  final String deleteFailed;
   final String wordLogTitle;
   final String wordLogTabText;
   final String wordLogTabImages;

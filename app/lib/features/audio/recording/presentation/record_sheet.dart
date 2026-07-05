@@ -1,8 +1,13 @@
-// Record bottom sheet (FR-1.1.3, T2.7). Renders the recorder state off
-// [recorderControllerProvider]: a Record affordance, the live elapsed timer
-// while recording, a saving spinner, and an error view. On a successful save
-// (saving → idle) it pops with the new filename so the host screen can show a
-// confirmation snackbar.
+// Record bottom sheet (FR-1.1.3, T2.7, T10.3). Renders the recorder state off
+// [recorderControllerProvider]: a Record affordance, the live elapsed timer +
+// editable name field while recording, a saving spinner, and an error view. On
+// a successful save (saving → idle) it pops with the new filename so the host
+// screen can show a confirmation snackbar.
+//
+// T10.3: the sheet owns a [TextEditingController] for the name field. When the
+// controller transitions into recording it seeds the field with the stamped
+// default base name; on stop the field's text is passed to [RecorderController]
+// .stop, which sanitizes it into the saved filename + display name.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,30 +16,70 @@ import 'package:rivendell/features/audio/recording/application/recorder_controll
 import 'package:rivendell/features/audio/recording/domain/recording_state.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
-class RecordSheet extends ConsumerWidget {
+class RecordSheet extends ConsumerStatefulWidget {
   const RecordSheet({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecordSheet> createState() => _RecordSheetState();
+}
+
+class _RecordSheetState extends ConsumerState<RecordSheet> {
+  final TextEditingController _nameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _seedName(String? defaultName) {
+    if (defaultName != null && defaultName.isNotEmpty) {
+      // Only seed when empty — don't clobber an in-flight edit across rebuilds.
+      if (_nameController.text.isEmpty) {
+        _nameController.value = TextEditingValue(
+          text: defaultName,
+          selection: TextSelection.collapsed(offset: defaultName.length),
+        );
+      }
+    } else {
+      _nameController.clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(recorderControllerProvider);
-    // Pop with the saved filename the moment a save completes (saving → idle).
+    // Seed the name field when capture starts; clear it back on return to idle
+    // so a subsequent record starts fresh.
     ref.listen<RecordingState>(recorderControllerProvider, (prev, next) {
       if (next.isIdle && (prev?.phase == RecordPhase.saving)) {
         final ctrl = ref.read(recorderControllerProvider.notifier);
         final saved = ctrl.lastSavedName;
         if (saved != null && context.mounted) Navigator.of(context).pop(saved);
+        return;
+      }
+      if (prev?.phase != RecordPhase.recording &&
+          next.phase == RecordPhase.recording) {
+        _seedName(next.defaultName);
+      } else if (next.isIdle && !(prev?.isIdle ?? true)) {
+        _nameController.clear();
       }
     });
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          32 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _Header(phase: state.phase),
             const SizedBox(height: 28),
-            _Body(state: state),
+            _Body(state: state, nameController: _nameController),
           ],
         ),
       ),
@@ -64,8 +109,9 @@ class _Header extends StatelessWidget {
 }
 
 class _Body extends ConsumerWidget {
-  const _Body({required this.state});
+  const _Body({required this.state, required this.nameController});
   final RecordingState state;
+  final TextEditingController nameController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,7 +134,10 @@ class _Body extends ConsumerWidget {
     }
 
     if (state.isRecording) {
-      return _RecordingView(elapsed: state.elapsed);
+      return _RecordingView(
+        elapsed: state.elapsed,
+        nameController: nameController,
+      );
     }
 
     return FilledButton.icon(
@@ -111,14 +160,16 @@ class _Body extends ConsumerWidget {
 }
 
 class _RecordingView extends ConsumerWidget {
-  const _RecordingView({required this.elapsed});
+  const _RecordingView({required this.elapsed, required this.nameController});
   final Duration elapsed;
+  final TextEditingController nameController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final strings = AppStrings.of(context);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Icon(
           Icons.graphic_eq_rounded,
@@ -128,17 +179,33 @@ class _RecordingView extends ConsumerWidget {
         const SizedBox(height: 12),
         Text(
           _mmss(elapsed),
+          textAlign: TextAlign.center,
           style: theme.textTheme.displaySmall?.copyWith(
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
+        TextField(
+          controller: nameController,
+          textInputAction: TextInputAction.done,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            isDense: true,
+            prefixIcon: const Icon(Icons.label_outline_rounded),
+            labelText: strings.recordNameLabel,
+            hintText: strings.recordNameHint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 20),
         FilledButton.icon(
           style: FilledButton.styleFrom(
             backgroundColor: theme.colorScheme.error,
             foregroundColor: theme.colorScheme.onError,
           ),
-          onPressed: () => ref.read(recorderControllerProvider.notifier).stop(),
+          onPressed: () => ref
+              .read(recorderControllerProvider.notifier)
+              .stop(name: nameController.text),
           icon: const Icon(Icons.stop_rounded),
           label: Text(strings.recordStop),
         ),

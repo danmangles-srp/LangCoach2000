@@ -1,11 +1,11 @@
 // Today's review queue screen (T2.5, FR-1.2.5 / M2 AC 3 / NFR-2.4.1). The home
-// surface: reads [warmedQueueProvider] (T7.1) and maps the AsyncValue to a
-// sectioned Today + Tomorrow list. Today holds the strict due-set (incl.
-// 1-day-stale), topped up to a floor of 3 with soonest-next-due "up next" rows
-// so a freshly indexed library isn't empty on day one; Tomorrow is the same
-// shape as a preview. Each row is one-tap play (M2 AC 3). The canonical GPA
-// intervals are never altered by the warm-up — up-next rows are reviewable-
-// early, not rescheduled.
+// surface: reads [warmedQueueProvider] (T7.1, strict-only per T10.1) and maps
+// the AsyncValue to a sectioned Today + Tomorrow list. Today holds the strict
+// due-set (active milestone due today or 1-day-stale); Tomorrow holds only
+// what's due tomorrow exactly. Neither window is topped up — a recording
+// appears only when on or past its next review date. Tomorrow rows render
+// de-emphasized so Today stands out (T10.2). Each row is one-tap play
+// (M2 AC 3).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +15,6 @@ import 'package:rivendell/features/audio/playback/application/audio_player_contr
 import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
-import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class TodayQueueScreen extends ConsumerWidget {
@@ -141,6 +140,10 @@ class _WarmedTile extends ConsumerWidget {
 
     final isCurrent = snap.recordingId == item.recording.id;
     final isPlaying = isCurrent && snap.isPlaying;
+    // T10.2: Tomorrow rows render de-emphasized (muted title, compact leading
+    // badge, lower-contrast subtitle) so Today — the actionable window —
+    // stands out. Today rows keep full emphasis.
+    final isTomorrow = window == _WarmWindow.tomorrow;
     // T8.1: tap opens the detail page (auto-plays on open); popping returns to
     // the queue. The now-playing badge still reflects transport state on
     // return.
@@ -148,14 +151,9 @@ class _WarmedTile extends ConsumerWidget {
         context.push('/recordings/${item.recording.id}', extra: navContext);
 
     final isStale = item.isStale;
-    final isUpNext = item.placement == WarmPlacement.upNext;
     final dueLabel = isStale
         ? strings.queueOverdue(1)
-        : (isUpNext
-              ? strings.queueUpNextBadge
-              : (window == _WarmWindow.tomorrow
-                    ? strings.queueDueTomorrow
-                    : strings.queueDueToday));
+        : (isTomorrow ? strings.queueDueTomorrow : strings.queueDueToday);
     final milestoneLabel = milestone != null
         ? 'D+${milestone.intervalDays}'
         : '';
@@ -167,12 +165,6 @@ class _WarmedTile extends ConsumerWidget {
         background: theme.colorScheme.errorContainer,
         foreground: theme.colorScheme.onErrorContainer,
       );
-    } else if (isUpNext) {
-      trailing = _PillBadge(
-        label: strings.queueUpNextBadge,
-        background: theme.colorScheme.secondaryContainer,
-        foreground: theme.colorScheme.onSecondaryContainer,
-      );
     } else if (isCurrent) {
       trailing = Text(
         strings.queueNowPlaying,
@@ -182,23 +174,33 @@ class _WarmedTile extends ConsumerWidget {
       );
     }
 
+    final titleColor = isTomorrow
+        ? theme.colorScheme.onSurfaceVariant
+        : theme.colorScheme.onSurface;
+    final subtitleColor = isStale
+        ? theme.colorScheme.error
+        : (isTomorrow
+              ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
+              : theme.colorScheme.onSurfaceVariant);
+
     return ListTile(
       onTap: onTap,
-      leading: _Leading(isPlaying: isPlaying, isError: snap.isError),
+      leading: _Leading(
+        isPlaying: isPlaying,
+        isError: snap.isError,
+        compact: isTomorrow,
+      ),
       title: Text(
         item.recording.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyLarge?.copyWith(color: titleColor),
       ),
       subtitle: Text(
         [milestoneLabel, dueLabel].where((s) => s.isNotEmpty).join(' · '),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: isStale
-              ? theme.colorScheme.error
-              : theme.colorScheme.onSurfaceVariant,
-        ),
+        style: theme.textTheme.bodySmall?.copyWith(color: subtitleColor),
       ),
       trailing: trailing,
     );
@@ -206,22 +208,31 @@ class _WarmedTile extends ConsumerWidget {
 }
 
 class _Leading extends StatelessWidget {
-  const _Leading({required this.isPlaying, required this.isError});
+  const _Leading({
+    required this.isPlaying,
+    required this.isError,
+    this.compact = false,
+  });
 
   final bool isPlaying;
   final bool isError;
+  // T10.2: Tomorrow rows use a smaller, lower-contrast badge.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final size = compact ? 32.0 : 40.0;
     return Container(
-      width: 40,
-      height: 40,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(12),
+        color: colorScheme.primaryContainer.withValues(
+          alpha: compact ? 0.5 : 1.0,
+        ),
+        borderRadius: BorderRadius.circular(compact ? 10 : 12),
       ),
       child: Icon(
         isPlaying
@@ -230,7 +241,7 @@ class _Leading extends StatelessWidget {
                   ? Icons.error_outline_rounded
                   : Icons.play_arrow_rounded),
         color: colorScheme.onPrimaryContainer,
-        size: 22,
+        size: compact ? 18 : 22,
       ),
     );
   }

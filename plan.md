@@ -68,7 +68,7 @@ Pinned at M0; versions recorded in the M0 PR. Re-pin only if a resolution fails 
 | Charts | `fl_chart` | analytics dashboard |
 | Logging | injected `AppLogger` | tagged: `DB/AUDIO/RECORD/ANKI/AI/MAIL/TASK/NOTIFY/CHART/CORE` |
 
-## Milestone 0: Foundation (bootstrap)
+## COMPLETE Milestone 0: Foundation (bootstrap)
 
 **Objective:** A building, analyzing, test-covered Flutter app skeleton with the encrypted Drift store,
 the abstract service seams, the offline queue, and the gate green — before any feature lands.
@@ -90,7 +90,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 1: Core Audio Sync & Native Playback
+## COMPLETE Milestone 1: Core Audio Sync & Native Playback
 
 **Objective:** Index and play existing local recordings with zero fluff. FR-1.1.x, NFR-2.2.1/2.2.2.
 
@@ -125,7 +125,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 2: GPA Scheduler & In-App Capturing
+## COMPLETE Milestone 2: GPA Scheduler & In-App Capturing
 
 **Objective:** Turn static audio into a structured GPA review pipeline. FR-1.2.x.
 
@@ -165,7 +165,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 3: Languaculture Word Log & Visual Attachments
+## COMPLETE Milestone 3: Languaculture Word Log & Visual Attachments
 
 **Objective:** Bridge audio with vocabulary data and visual media (GPA "Word Log"). FR-1.3.1/1.3.2.
 
@@ -190,7 +190,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 4: Anki Generation & AI Image Engine
+## COMPLETE Milestone 4: Anki Generation & AI Image Engine
 
 **Objective:** Push vocab to Anki and generate concept-image cards. FR-1.3.3/1.3.4.
 
@@ -222,7 +222,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 5: Task Management, Coaching Repository & Notifications
+## COMPLETE Milestone 5: Task Management, Coaching Repository & Notifications
 
 **Objective:** Actionable dashboard for learning targets + live coaching sessions. FR-1.4.x.
 
@@ -252,7 +252,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 6: Analytics Dashboard & Automated Email Reports
+## Milestone 6: Analytics Dashboard & Automated Email Reports (T6.1 done; T6.2–T6.6 pending)
 
 **Objective:** Aesthetic summary of consistency. FR-1.5.x.
 
@@ -286,7 +286,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 7: UX & Queue Polish (post-M4 feedback)
+## COMPLETE Milestone 7: UX & Queue Polish (post-M4 feedback)
 
 **Objective:** Make the app feel alive on day one and remove friction in the
 recording detail flow. These are real-use findings, not new scope — they sharpen
@@ -304,10 +304,13 @@ existing M1–M3 surfaces.
   screen.
 
 ### Acceptance criteria
-* After first index, the Today queue shows **≥3** recordings (topped up from the
-  soonest-next-due if the strict-GPA due-today set is smaller); the Tomorrow
-  preview shows **≥3** likewise. The canonical GPA intervals are NOT altered —
-  top-ups are presented as reviewable-early, not rescheduled.
+* After first index, the Tomorrow preview shows **≥3** recordings (topped up
+  from the soonest-next-due if the strict-GPA due-tomorrow set is smaller). The
+  canonical GPA intervals are NOT altered — top-ups are presented as
+  reviewable-early, not rescheduled.
+  *Superseded by M10 AC4:* the Today queue **no longer** has a ≥3 floor — Today
+  shows only the strict due-set (active milestone due today or 1-day-stale).
+  M7 AC1's "Today ≥3" wording is withdrawn; the Tomorrow ≥3 floor stands.
 * The recording detail screen no longer shows duration / size / format chips;
   the GPA milestone (D+N) list renders **below** the vocab log section.
 * Tapping an attached image opens a full-screen viewer with pinch-zoom
@@ -321,6 +324,8 @@ existing M1–M3 surfaces.
   badged "up next"); apply the same ≥3 floor to the Tomorrow preview. Pure-Dart
   selector over the existing GPA derivation — no schema change, no rescheduling.
   *ACs:* M7 AC 1. *Deps:* T2.4 (today queue + stale rule).
+  *Superseded by T10.1:* the Today top-up half is removed (Today strict-only).
+  T7.1's Tomorrow top-up logic remains in force.
 - **T7.2 — Recording detail layout trim + reorder.** Remove the duration / size
   / format chips from the detail screen; move the D+N milestone list to render
   below the vocab log section. *ACs:* M7 AC 2. *Deps:* T1.6, T3.4.
@@ -334,7 +339,7 @@ existing M1–M3 surfaces.
 
 ---
 
-## Milestone 8: Playback-flow & safe-area fixes (post-M7 feedback)
+## Milestone 8: Playback-flow & safe-area fixes (post-M7 feedback) — T8.1/T8.2/T8.4 done; T8.3 image-render still broken (re-opened)
 
 **Objective:** Four real-use findings from the playback + library flow. The first
 three tighten how the queue, the player, and attached images behave; the fourth
@@ -392,7 +397,133 @@ sharpen M1–M3 surfaces (and one is a platform/edge-to-edge bug).
 
 ---
 
-## Open questions for the user
+## Milestone 9: Real-use feedback batch 2 + AnkiDroid 2.24 rework (post-M8)
+
+**Objective:** Two re-opened bugs and four polish items from the latest real-use
+pass. The headline: the Anki export "permission" fix (PR #41) was aimed at the
+*old* AnkiDroid API model — on AnkiDroid 2.24 the v1.1.0 `READ_WRITE_DATABASE`
+custom permission no longer grants content-provider access, and the user-facing
+flow has changed (global "Enable AnkiDroid API" toggle + a third-party-apps
+GitHub allowlist; no per-app grant screen). The image-attach render bug from
+T8.3 also remains open.
+
+### User stories
+* As a learner, I want "Send to Anki" to actually work against a current
+  AnkiDroid install (2.24+), not a 2020-era API model.
+* As a learner, I want attached notebook photos to render (thumbnail + full
+  screen), not show "couldn't load".
+* As a learner, I want the library + review lists to show which recording is
+  currently playing.
+* As a learner, I want tasks to open in a detail view on tap and enter edit
+  mode on a further tap (Todoist-style), not jump straight to editing.
+
+### Acceptance criteria
+* "Send to Anki" succeeds on AnkiDroid 2.24 without a manual permission dance,
+  OR fails with a hint that matches the modern AnkiDroid UI (no stale
+  "Settings → Advanced → API → allow Rivendell" copy).
+* An attached image renders its bytes (thumbnail + full-screen) on first
+  attach; a missing/corrupt file reports a clear, diagnosable state.
+* The currently-playing recording is visually indicated in the library list
+  and the review queue.
+* A task row opens a detail view on tap; a further tap enters edit mode.
+
+### Tickets
+- **T9.1 — AnkiDroid API v2 migration.** Swap the bundled `api-1.1.0.aar` for
+  the modern AnkiDroid API release that exposes `shouldRequestPermission()` /
+  `requestPermission()`; drive the runtime grant intent from the export flow
+  before the first content-provider call. Remove the now-stale v1.1.0
+  `READ_WRITE_DATABASE` guidance. *ACs:* M9 AC 1. *Deps:* T4.1.
+- **T9.2 — Word-log image render (root cause).** T8.3 added diagnostics but the
+  copy still produces an unrenderable file. Trace `ImageLogService.attach` →
+  SAF copy → stored path vs the `appDocsDir/{body}` read path; fix the mismatch
+  so the bytes decode. *ACs:* M9 AC 2. *Deps:* T3.3, T8.3.
+- **T9.3 — Now-playing indicator.** Surface the player snapshot's current
+  recording id in the library list + review queue rows (highlight / equalizer
+  glyph). *ACs:* M9 AC 3. *Deps:* T1.5.
+- **T9.4 — Tasks tap-to-detail.** Task row tap → detail view; further tap →
+  edit (Todoist-style). *ACs:* M9 AC 4. *Deps:* T5.2.
+
+---
+
+## Milestone 10: Real-use feedback batch 3 — capture naming, rename/delete, queue strictness (post-M9)
+
+**Objective:** Four real-use findings. Two add file management the indexer-only
+model lacked (in-app rename + delete, both touching the physical file in the
+Samsung folder); one fixes capture so a recording is named when taken; two
+tighten the queue (Today strict-only per user feedback, Tomorrow visually
+de-emphasized). M10 AC4 amends M7 AC1.
+
+### User stories
+* As a learner, I want to name a recording while I'm taking it so the saved
+  file reflects content, not a timestamp.
+* As a learner, I want to rename a recording in-app and have the file on disk
+  follow.
+* As a learner, I want to delete a recording in-app — file + all its data —
+  without leaving stale rows.
+* As a learner, I want Today's queue to show only what's genuinely due (no early
+  filler), so I trust the queue.
+* As a learner, I want Tomorrow's preview clearly de-emphasized so Today stands
+  out.
+
+### Acceptance criteria
+* The record sheet shows a name field while recording (pre-filled with the
+  auto-generated default). The entered name becomes the saved filename **and**
+  the display name; blank falls back to the default.
+* Rename from a recording's detail screen renames both the DB row (display name
+  + `filePath` upsert key) and the physical file in the Samsung folder
+  atomically; a re-scan does not resurrect the old name.
+* Delete from a recording's detail screen removes the physical file and
+  cascades the DB row + its `review_events`, `word_logs`, image logs, and
+  coach-bank links; a confirm dialog precedes deletion. Re-scan does not
+  resurrect the row.
+* **(Amends M7 AC1)** Today's queue shows only the strict due-set (active
+  milestone due today or 1-day-stale); the ≥3 Today floor is revoked.
+* Tomorrow's preview is **also strict-only**: it shows only active milestones
+  due tomorrow exactly (overdue == -1). The ≥3 floor and "up next" filler are
+  revoked for both windows. A recording appears in either queue only when on
+  or past its next review date.
+* Tomorrow's preview rows render de-emphasized (muted/grey, lower visual
+  weight) relative to Today.
+
+### tickets
+- **T10.1 — Queue strict-only (Today + Tomorrow).** Drop ALL top-up / filler
+  from `warmUpQueue` (queue_warmup.dart). Today = active milestone due today or
+  1-day-stale. Tomorrow = active milestone due tomorrow exactly (overdue == -1).
+  Remove `WarmPlacement` / `kWarmFloor` / `floor` param (single-value enum is
+  dead weight). Amend M7 AC1 wording + queue-warmup unit tests. *ACs:*
+  M10 AC4 + AC5(strict). *Deps:* T7.1.
+- **T10.2 — Tomorrow preview de-emphasis.** Render tomorrow-section rows in
+  `today_queue_screen.dart` with muted color + reduced weight vs Today (e.g.
+  `onSurfaceVariant` at reduced opacity, smaller leading badge). Today retains
+  full emphasis. Pure presentation. *ACs:* M10 AC5. *Deps:* T2.5, T10.1.
+- **T10.3 — Name-on-capture.** Add an editable name field to the record sheet
+  (visible while recording), pre-filled with `buildRecordingFileName` default.
+  On stop, `RecorderController.stop` uses the entered name as both the writer's
+  `displayName` and the indexed display name; blank or unchanged → default. The
+  temp-path → folder-copy step preserves the file extension. *ACs:* M10 AC1.
+  *Deps:* T2.7.
+- **T10.4 — Rename recording (DB + file).** ✅ Detail-screen AppBar menu
+  → Rename dialog. `RecordingManagementService.renameRecording` sanitizes the
+  base name (shared `sanitizeRecordingBaseName`), SAF-renames the doc via
+  `rivendell/record` → `renameDocument`, and writes the DB row's `name` +
+  `filePath` atomically (`RecordingRepository.updateNameAndPath`). The
+  authoritative new URI comes from SAF (the stem can shift on collision), so
+  the next rescan keys on the new path — no re-add. Falls back to a
+  timestamped base if the input sanitizes to empty; throws on SAF failure
+  without mutating the DB. *ACs:* M10 AC2. *Deps:* T1.3, T10.3.
+- **T10.5 — Delete recording (DB + file, cascade).** ✅ Detail-screen AppBar
+  menu → hard-confirm dialog ("Delete <name>? This removes the audio file and
+  all its vocab and review data.", no undo). `RecordingManagementService.
+  deleteRecording` best-effort wipes `wordlog/<id>/` (dart:io, app-private),
+  best-effort SAF-deletes the audio (`deleteDocument`), then a single
+  `recordings.deleteById` whose FK cascade drops `review_events`, `word_logs`,
+  `coach_note_recordings`, `coach_note_word_logs`. File-op failures are logged
+  but never block the DB delete. On success the detail screen pops; on failure
+  a snackbar surfaces. *ACs:* M10 AC3. *Deps:* T1.2, T3.1.
+
+---
+
+
 
 These are deferred, not blocking M0–M1. Surface them when their milestone approaches:
 
