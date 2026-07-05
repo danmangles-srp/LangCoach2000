@@ -150,6 +150,18 @@ class AppStrings {
     coachPickVocab: 'Pick vocab logs',
     coachNRecordingsN: '{n} recordings',
     coachNVocabN: '{n} vocab',
+    statsTitle: 'Stats',
+    statsGranularityDaily: 'Daily',
+    statsGranularityWeekly: 'Weekly',
+    statsGranularityMonthly: 'Monthly',
+    statsMetricLessonDuration: 'Lesson time',
+    statsMetricJournalingOutput: 'Vocab logs',
+    statsMetricCompletedQueueItems: 'Reviews done',
+    statsMetricFlashcardsReviewed: 'Flashcards',
+    statsEmptyTitle: 'No data yet',
+    statsEmptyBody:
+        'Listen to a due recording or add a vocab log and your stats '
+        'will appear here.',
     settingsTitle: 'Settings',
     settingsTooltip: 'Settings',
     settingsAutoAdvanceTitle: 'Auto-advance to next recording',
@@ -292,6 +304,18 @@ class AppStrings {
     coachPickVocab: 'Lug‘atni tanlash',
     coachNRecordingsN: '{n} yozuv',
     coachNVocabN: '{n} lug‘at',
+    statsTitle: 'Statistika',
+    statsGranularityDaily: 'Kunlik',
+    statsGranularityWeekly: 'Haftalik',
+    statsGranularityMonthly: 'Oylik',
+    statsMetricLessonDuration: 'Dars vaqti',
+    statsMetricJournalingOutput: 'Lug‘atlar',
+    statsMetricCompletedQueueItems: 'Tugatilgan takrorlar',
+    statsMetricFlashcardsReviewed: 'Flashkartalar',
+    statsEmptyTitle: 'Hozircha maʼlumot yo‘q',
+    statsEmptyBody:
+        'Muddatli yozuvni tinglang yoki lug‘at qo‘shing — statistika '
+        'shu yerda paydo bo‘ladi.',
     settingsTitle: 'Sozlamalar',
     settingsTooltip: 'Sozlamalar',
     settingsAutoAdvanceTitle: 'Keyingi yozuvga avtomatik o‘tish',
@@ -421,6 +445,19 @@ class AppStrings {
   String coachNRecordings(int n) =>
       _bundle.coachNRecordingsN.replaceAll('{n}', '$n');
   String coachNVocab(int n) => _bundle.coachNVocabN.replaceAll('{n}', '$n');
+
+  String get statsTitle => _bundle.statsTitle;
+  String get statsGranularityDaily => _bundle.statsGranularityDaily;
+  String get statsGranularityWeekly => _bundle.statsGranularityWeekly;
+  String get statsGranularityMonthly => _bundle.statsGranularityMonthly;
+  String get statsMetricLessonDuration => _bundle.statsMetricLessonDuration;
+  String get statsMetricJournalingOutput => _bundle.statsMetricJournalingOutput;
+  String get statsMetricCompletedQueueItems =>
+      _bundle.statsMetricCompletedQueueItems;
+  String get statsMetricFlashcardsReviewed =>
+      _bundle.statsMetricFlashcardsReviewed;
+  String get statsEmptyTitle => _bundle.statsEmptyTitle;
+  String get statsEmptyBody => _bundle.statsEmptyBody;
 
   String get settingsTitle => _bundle.settingsTitle;
   String get settingsTooltip => _bundle.settingsTooltip;
@@ -553,6 +590,16 @@ class _Bundle {
     required this.coachPickVocab,
     required this.coachNRecordingsN,
     required this.coachNVocabN,
+    required this.statsTitle,
+    required this.statsGranularityDaily,
+    required this.statsGranularityWeekly,
+    required this.statsGranularityMonthly,
+    required this.statsMetricLessonDuration,
+    required this.statsMetricJournalingOutput,
+    required this.statsMetricCompletedQueueItems,
+    required this.statsMetricFlashcardsReviewed,
+    required this.statsEmptyTitle,
+    required this.statsEmptyBody,
     required this.settingsTitle,
     required this.settingsTooltip,
     required this.settingsAutoAdvanceTitle,
@@ -673,6 +720,16 @@ class _Bundle {
   final String coachPickVocab;
   final String coachNRecordingsN;
   final String coachNVocabN;
+  final String statsTitle;
+  final String statsGranularityDaily;
+  final String statsGranularityWeekly;
+  final String statsGranularityMonthly;
+  final String statsMetricLessonDuration;
+  final String statsMetricJournalingOutput;
+  final String statsMetricCompletedQueueItems;
+  final String statsMetricFlashcardsReviewed;
+  final String statsEmptyTitle;
+  final String statsEmptyBody;
   final String settingsTitle;
   final String settingsTooltip;
   final String settingsAutoAdvanceTitle;

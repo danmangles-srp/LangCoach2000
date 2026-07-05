@@ -1,15 +1,16 @@
-// Rivendell — app home shell (T2.5). A four-destination bottom nav: the Today
+// Rivendell — app home shell (T2.5). A five-destination bottom nav: the Today
 // tab is the review queue (the app's primary surface — M2 story 3), the
 // Library tab is the full recordings list (T1.4), the Tasks tab is the
-// exercises/to-do surface (T5.2), the Coach tab is the Coach Bank (T5.5). All
-// stay built in an IndexedStack so switching is instant and transport/scroll
-// state survives.
+// exercises/to-do surface (T5.2), the Coach tab is the Coach Bank (T5.5), the
+// Stats tab is the analytics dashboard (T6.3). All stay built in an
+// IndexedStack so switching is instant and transport/scroll state survives.
 
 import 'package:flutter/material.dart';
 
 import 'package:rivendell/features/audio/presentation/recordings_screen.dart';
 import 'package:rivendell/features/coach/presentation/coach_bank_screen.dart';
 import 'package:rivendell/features/gpa/presentation/today_queue_screen.dart';
+import 'package:rivendell/features/metrics/presentation/stats_screen.dart';
 import 'package:rivendell/features/tasks/presentation/tasks_screen.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -33,6 +34,7 @@ class _HomeShellState extends State<HomeShell> {
           TodayQueueScreen(),
           RecordingsScreen(),
           TasksScreen(),
+          StatsScreen(),
           CoachBankScreen(),
         ],
       ),
@@ -59,6 +61,11 @@ class _HomeShellState extends State<HomeShell> {
               icon: const Icon(Icons.checklist_rounded),
               selectedIcon: const Icon(Icons.checklist_rounded),
               label: strings.tasksTitle,
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.insights_rounded),
+              selectedIcon: const Icon(Icons.insights_rounded),
+              label: strings.statsTitle,
             ),
             NavigationDestination(
               icon: const Icon(Icons.menu_book_rounded),

@@ -54,6 +54,8 @@ dependencies:
   # imports it directly to convert a local fire instant to a TZDateTime, so it
   # is declared here too (T5.3).
   timezone: ^0.11.1
+  # Native charts for the analytics dashboard (T6.3, FR-1.5.2).
+  fl_chart: ^0.71.0
 
 dev_dependencies:
   flutter_test:
