@@ -9,6 +9,16 @@ model_list:
           type: "enabled"
         reasoning_effort: "high"
 
+  - model_name: claude-haiku-4-5-20251001
+    litellm_params:
+      model: anthropic/glm-5.2
+      api_base: https://api.z.ai/api/anthropic
+      api_key: os.environ/ZAI_API_KEY
+      extra_body:
+        thinking:
+          type: "enabled"
+        reasoning_effort: "high"
+
   - model_name: claude-opus-4-8
     litellm_params:
       model: anthropic/glm-5.2
@@ -18,3 +28,4 @@ model_list:
         thinking:
           type: "enabled"
         reasoning_effort: "max"
+
