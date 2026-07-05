@@ -273,9 +273,9 @@ the abstract service seams, the offline queue, and the gate green — before any
   `review_events`** (count of milestone completions in the window) — do not duplicate it into a second
   counter. *ACs:* FR-1.5.1. *Deps:* T0.2, T2.2.
 - **T6.2 — Metrics aggregation (pure Dart).** Roll up events into daily/weekly/monthly series. *ACs:*
-  FR-1.5.1. *Deps:* T6.1. (Pure-Dart, unit-tested.)
+  FR-1.5.1. *Deps:* T6.1. (Pure-Dart, unit-tested.) ✅ PR #43
 - **T6.3 — Analytics dashboard.** `fl_chart` daily/weekly/monthly views; premium styling; empty states.
-  *ACs:* FR-1.5.2, M6 AC 1, NFR-2.4.1. *Deps:* T6.2.
+  *ACs:* FR-1.5.2, M6 AC 1, NFR-2.4.1. *Deps:* T6.2. ✅ PR #44
 - **T6.4 — HTML report renderer.** Render the weekly aggregate into a stylized HTML template. *ACs:*
   FR-1.5.3 (render). *Deps:* T6.2.
 - **T6.5 — SMTP email service (abstract seam).** `EmailService` interface; SMTP impl via `mailer`; creds

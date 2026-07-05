@@ -39,6 +39,8 @@ the product. Working code that solved the wrong problem is a failure, not a near
 9. **Check in.** Summarize what changed, what you decided, and what still needs human/device acceptance.
    Surface any assumption you made so the user can correct it.
 10. **Commit & PR.** Follow the standards below.
+11. Update `plan.md`. Mark completed milestones and tickets as COMPLETE e.g. ## MS1 --> ## COMPLETE MS1. 
+e.g. `- T9.1` -> `- COMPLETE (#34) T9.1`
 
 ## Validation gate (before every commit)
 
@@ -90,7 +92,7 @@ spend the user's attention on decisions that actually fork the product.
 
 ## Self-review feedback loops (review your own work before the human does)
 
-Treat your first draft as a draft. Two loops, run before every PR:
+Treat your first draft as a draft. Two LIGHTWEIGHT loops, run before every PR:
 
 - **Code loop** — `/code-review` (or a `subagent` told to be adversarial: "find bugs, reuse, and
   simplifications in this diff; assume it's wrong"). Apply the valid findings; re-run until clean.
