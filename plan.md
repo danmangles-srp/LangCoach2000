@@ -277,7 +277,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 - **T6.3 — Analytics dashboard.** `fl_chart` daily/weekly/monthly views; premium styling; empty states.
   *ACs:* FR-1.5.2, M6 AC 1, NFR-2.4.1. *Deps:* T6.2. ✅ PR #44
 - **T6.4 — HTML report renderer.** Render the weekly aggregate into a stylized HTML template. *ACs:*
-  FR-1.5.3 (render). *Deps:* T6.2.
+  FR-1.5.3 (render). *Deps:* T6.2. ✅ PR #45
 - **T6.5 — SMTP email service (abstract seam).** `EmailService` interface; SMTP impl via `mailer`; creds
   via `--dart-define`; enqueue + drain on reconnect. *ACs:* FR-1.5.3, NFR-2.1.3, NFR-2.6.1. *Deps:* T0.3,
   T6.4.
