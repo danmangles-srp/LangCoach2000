@@ -340,7 +340,7 @@ existing M1–M3 surfaces.
 
 ---
 
-## Milestone 8: Playback-flow & safe-area fixes (post-M7 feedback) — T8.1/T8.2/T8.4 done; T8.3 image-render still broken (re-opened)
+## Milestone 8: Playback-flow & safe-area fixes (post-M7 feedback) — T8.1/T8.2/T8.3/T8.4 done (image-render *bug* still open under T9.2)
 
 **Objective:** Four real-use findings from the playback + library flow. The first
 three tighten how the queue, the player, and attached images behave; the fourth
@@ -391,6 +391,7 @@ sharpen M1–M3 surfaces (and one is a platform/edge-to-edge bug).
   log the resolved path + existence under the `wordlog` tag, and replace the bare
   broken-image icon with a clear "couldn't load" tile. Re-attach + share the log
   to root-cause the on-device copy/decode failure. *ACs:* M8 AC 3. *Deps:* T3.3.
+  ✅ PR #31 (diagnostics + tile; on-device byte fix deferred to T9.2).
 - **T8.4 — Android safe-area.** Enable `SystemUiMode.edgeToEdge` in `main` so the
   system-bar insets are exposed, then ensure the home shell's `NavigationBar` and
   the detail screen's body sit above the bottom inset (`SafeArea`). *ACs:* M8 AC 4.
@@ -435,9 +436,16 @@ T8.3 also remains open.
   before the first content-provider call. Remove the now-stale v1.1.0
   `READ_WRITE_DATABASE` guidance. *ACs:* M9 AC 1. *Deps:* T4.1.
 - **T9.2 — Word-log image render (root cause).** T8.3 added diagnostics but the
-  copy still produces an unrenderable file. Trace `ImageLogService.attach` →
-  SAF copy → stored path vs the `appDocsDir/{body}` read path; fix the mismatch
-  so the bytes decode. *ACs:* M9 AC 2. *Deps:* T3.3, T8.3.
+  copy still produced an unrenderable file. Root cause: the SAF `copyTo` wrote
+  source bytes verbatim, so a corrupt/partial stream or a Samsung mime-mismatch
+  (e.g. HEIC bytes served under `image/jpeg`) landed bytes Flutter's
+  `Image.file` could not decode. Fix: re-encode the picked image through
+  `BitmapFactory` (decode bounds → sample to a 2048px max edge → re-encode as
+  JPEG/PNG to match the destination extension, recycle the bitmap) and throw a
+  typed `IOException` on a corrupt/undecodable source so the caller surfaces
+  the failure rather than writing a broken file. JPG/PNG only (FR-1.3.1).
+  *ACs:* M9 AC 2. *Deps:* T3.3, T8.3.
+  ✅ PR #48.
 - **T9.3 — Now-playing indicator.** Surface the player snapshot's current
   recording id in the library list + review queue rows (highlight / equalizer
   glyph). *ACs:* M9 AC 3. *Deps:* T1.5.
