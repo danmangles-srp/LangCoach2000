@@ -144,8 +144,9 @@ class RecorderController extends Notifier<RecordingState> {
       return;
     }
 
+    String docUri;
     try {
-      await _writer.copyToFolder(
+      docUri = await _writer.copyToFolder(
         treeUri: folder,
         sourcePath: recordedPath,
         displayName: saveName,
@@ -154,6 +155,18 @@ class RecorderController extends Notifier<RecordingState> {
       _logger.e(LogTag.record, 'copy to folder failed: $e');
       _fail('write');
       return;
+    }
+
+    // T14.5: also publish to MediaStore so Samsung Voice Recorder's "All
+    // recordings" tab surfaces the capture. Best-effort — the SAF copy already
+    // succeeded, so a failure here is logged and the save flow continues.
+    try {
+      await _writer.publishToMediaStore(
+        sourceUri: docUri,
+        displayName: saveName,
+      );
+    } on Object catch (e) {
+      _logger.w(LogTag.record, 'mediastore publish failed: $e');
     }
 
     final indexer = await ref.read(recordingIndexerProvider.future);

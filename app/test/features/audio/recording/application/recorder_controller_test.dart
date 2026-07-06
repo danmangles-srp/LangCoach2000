@@ -55,6 +55,10 @@ class _FakeWriter implements RecordingWriterService {
   String? lastSource;
   String? lastName;
   Exception? throwOnCopy;
+  String? publishSourceUri;
+  String? publishName;
+  int publishCalls = 0;
+  Exception? throwOnPublish;
   @override
   Future<String> copyToFolder({
     required String treeUri,
@@ -67,6 +71,18 @@ class _FakeWriter implements RecordingWriterService {
     lastSource = sourcePath;
     lastName = displayName;
     return 'content://folder/$displayName';
+  }
+
+  @override
+  Future<void> publishToMediaStore({
+    required String sourceUri,
+    required String displayName,
+  }) async {
+    publishCalls++;
+    final err = throwOnPublish;
+    if (err != null) throw err;
+    publishSourceUri = sourceUri;
+    publishName = displayName;
   }
 }
 
@@ -208,12 +224,39 @@ void main() {
       expect(writer.lastName, _expectedName);
       expect(indexer.scanCalls, 1);
       expect(controller.lastSavedName, _expectedName);
+      // T14.5: after a successful copy, the recording is also published to
+      // MediaStore with the doc URI copyToFolder returned + the display name.
+      expect(writer.publishCalls, 1);
+      expect(writer.publishSourceUri, 'content://folder/$_expectedName');
+      expect(writer.publishName, _expectedName);
       expect(
         container.read(recorderControllerProvider).phase,
         RecordPhase.idle,
       );
     },
   );
+
+  // T14.5: a MediaStore publish failure is non-fatal — the SAF copy already
+  // succeeded, so the save flow still rescans + reaches idle.
+  test('stop with a MediaStore publish failure still reaches idle', () async {
+    await _setFolder(db);
+    final writer = _FakeWriter()..throwOnPublish = Exception('insert null');
+    final indexer = _FakeIndexer();
+    final container = _container(
+      recorder: _FakeRecorder(),
+      writer: writer,
+      indexer: indexer,
+      db: db,
+    );
+    final controller = container.read(recorderControllerProvider.notifier);
+    await controller.start();
+    await controller.stop();
+
+    expect(writer.publishCalls, 1);
+    expect(indexer.scanCalls, 1); // rescan still ran
+    expect(controller.lastSavedName, _expectedName);
+    expect(container.read(recorderControllerProvider).phase, RecordPhase.idle);
+  });
 
   test('stop when the writer throws → error(write), no rescan', () async {
     await _setFolder(db);

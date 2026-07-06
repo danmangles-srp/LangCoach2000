@@ -13,4 +13,14 @@ abstract class RecordingWriterService {
     required String sourcePath,
     required String displayName,
   });
+
+  /// Publish the just-saved recording ([sourceUri] = the doc URI returned by
+  /// [copyToFolder]) into MediaStore so Samsung Voice Recorder's "All
+  /// recordings" tab surfaces it (T14.5). Throws on failure — the caller logs
+  /// and continues, since the SAF copy has already succeeded and MediaStore
+  /// visibility is purely additive.
+  Future<void> publishToMediaStore({
+    required String sourceUri,
+    required String displayName,
+  });
 }

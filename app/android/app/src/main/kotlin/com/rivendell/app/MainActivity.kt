@@ -1,11 +1,14 @@
 package com.rivendell.app
 
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
+import android.provider.MediaStore
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -201,6 +204,23 @@ class MainActivity : AudioServiceFragmentActivity() {
                             result.success(removed)
                         } catch (e: Exception) {
                             result.error("DELETE_FAILED", e.message, null)
+                        }
+                    }
+                }
+
+                "publishToMediaStore" -> {
+                    val sourceUri = call.argument<String>("sourceUri")
+                    val displayName = call.argument<String>("displayName")
+                    if (sourceUri == null || displayName == null) {
+                        result.error("BAD_ARGS", "sourceUri/displayName required", null)
+                        return@setMethodCallHandler
+                    }
+                    thread(start = true) {
+                        try {
+                            publishToMediaStore(sourceUri, displayName)
+                            result.success(null)
+                        } catch (e: Exception) {
+                            result.error("MEDIASTORE_FAILED", e.message, null)
                         }
                     }
                 }
@@ -542,6 +562,41 @@ class MainActivity : AudioServiceFragmentActivity() {
         } finally {
             bitmap?.recycle()
         }
+    }
+
+    /**
+     * Publish a just-saved recording into MediaStore so Samsung Voice Recorder's
+     * "All recordings" tab (which queries MediaStore with voice-recording flags)
+     * surfaces it (FR-1.1.3, T14.5). The SAF copy alone is invisible to that
+     * tab. Inserts an audio row under Recordings/Voice Recorder tagged as a
+     * voice recording (IS_RECORDING on API 31+), then streams the source doc's
+     * bytes into the row's OutputStream. Best-effort: a throw bubbles to the
+     * Dart caller, which logs and continues (the SAF copy already succeeded;
+     * MediaStore visibility is additive).
+     */
+    private fun publishToMediaStore(sourceUriStr: String, displayName: String) {
+        val source = Uri.parse(sourceUriStr)
+        val resolver = contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Audio.Media.DISPLAY_NAME, displayName)
+            put(MediaStore.Audio.Media.MIME_TYPE, "audio/mp4")
+            put(MediaStore.Audio.Media.RELATIVE_PATH, "Recordings/Voice Recorder")
+            put(MediaStore.Audio.Media.ALBUM, "Voice Recorder")
+            put(MediaStore.Audio.Media.ARTIST, "Voice Recorder")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                put(MediaStore.Audio.Media.IS_RECORDING, 1)
+                put(MediaStore.Audio.Media.IS_MUSIC, 0)
+            }
+        }
+        val uri = resolver.insert(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            values,
+        ) ?: throw java.io.IOException("MediaStore insert returned null")
+        resolver.openOutputStream(uri)?.use { out ->
+            resolver.openInputStream(source)?.use { input ->
+                input.copyTo(out)
+            } ?: throw java.io.IOException("could not open source URI for publish")
+        } ?: throw java.io.IOException("could not open MediaStore OutputStream")
     }
 
     /** Largest power-of-two sample size keeping the longer edge ≤ [maxEdge]. */

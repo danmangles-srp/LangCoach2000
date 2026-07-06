@@ -37,4 +37,21 @@ class SafRecordingWriterService implements RecordingWriterService {
       throw FileSystemException('copy failed: ${e.code} ${e.message ?? ''}');
     }
   }
+
+  @override
+  Future<void> publishToMediaStore({
+    required String sourceUri,
+    required String displayName,
+  }) async {
+    try {
+      await _channel.invokeMethod<void>(
+        'publishToMediaStore',
+        <String, Object?>{'sourceUri': sourceUri, 'displayName': displayName},
+      );
+    } on PlatformException catch (e) {
+      throw FileSystemException(
+        'mediastore publish failed: ${e.code} ${e.message ?? ''}',
+      );
+    }
+  }
 }
