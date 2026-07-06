@@ -56,6 +56,7 @@ dependencies:
   timezone: ^0.11.1
   # Native charts for the analytics dashboard (T6.3, FR-1.5.2).
   fl_chart: ^0.71.0
+  mailer: ^7.1.0
 
 dev_dependencies:
   flutter_test:
