@@ -712,7 +712,7 @@ MediaStore. No new scope — all sharpen existing surfaces.
   the KV read; password stays blank). Keep `dispose` disposing all three. Regression: a widget test
   that mounts `SettingsScreen` (faked `settingsRepositoryProvider`) asserts it builds without
   throwing and a second open re-hydrates saved values. *ACs:* M14 AC 2. *Deps:* T6.6.
-- **T14.3 — Auto-advance shows real duration (no zero-length).** Root cause:
+- **COMPLETE (#53) T14.3 — Auto-advance shows real duration (seed only; persist-back deferred).** Root cause:
   `features/audio/presentation/recording_detail_screen.dart` `_DetailContent` computes
   `totalMs = snap.duration.inMilliseconds` (0 until the engine emits `MediaItem.duration`), so right
   after `context.replace('/recordings/$nextId')` the new row shows "0:00" + an indeterminate bar. The
@@ -723,6 +723,12 @@ MediaStore. No new scope — all sharpen existing surfaces.
   duration back to `recordings.durationMs` when it lands (in `_onMediaItem`) so later opens are
   instant. Tests: controller unit test that `loadAndPlay` with a non-null `durationMs` emits a
   snapshot with that duration before any transport event. *ACs:* M14 AC 3. *Deps:* T8.2, T1.5.
+  **Shipped (#53):** seed-only — `loadAndPlay` seeds `_duration` from `recording.durationMs`,
+  emits via `scheduleMicrotask` (the synchronous emit tripped Riverpod's build-phase guard since
+  `loadAndPlay` runs in the detail screen's build branch). **Persist-back deferred to T15.x:**
+  writing from the controller forces creation of `appDatabaseProvider`/`recordingRepositoryProvider`
+  during a build frame in widget tests that don't override the DB, entangling the same guard; needs
+  a cleaner injection seam (capture the repo at boot, not mid-build). The zero-length bug is fixed.
 - **T14.4 — Word-log image attach root-cause (4th attempt).** Failed three times (T8.3 diagnostics,
   T9.2 BitmapFactory re-encode). Symptom is "doesn't attach" — the `wordLogAttachFailed` snackbar
   from `word_log_section.dart _attachImage`, which fires on `isSupportedImageExt` rejection **or**
