@@ -1,20 +1,44 @@
 // Rivendell — root widget + Material 3 theme.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/app/router.dart';
+import 'package:rivendell/features/gpa/application/review_providers.dart';
+import 'package:rivendell/features/settings/application/settings_providers.dart';
+import 'package:rivendell/features/settings/domain/app_settings.dart';
+import 'package:rivendell/l10n/app_strings.dart';
 
 class RivendellApp extends ConsumerWidget {
   const RivendellApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep the 80%-review watcher alive for the app's lifetime so background
+    // playback still logs review events (FR-1.2.3, T2.2).
+    ref.watch(reviewProgressWatcherProvider);
+    final themePref = ref.watch(
+      appSettingsProvider.select((s) => s.themePreference),
+    );
+    final themeMode = switch (themePref) {
+      ThemePreference.system => ThemeMode.system,
+      ThemePreference.light => ThemeMode.light,
+      ThemePreference.dark => ThemeMode.dark,
+    };
     return MaterialApp.router(
       title: 'Rivendell',
       debugShowCheckedModeBanner: false,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
+      themeMode: themeMode,
+      localizationsDelegates: const [
+        AppStrings.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppStrings.supportedLocales,
       routerConfig: ref.watch(routerProvider),
     );
   }
