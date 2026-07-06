@@ -703,7 +703,7 @@ MediaStore. No new scope — all sharpen existing surfaces.
   unit tests (new cases: overdue 0/1/5/13 in; 14+ out; exactly-4 cap; ordering most-overdue-first;
   Tomorrow still overdue==−1 only). Pure-Dart, no schema change. *ACs:* M14 AC 1. *Deps:* T10.1
   (Today strict-only — superseded).
-- **T14.2 — Settings screen `LateInitializationError` fix.** Root cause:
+- **COMPLETE (#52) T14.2 — Settings screen `LateInitializationError` fix.** Root cause:
   `features/report/presentation/weekly_report_settings_section.dart:29-31` declares
   `late final TextEditingController _username/_password/_recipient` but never constructs them —
   `_hydrate` only writes `.text`, and `build` reads `_username` (line ~150) before any assignment,
