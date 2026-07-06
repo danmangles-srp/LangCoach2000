@@ -8,6 +8,7 @@
 // Home is the review-queue shell (T2.5); the library lives on the second
 // nav tab, so these tests switch to it before asserting on its content.
 
+import 'package:audio_service/audio_service.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,8 @@ import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/data/folder_repository.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
+import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
+import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart';
 
 void main() {
   Future<void> seedRecordings(AppDatabase db, {required int count}) async {
@@ -149,6 +152,90 @@ void main() {
     // After retry the empty state renders (no recordings seeded).
     expect(find.text('No recordings yet'), findsOneWidget);
   });
+
+  // T9.3: the library row surfaces the player snapshot — leading glyph swaps
+  // to graphic_eq + a "Now playing" trailing label appears on the active row,
+  // mirroring the review queue so the two lists agree on what "now playing"
+  // looks like. Other rows stay on the music_note glyph.
+  testWidgets(
+    'library row shows the now-playing glyph + label on the active recording',
+    (tester) async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      await FolderRepository(KvRepository(db)).setFolder('/svr');
+      await seedRecordings(db, count: 2);
+      // rec_0 is the first insert (row id 1). Targeting the older row proves
+      // the indicator tracks the snapshot, not list position.
+      const snapshot = PlaybackSnapshot(
+        recordingId: 1,
+        processingState: AudioProcessingState.ready,
+        isPlaying: true,
+        isCompleted: false,
+        position: Duration.zero,
+        duration: Duration(minutes: 1),
+        bufferedPosition: Duration.zero,
+        speed: 1,
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWith((ref) async {
+              ref.onDispose(db.close);
+              return db;
+            }),
+            audioPlayerControllerProvider.overrideWith(
+              () => _FakeAudio(snapshot),
+            ),
+          ],
+          child: const RivendellApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await openLibrary(tester);
+
+      expect(find.text('Now playing'), findsOneWidget);
+      expect(find.byIcon(Icons.graphic_eq_rounded), findsOneWidget);
+      // The other row keeps its muted music_note badge.
+      expect(find.byIcon(Icons.music_note_rounded), findsOneWidget);
+    },
+  );
+
+  testWidgets('library rows stay muted when the player is idle', (
+    tester,
+  ) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    await FolderRepository(KvRepository(db)).setFolder('/svr');
+    await seedRecordings(db, count: 2);
+    const snapshot = PlaybackSnapshot.idle();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWith((ref) async {
+            ref.onDispose(db.close);
+            return db;
+          }),
+          audioPlayerControllerProvider.overrideWith(
+            () => _FakeAudio(snapshot),
+          ),
+        ],
+        child: const RivendellApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await openLibrary(tester);
+
+    expect(find.text('Now playing'), findsNothing);
+    expect(find.byIcon(Icons.graphic_eq_rounded), findsNothing);
+    expect(find.byIcon(Icons.music_note_rounded), findsNWidgets(2));
+  });
+}
+
+/// Notifier that returns a fixed snapshot so the now-playing indicator can be
+/// exercised without a real audio engine.
+class _FakeAudio extends AudioPlayerController {
+  _FakeAudio(this.snapshot);
+  final PlaybackSnapshot snapshot;
+  @override
+  PlaybackSnapshot build() => snapshot;
 }
 
 /// DB-only host app (no extra overrides). Kept as a function so the override
