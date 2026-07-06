@@ -729,7 +729,7 @@ MediaStore. No new scope — all sharpen existing surfaces.
   writing from the controller forces creation of `appDatabaseProvider`/`recordingRepositoryProvider`
   during a build frame in widget tests that don't override the DB, entangling the same guard; needs
   a cleaner injection seam (capture the repo at boot, not mid-build). The zero-length bug is fixed.
-- **T14.4 — Word-log image attach root-cause (4th attempt).** Failed three times (T8.3 diagnostics,
+- **COMPLETE (#54, pending device confirm) T14.4 — Word-log image attach root-cause (open-once fix).** Failed three times (T8.3 diagnostics,
   T9.2 BitmapFactory re-encode). Symptom is "doesn't attach" — the `wordLogAttachFailed` snackbar
   from `word_log_section.dart _attachImage`, which fires on `isSupportedImageExt` rejection **or**
   `service.attach` throwing **or** the picker returning null (silent). Treat as unknown root cause
@@ -744,6 +744,12 @@ MediaStore. No new scope — all sharpen existing surfaces.
   prove a **fresh** attach renders both the thumbnail + the full-screen `_FullScreenImage`. If the
   root cause is a single-use PhotoPicker URI revoked before copy, the fix is to take a persistent
   copy (or re-encoded bytes) before returning from the picker. *ACs:* M14 AC 4. *Deps:* T3.3, T9.2.
+  **Shipped (#54):** audit pointed to `copyImage` reopening the picker URI twice (bounds, then decode);
+  on Samsung the PickVisualMedia grant isn't reliably reusable, so the 2nd `openInputStream()` threw
+  SecurityException → "could not decode image bytes" → `wordLogAttachFailed`. Fix: buffer the URI bytes
+  once, decode from the buffer (2 opens → 1). Native-only; **device confirm still required** (fresh
+  attach → thumbnail + `_FullScreenImage`). Secondary finding left as-is: `mimeToExt` rejects HEIC at
+  the picker (FR-1.3.1 is JPG/PNG), so T9.2's HEIC re-encoder is unreachable for HEIC sources.
 - **T14.5 — Capture → Samsung "All recordings" via MediaStore.** In-app captures already save to the
   Samsung folder via SAF (`saf_recording_writer_service.copyToFolder` on `rivendell/record`), but
   Samsung Voice Recorder's "All recordings" tab queries MediaStore with voice-recording flags, so a
