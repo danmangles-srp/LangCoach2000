@@ -103,6 +103,16 @@ class AudioPlayerController extends Notifier<PlaybackSnapshot> {
   Future<void> loadAndPlay(Recording recording) async {
     final service = _service ?? await _awaitService();
     if (service == null) return;
+    // Seed the duration floor from the recording row BEFORE loadRecording so
+    // the snapshot carries a real duration on the first frame after an
+    // auto-advance (the engine emits MediaItem.duration asynchronously, which
+    // left a 0:00 + indeterminate bar in the gap). Deferred via microtask:
+    // loadAndPlay can run inside a widget build (the detail screen's data
+    // branch), and a synchronous state set trips Riverpod's build-phase guard.
+    // Stream-originated emits (below) don't, so only this seed needs deferring.
+    _recordingId = recording.id;
+    _duration = Duration(milliseconds: recording.durationMs ?? 0);
+    scheduleMicrotask(_emit);
     await service.loadRecording(recording);
     await service.play();
   }
