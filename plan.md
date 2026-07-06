@@ -448,7 +448,13 @@ T8.3 also remains open.
   ✅ PR #48.
 - **T9.3 — Now-playing indicator.** Surface the player snapshot's current
   recording id in the library list + review queue rows (highlight / equalizer
-  glyph). *ACs:* M9 AC 3. *Deps:* T1.5.
+  glyph). The review queue already swapped its leading glyph to
+  `graphic_eq_rounded` + showed a "Now playing" trailing label on the active
+  row; T9.3 brings the library list to parity — `_RecordingTile` reads the
+  snapshot, swaps its `_FormatBadge` glyph between `music_note_rounded` and
+  `graphic_eq_rounded`, and shows the same trailing label so the two lists
+  agree on what "now playing" looks like. *ACs:* M9 AC 3. *Deps:* T1.5.
+  ✅ PR #49.
 - **T9.4 — Tasks tap-to-detail.** Task row tap → detail view; further tap →
   edit (Todoist-style). *ACs:* M9 AC 4. *Deps:* T5.2.
 

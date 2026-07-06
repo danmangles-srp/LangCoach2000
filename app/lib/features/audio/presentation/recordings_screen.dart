@@ -13,6 +13,7 @@ import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/recording_formatting.dart';
+import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/audio/recording/presentation/record_sheet.dart';
 import 'package:rivendell/l10n/app_strings.dart';
@@ -126,7 +127,7 @@ class RecordingsScreen extends ConsumerWidget {
   }
 }
 
-class _RecordingTile extends StatelessWidget {
+class _RecordingTile extends ConsumerWidget {
   const _RecordingTile({
     required this.recording,
     required this.dateFormat,
@@ -138,16 +139,47 @@ class _RecordingTile extends StatelessWidget {
   final RecordingNavContext navContext;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final strings = AppStrings.of(context);
+    // Select only the bits the indicator depends on so a transport tick that
+    // only advances `position` (every ~250ms while playing) doesn't rebuild
+    // every visible library row.
+    final snap = ref.watch(
+      audioPlayerControllerProvider.select(
+        (s) => (recordingId: s.recordingId, isPlaying: s.isPlaying),
+      ),
+    );
     final format = formatOf(recording);
     final duration = formatDurationMs(recording.durationMs);
     final date = dateFormat.format(recording.createdAt);
     final size = formatBytes(recording.sizeBytes);
 
+    // T9.3: highlight the row the player is on. Mirrors the review queue's
+    // leading glyph swap + trailing label so both lists agree on what
+    // "now playing" looks like.
+    final isCurrent = snap.recordingId == recording.id;
+    final isPlaying = isCurrent && snap.isPlaying;
+
+    Widget? trailing;
+    if (isCurrent) {
+      trailing = Text(
+        strings.queueNowPlaying,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
+        ),
+      );
+    } else if (format == null) {
+      trailing = Text(
+        strings.unknownFormat,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
     return ListTile(
-      leading: const _FormatBadge(),
+      leading: _FormatBadge(isPlaying: isPlaying),
       onTap: () =>
           context.push('/recordings/${recording.id}', extra: navContext),
       title: Text(recording.name, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -159,20 +191,15 @@ class _RecordingTile extends StatelessWidget {
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
-      trailing: format == null
-          ? Text(
-              strings.unknownFormat,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          : null,
+      trailing: trailing,
     );
   }
 }
 
 class _FormatBadge extends StatelessWidget {
-  const _FormatBadge();
+  const _FormatBadge({this.isPlaying = false});
+
+  final bool isPlaying;
 
   @override
   Widget build(BuildContext context) {
@@ -187,7 +214,7 @@ class _FormatBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
-        Icons.music_note_rounded,
+        isPlaying ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
         color: colorScheme.onPrimaryContainer,
         size: 20,
       ),
