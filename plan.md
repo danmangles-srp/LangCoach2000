@@ -279,8 +279,8 @@ the abstract service seams, the offline queue, and the gate green — before any
 - **T6.4 — HTML report renderer.** Render the weekly aggregate into a stylized HTML template. *ACs:*
   FR-1.5.3 (render). *Deps:* T6.2. ✅ PR #45
 - **T6.5 — SMTP email service (abstract seam).** `EmailService` interface; SMTP impl via `mailer`; creds
-  via `--dart-define`; enqueue + drain on reconnect. *ACs:* FR-1.5.3, NFR-2.1.3, NFR-2.6.1. *Deps:* T0.3,
-  T6.4.
+  in encrypted local KV (user-supplied Gmail app-password); enqueue + drain on reconnect. *ACs:*
+  FR-1.5.3, NFR-2.1.3, NFR-2.6.1. *Deps:* T0.3, T6.4. ✅ PR #46
 - **T6.6 — Weekly report scheduler.** `workmanager` periodic worker; dispatch the rendered HTML email
   weekly; retry/backoff; in-app "last send / next send" indicator. *ACs:* FR-1.5.3, M6 AC 3. *Deps:* T6.5.
 

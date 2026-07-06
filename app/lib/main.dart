@@ -18,6 +18,7 @@ import 'package:rivendell/core/queue/platform/queue_providers.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
+import 'package:rivendell/features/report/platform/email_providers.dart';
 import 'package:rivendell/features/tasks/application/task_providers.dart';
 
 Future<void> main() async {
@@ -68,10 +69,11 @@ Future<void> main() async {
   // Boot after runApp so a slow DB open / workmanager init can't delay the
   // first frame (NFR-2.2). Fire-and-forget: a boot failure is non-fatal —
   // items just wait for the next app start — but surface it so it isn't
-  // silently swallowed. The ai_image handler is registered BEFORE the worker
-  // starts so the initial online drain already sees it.
+  // silently swallowed. The ai_image + email handlers are registered BEFORE
+  // the worker starts so the initial online drain already sees them.
   unawaited(
     registerAiImageHandler(container)
+        .then((_) => registerEmailHandler(container))
         .then((_) => bootOfflineQueue(container))
         .catchError(
           (Object e, StackTrace st) => FlutterError.reportError(
