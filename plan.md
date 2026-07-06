@@ -693,7 +693,7 @@ MediaStore. No new scope — all sharpen existing surfaces.
   older One UI degrade gracefully (best-effort insert, never blocks the save).
 
 ### Tickets
-- **T14.1 — Today queue: 2-week backlog, cap 4.** In `features/gpa/domain/queue_warmup.dart`, change
+- **COMPLETE (#51) T14.1 — Today queue: 2-week backlog, cap 4.** In `features/gpa/domain/queue_warmup.dart`, change
   the Today membership test from `overdue >= 0 && overdue < 2` to `overdue >= 0 && overdue <= 13`,
   then take the **top 4** by most-overdue (the existing `_compareByDueThenId` sorts overdue-ascending;
   slice to 4 after sort). Drop the `isStale` distinction for Today rows (every Today row is now simply
@@ -897,38 +897,4 @@ canonical flow the official `ankidroid/apisample` ships, ported to Rivendell's c
   Widget tests: faked gateway exercising the three branches (notInstalled / needsPermission-granted /
   needsPermission-denied) assert the right dialog/snackbar/export path. *ACs:* M16 AC 1–4. *Deps:*
   T16.2, T4.5.
----
-
-## Milestone 17: Scope trim — hide Tasks + Coaching (deferred)
-
-**Objective:** User feedback (post-M14): Tasks and Coaching are not earning their
-surface in v1. Hide both from the UI for now — the code + schema stay in place
-(hidden, not deleted), so either can be re-exposed without a rebuild when the
-product calls for it. **Deferred** — do not start until the user picks this up.
-
-### User stories
-* As a user, I want the app's navigation to show only the surfaces I actually use
-  (Library, Today/Review, Progress, Settings) — Tasks and Coaching are noise to
-  me right now.
-
-### Acceptance criteria
-* The Tasks + Coaching nav destinations (and any entry points — FABs, deep-link
-  routes, settings rows) are hidden from the HomeShell / nav bar.
-* No data loss: the `tasks`, `coach_notes`, `coach_note_recordings`,
-  `coach_note_word_logs` tables + their repos/providers remain intact and
-  migrated; nothing is dropped. A re-expose later flips a flag, not a migration.
-* Deep links (`/tasks/:id`) degrade gracefully (fall back to home, not a crash).
-* Task-complete XP hook (T11.2) + task scheduled-notification path (T5.3) are
-  gated behind the same flag so no orphan notifications fire on a hidden feature.
-
-### tickets
-- **T17.1 — Feature-flag the Tasks + Coaching surfaces.** Add a
-  `featuresEnabled` setting (or a single `AppSettings.showTasksAndCoaching`
-  bool, default `false`) on `AppSettings` + `AppSettingsNotifier`, persisted via
-  `KvRepository` (key `settings.show_tasks_coaching`) — mirrors the
-  `showProgressIndicator` pattern from T11.5. Gate the HomeShell nav
-  destinations, the record/tasks FABs, the `/tasks/:id` route registration (or
-  its visibility), and the settings rows that configure either feature, behind
-  this flag. Gate the T5.3 notification scheduler + the T11.2 task-complete XP
-  hook on the same flag. *ACs:* M17 AC 1–4. *Deps:* T5.2, T11.2.
 ---
