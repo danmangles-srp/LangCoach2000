@@ -39,7 +39,7 @@ the product. Working code that solved the wrong problem is a failure, not a near
 9. **Check in.** Summarize what changed, what you decided, and what still needs human/device acceptance.
    Surface any assumption you made so the user can correct it.
 10. **Commit & PR.** Follow the standards below.
-11. Update `plan.md`. Mark completed milestones and tickets as COMPLETE e.g. ## MS1 --> ## COMPLETE MS1. 
+11. Merge and update `plan.md`. Mark completed milestones and tickets as COMPLETE e.g. ## MS1 --> ## COMPLETE MS1. 
 e.g. `- T9.1` -> `- COMPLETE (#34) T9.1`
 
 ## Validation gate (before every commit)

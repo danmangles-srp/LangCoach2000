@@ -430,7 +430,7 @@ T8.3 also remains open.
 * A task row opens a detail view on tap; a further tap enters edit mode.
 
 ### Tickets
-- **T9.1 — AnkiDroid API v2 migration.** Swap the bundled `api-1.1.0.aar` for
+- **NOT DONE T9.1 — AnkiDroid API v2 migration.** Swap the bundled `api-1.1.0.aar` for
   the modern AnkiDroid API release that exposes `shouldRequestPermission()` /
   `requestPermission()`; drive the runtime grant intent from the export flow
   before the first content-provider call. Remove the now-stale v1.1.0
@@ -469,7 +469,7 @@ T8.3 also remains open.
 
 ---
 
-## Milestone 10: Real-use feedback batch 3 — capture naming, rename/delete, queue strictness (post-M9) — T10.1/T10.2/T10.3/T10.4/T10.5 done (shipped together via PR #42)
+## COMPLETE Milestone 10: Real-use feedback batch 3 — capture naming, rename/delete, queue strictness (post-M9) — T10.1/T10.2/T10.3/T10.4/T10.5 done (shipped together via PR #42)
 
 **Objective:** Four real-use findings. Two add file management the indexer-only
 model lacked (in-app rename + delete, both touching the physical file in the
@@ -562,3 +562,339 @@ These are deferred, not blocking M0–M1. Surface them when their milestone appr
 4. **Weekly report cadence anchor** — "weekly" anchored to calendar week (Mon 00:00) vs. install
   anniversary. Decide at T6.6.
 5. **Uzbek text normalization** — Latin vs. Cyrillic Uzbek; does the parser normalize both? Decide at T3.2.
+
+---
+
+## Milestone 11: XP & Streak Motivation Layer
+
+**Objective:** Layer a lightweight, non-punitive progress signal on top of the existing review pipeline —
+a single XP total/level and a daily streak counter. XP **itself** is a derived view (sum of an append-only
+`xp_events` ledger, level banded at 500 XP — never a hand-edited counter, matching decision #9). The
+**only** manual input is an optional reading/movie activity log; everything else (reviews, word-log
+attaches, Anki exports, tasks) posts XP automatically as a side effect. Streaks have **1 freeze per
+week** (for a day off). Nothing is ever gated on XP or streak.
+
+### User stories
+* As a learner, I want a single XP total and level that grows automatically from actions I'm already
+  taking in the app, so progress feels earned without a separate logging chore.
+* As a learner, I want to optionally log a reading or movie-watching session for extra XP.
+* As a learner, I want a visible daily streak that survives one missed day per week.
+
+### Acceptance criteria
+* Dashboard shows a current XP total + level (derived, fixed band — **500 XP/level**), computed from an
+  append-only `xp_events` ledger, never a hand-edited counter.
+* XP posts automatically as a side effect of five actions: a review-event completion, a word-log attach,
+  a successful Anki export, a task marked complete, **and** a logged reading/movie activity. Canonical
+  point values: review **+10**, word-log attach **+5**, Anki export **+2 per card** (matches the
+  `flashcards_reviewed` metric), task complete **+8**, reading/movie log **+15**.
+* Streak count derives from consecutive calendar days with **≥1 review-event**; a missed day consumes
+  one available streak-freeze token (auto-granted weekly, **capped at 1 banked**) before the streak
+  resets to 0. Reading/movie logs feed XP only — not the streak.
+* XP + level + streak are visible on **all main screens** via a shared persistent indicator, and the
+  indicator can be hidden from Settings (default: shown).
+* No feature is ever gated, disabled, or hidden as a consequence of a broken streak or a zero XP
+  balance — streak/XP are purely informational.
+
+### Tickets
+- **T11.1 — XP ledger schema + engine (pure Dart).** Add an `xp_events` table
+  (`features/progress/data/xp_events_table.dart`, mirroring `metrics_events_table.dart`): columns
+  `id` (autoInc), `source` (text — `review`/`wordlog`/`anki`/`task`/`reading`/`movie`), `points`
+  (int, non-negative), `recordingId` (int, nullable, FK→recordings), `taskId` (int, nullable,
+  FK→tasks), `at` (DateTime, default now). Register in `app_database.dart` (`tables:`, bump
+  `schemaVersion` to 10, add `if (from < 10) await m.createTable(xpEvents);`).
+  Domain (`features/progress/domain/xp_level.dart`): `int levelFromTotalXp(int total) => total ~/ 500;`
+  + `int xpIntoLevel(int total) => total % 500;` + an `XpSource` enum with stable `columnValue`
+  strings (mirror `MetricKind`). Pure-Dart unit tests: level banding at 0/499/500/999/1000, negative
+  total clamps to 0. *ACs:* M11 AC 1. *Deps:* T0.2.
+- **T11.2 — XP awarding hooks.** Wire `xp_events` inserts into the five completion points — no new UI
+  for four of them, XP is a side effect:
+  - **review** (+10): `ReviewEventRepository.recordReview` + `markReviewed` (`features/gpa/data/review_event_repository.dart`) — insert the xp row in the same transaction.
+  - **wordlog** (+5): `WordLogRepository.setTextLog` (non-empty body) + `ImageLogService.attach` success (`features/wordlog/`).
+  - **anki** (+2 × cards exported): `AnkiExportService` success path (`features/anki/application/anki_export_service.dart`) — points = 2 × notes added.
+  - **task** (+8): task-completion mutation in `TaskRepository`/`task_commands.dart` (`features/tasks/`).
+  - **reading/movie** (+15): the T11.4 log insert.
+  All inserts go through a small `XpRepository.record(source, points, {recordingId, taskId})` over the
+  `xp_events` table (mirror `MetricsRepository.record`). Idempotency: review/anki hooks fire once per
+  completion (the existing transaction guards double-fires); wordlog setTextLog is replace-on-edit so
+  award only when the body changes from empty→non-empty (track via the prior row). Unit tests assert
+  each hook writes exactly one row with the expected source+points. *ACs:* M11 AC 2. *Deps:* T11.1,
+  T2.2, T3.2, T4.4, T5.2.
+- **T11.3 — Streak + freeze engine (pure Dart).** Domain
+  `features/progress/domain/streak_engine.dart`. `StreakResult computeStreak({required
+  List<DateTime> reviewDays, required DateTime asOf, required int freezesBanked})` — consecutive
+  calendar days with ≥1 review-event ending on `asOf` (or `asOf-1` if asOf itself has none, so "today
+  not yet reviewed" doesn't read as a break); a 1-day gap consumes one banked freeze (gap collapses,
+  streak continues); a longer gap or a gap with no freeze → streak 0. Source = `review_events`
+  `completedAt` day-set (reuse `ReviewEventRepository.eventTimestamps`). Freeze state is the one
+  mutable counter (not derivable from reviews): store `streak_freezes_banked` (int) +
+  `streak_freezes_last_grant_week` (ISO week id) in `key_values` via `KvRepository`; on compute, if the
+  current ISO week > last-grant week and banked < 1, set banked = 1 and stamp last-grant. Pure-Dart
+  engine tests: 3-day run, gap-with-freeze continues, gap-no-freeze resets, freeze auto-grant fires
+  once per ISO week, cap-1 banking. **No UI gating on reset.** *ACs:* M11 AC 3. *Deps:* T2.3, T11.1.
+- **T11.4 — Reading/movie activity log.** New manual XP source. Schema: `activity_logs` table
+  (`features/progress/data/activity_logs_table.dart`): `id`, `kind` (`reading`/`movie`), `title`
+  (text), `durationMinutes` (int, nullable), `at` (DateTime). Register in `app_database.dart`
+  (schemaVersion bump to 11 — fold with T11.1's bump if shipped together). Repository +
+  Riverpod providers under `features/progress/`. Entry UI: an "Log activity" action (FAB on the
+  progress dashboard or a menu item) opens a dialog (`AlertDialog`) with kind selector, title field,
+  optional duration field; on save, insert the `activity_logs` row **and** fire the T11.2
+  reading/movie XP hook (+15). List view of past logs on the dashboard (optional delete). Pure-Dart
+  repo tests + a widget test for the dialog. *ACs:* M11 AC 2 (5th source). *Deps:* T11.1, T11.2.
+- **T11.5 — XP & streak dashboard card + global indicator + settings toggle.**
+  - **Dashboard card** on `today_queue_screen.dart` (above the queue list): level + `xpIntoLevel/500`
+    progress bar + streak count + a freeze-available badge (frost icon when `banked > 0`).
+  - **Global indicator** visible on all main screens: a compact level/streak chip in the `HomeShell`
+    AppBar (read from a `progressSnapshotProvider` that fans out `xp_events` sum + streak result).
+  - **Settings toggle**: add `showProgressIndicator` (bool, default true) to `AppSettings`
+    (`features/settings/domain/app_settings.dart`) + `AppSettingsNotifier`
+    (`features/settings/application/settings_providers.dart`) persisted via `KvRepository`
+    (key `settings.show_progress`) — mirrors the existing auto-advance/theme pattern. When off, the
+    global indicator hides; the dashboard card stays.
+  Widget tests: card renders level/XP/streak from a faked ledger; toggle hides the chip. *ACs:*
+  M11 AC 1, AC 3, AC 4. *Deps:* T2.5, T11.1, T11.3.
+
+---
+
+## Milestone 14: Real-use feedback batch 4 — queue backlog, capture indexing, crash + render bugs (post-M11)
+
+**Objective:** Five findings from the latest real-use pass. One widens Today's queue back to a
+forgiving 2-week backlog (the **third** Today revision: M7 ≥3 floor → M10 strict-only → M14
+2-week-backlog, cap 4); one crashes the settings screen on open; one shows an auto-advanced
+recording as zero-length; one re-opens the word-log image attach bug after **three** failed
+attempts; one gets in-app captures into Samsung Voice Recorder's global "All recordings" tab via
+MediaStore. No new scope — all sharpen existing surfaces.
+
+### User stories
+* As a learner, I want Today to surface anything I've let slip in the last two weeks (up to four),
+  not just what's due today, so a missed day doesn't drop recordings out of sight.
+* As a user, I want the Settings screen to open without crashing.
+* As a listener, when a recording auto-advances I want the next one to show its real length, not
+  "0:00".
+* As a learner, I want to attach a notebook photo and actually see it attach (this has failed three
+  times).
+* As a learner recording in-app, I want the capture to also appear in Samsung Voice Recorder's "All
+  recordings" tab, not just inside Rivendell.
+
+### Acceptance criteria
+* **(Amends M10 AC4)** Today's queue shows recordings whose active milestone became due in the last
+  2 weeks (overdue 0..13 days), most-overdue first, **capped at 4**. The 1-day-stale special case +
+  badge is subsumed by the backlog window (every Today row is simply "due", ordered by overdue days).
+  M10's strict-only Today wording is withdrawn. **Tomorrow stays strict-only** (M10 AC5 unchanged —
+  overdue == −1 exactly); the cap + 2-week window apply to Today only.
+* The Settings screen opens without throwing; the SMTP-credentials block renders populated on second
+  open and never throws `LateInitializationError`.
+* After an auto-advance, the detail screen shows the new recording's real duration immediately (no
+  transient "0:00 / 0:00"); the slider is usable as soon as the row loads.
+* Attaching a JPG/PNG notebook photo produces a renderable thumbnail + full-screen image on the
+  **first** attach, on device. A genuine decode failure (corrupt source, unsupported bytes) surfaces
+  a precise, diagnosable error — not a silent no-op or a bare "couldn't load".
+* A recording captured in-app is queryable by Samsung Voice Recorder's "All recordings" tab on
+  Android 12+ (MediaStore row with `IS_RECORDING=1`, album/artist "Voice Recorder"). Captures on
+  older One UI degrade gracefully (best-effort insert, never blocks the save).
+
+### Tickets
+- **T14.1 — Today queue: 2-week backlog, cap 4.** In `features/gpa/domain/queue_warmup.dart`, change
+  the Today membership test from `overdue >= 0 && overdue < 2` to `overdue >= 0 && overdue <= 13`,
+  then take the **top 4** by most-overdue (the existing `_compareByDueThenId` sorts overdue-ascending;
+  slice to 4 after sort). Drop the `isStale` distinction for Today rows (every Today row is now simply
+  due; the stale badge is removed from the Today path — the Tomorrow path is untouched). Update
+  `features/gpa/data/review_event_repository.dart` `warmedQueue` doc + the `_WarmedTile` stale branch
+  in `features/gpa/presentation/today_queue_screen.dart`. Amend M10 AC4 wording + the queue-warmup
+  unit tests (new cases: overdue 0/1/5/13 in; 14+ out; exactly-4 cap; ordering most-overdue-first;
+  Tomorrow still overdue==−1 only). Pure-Dart, no schema change. *ACs:* M14 AC 1. *Deps:* T10.1
+  (Today strict-only — superseded).
+- **T14.2 — Settings screen `LateInitializationError` fix.** Root cause:
+  `features/report/presentation/weekly_report_settings_section.dart:29-31` declares
+  `late final TextEditingController _username/_password/_recipient` but never constructs them —
+  `_hydrate` only writes `.text`, and `build` reads `_username` (line ~150) before any assignment,
+  throwing `LateInitializationError: field '_username' has not been initialised`. Fix: construct the
+  three controllers in `initState` (empty text; `_hydrate` then sets username/recipient text after
+  the KV read; password stays blank). Keep `dispose` disposing all three. Regression: a widget test
+  that mounts `SettingsScreen` (faked `settingsRepositoryProvider`) asserts it builds without
+  throwing and a second open re-hydrates saved values. *ACs:* M14 AC 2. *Deps:* T6.6.
+- **T14.3 — Auto-advance shows real duration (no zero-length).** Root cause:
+  `features/audio/presentation/recording_detail_screen.dart` `_DetailContent` computes
+  `totalMs = snap.duration.inMilliseconds` (0 until the engine emits `MediaItem.duration`), so right
+  after `context.replace('/recordings/$nextId')` the new row shows "0:00" + an indeterminate bar. The
+  DB already carries `recordings.durationMs` (nullable, filled lazily — see `recordings_table.dart`).
+  Fix: seed the controller's duration floor from the recording row — pass `durationMs` into
+  `AudioPlayerController.loadAndPlay` (`features/audio/playback/application/audio_player_controller.dart`)
+  so `_duration` initializes from it before the media-item stream fires. Persist the engine-resolved
+  duration back to `recordings.durationMs` when it lands (in `_onMediaItem`) so later opens are
+  instant. Tests: controller unit test that `loadAndPlay` with a non-null `durationMs` emits a
+  snapshot with that duration before any transport event. *ACs:* M14 AC 3. *Deps:* T8.2, T1.5.
+- **T14.4 — Word-log image attach root-cause (4th attempt).** Failed three times (T8.3 diagnostics,
+  T9.2 BitmapFactory re-encode). Symptom is "doesn't attach" — the `wordLogAttachFailed` snackbar
+  from `word_log_section.dart _attachImage`, which fires on `isSupportedImageExt` rejection **or**
+  `service.attach` throwing **or** the picker returning null (silent). Treat as unknown root cause
+  and prove the fix on device — do **not** guess again. Audit (read, in order):
+  `features/wordlog/platform/saf_image_log_picker_service.dart` + the Kotlin `pickImage` handler on
+  `rivendell/wordlog` in `MainActivity.kt` (does the PhotoPicker launch + return a usable, persistent
+  URI?); `features/wordlog/domain/supported_image_format.dart` (does it reject real-world ext like
+  `.jpeg`/HEIC?); `image_log_service.attach` + `saf_image_writer_service` Kotlin (does the re-encode
+  throw on a revoked / single-use PhotoPicker URI?); the `rivendell/wordlog` channel contract test.
+  Instrument every hop under the `wordlog` tag (picker result, ext, channel return, bytes written,
+  DB row id) so a failure leaves a precise trail. Reproduce on device, fix the actual root cause, and
+  prove a **fresh** attach renders both the thumbnail + the full-screen `_FullScreenImage`. If the
+  root cause is a single-use PhotoPicker URI revoked before copy, the fix is to take a persistent
+  copy (or re-encoded bytes) before returning from the picker. *ACs:* M14 AC 4. *Deps:* T3.3, T9.2.
+- **T14.5 — Capture → Samsung "All recordings" via MediaStore.** In-app captures already save to the
+  Samsung folder via SAF (`saf_recording_writer_service.copyToFolder` on `rivendell/record`), but
+  Samsung Voice Recorder's "All recordings" tab queries MediaStore with voice-recording flags, so a
+  SAF-only file is invisible there. Add a Kotlin method `publishToMediaStore` on the `rivendell/record`
+  channel: insert a `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI` row with `DISPLAY_NAME`,
+  `MIME_TYPE=audio/mp4`, `RELATIVE_PATH=Recordings/Voice Recorder`, `ALBUM="Voice Recorder"`,
+  `ARTIST="Voice Recorder"`, and on API 31+ `IS_RECORDING=1`, `IS_MUSIC=0`; open the returned
+  `OutputStream` and stream the just-written file's bytes in. Dart side: after `copyToFolder`
+  succeeds in `recorder_controller.dart`, call `publishToMediaStore` with the new URI + display name.
+  Best-effort — on failure log under the `RECORD` tag and continue (the recording is already saved;
+  MediaStore visibility is additive). Gate the `IS_RECORDING` flag on `Build.VERSION.SDK_INT >= S`.
+  *ACs:* M14 AC 5. *Deps:* T2.7, T10.3.
+
+---
+
+## Milestone 15: Architecture health pass — review, refactor, gate efficiency (post-M11)
+
+**Objective:** Two non-feature asks. (1) A critical architecture review across the whole app, then
+a spawned refactor milestone for long-term maintainability. (2) Make the Standard Gate cheaper and
+guarantee it's wired as a hook. No user-visible behavior change.
+
+### User stories
+* As the maintainer, I want an honest audit of how the app is structured after this much accretion,
+  so the next milestones don't compound the rough edges.
+* As the maintainer, I want the gate to run fast enough that I actually run it, and certainty that
+  it fires on every push.
+
+### Acceptance criteria
+* A written architecture review lives at `docs/architecture-review.md`: per-feature boundary check
+  (presentation/application/data/domain seams), repository/service/provider consistency, Drift
+  migration + derive-don't-store invariant adherence, test-coverage gaps against the 80% floor, dead
+  code, duplication, error-handling consistency, i18n completeness, and NFR-perf risks. Each finding
+  is severity-tagged.
+* The review **emits its own follow-up tickets** (T15.3…T15.n) appended to this milestone, ordered
+  by severity — the review is not the deliverable, the refactors are. Do not start the refactors
+  until the review lands and the user picks the subset to ship.
+* The Standard Gate (`scripts/gate.sh`) runs materially faster on a no-op change (skips the Android
+  debug build when no native/Kotlin/manifest/resource file changed; reuses the build_runner cache).
+  The pre-push hook remains the canonical gate; `scripts/install-hooks.sh` is documented in the
+  bootstrap step and re-runnable.
+
+### tickets
+- **T15.1 — Whole-app architecture review (read-only).** Produce `docs/architecture-review.md`.
+  Cover, per feature dir under `lib/features/`: (a) layer purity (domain has no Flutter/Drift deps;
+  data has no presentation deps; presentation doesn't touch the DB directly); (b) repository +
+  service + provider naming/seam consistency vs the M0 pattern; (c) Drift migration hygiene
+  (schemaVersion bumps, idempotent `onUpgrade` branches, FK pragmas); (d) the two invariants —
+  append-only event logs (`review_events`, `metrics_events`, `xp_events`) and derive-don't-store
+  (`RecordingReviewStatus`, queue, XP level, streak count) — audited for accidental mutable
+  counters (freeze bank is the one allowed exception); (e) test-coverage holes against
+  `scripts/check_coverage.dart`; (f) dead code + duplication across the M7–M10 queue churn (e.g.
+  `WarmPlacement`-style leftovers, the two parallel queue shapes in `review_event_repository`:
+  `todayQueue` vs `warmedQueue`); (g) error-handling consistency (swallowed `on Object` catches,
+  missing user surfacing); (h) i18n — any hardcoded user-facing strings; (i) NFR-perf risks (N+1
+  queries, main-isolate file work, unbounded list builders). Output = the doc + a severity-ordered
+  refactor list that becomes T15.3+. *ACs:* M15 AC 1. *Deps:* none (read-only).
+- **T15.2 — Gate efficiency + hook assurance.** (a) Teach `scripts/gate.sh` to skip the Android
+  debug build (step 6) when `git diff` against the merge-base shows no change under
+  `app/android/**`, `**/*.kt`, `**/*.gradle*`, or `AndroidManifest.xml` — print a clear
+  `gate: android skipped (no native change)` line. (b) Ensure `dart run build_runner` reuses cached
+  outputs (don't blow away `.dart_tool/build` between runs). (c) Confirm the pre-push hook
+  (`scripts/git-hooks/pre-push`) still `exec`s `gate.sh` verbatim and that
+  `scripts/install-hooks.sh` installs pre-push + pre-commit + commit-msg; document running it in
+  `setup.md` bootstrap. (d) Add a `gate --fast` mode (`SKIP_ANDROID=1` + skip codegen when no
+  `.g.dart`/`.freezed.dart` source changed) for the inner-loop cycle. No change to what "green"
+  means on a real push. *ACs:* M15 AC 3. *Deps:* T0.1.
+- **T15.3…T15.n — Refactors emitted by T15.1.** Placeholder. Each high/medium finding in
+  `docs/architecture-review.md` becomes one ticket here (1 ticket = 1 PR), dependency-ordered. Scope
+  each to a PR-sized slice; do not bundle unrelated refactors. The user selects the subset to ship
+  before work begins. *ACs:* M15 AC 2. *Deps:* T15.1.
+
+---
+
+## Milestone 16: AnkiDroid runtime-grant fix (T9.1, finally)
+
+**Objective:** "Send to Anki" actually works against a current AnkiDroid install. The export throws
+`Permission not granted for: CardContentProvider.query /decks (com.rivendell.app)` on the very first
+content-provider call. Root cause is concrete and verified: `AnkiGateway.kt` calls
+`api.deckList` / `api.modelList` (content-provider queries) **without ever driving AnkiDroid's runtime
+permission grant**. On modern AnkiDroid, access requires the `READ_WRITE_PERMISSION`
+(`AddContentApi.READ_WRITE_PERMISSION`) runtime grant — which Rivendell never requests. The bundled
+`api-1.1.0.aar` already exports the symbols this needs (`READ_WRITE_PERMISSION`,
+`getAnkiDroidPackageName`, `shouldRequestPermission` is *not* on the AAR — see T16.1); **no AAR swap
+or manifest patch is the fix** — the missing piece is the runtime request flow itself. This is the
+canonical flow the official `ankidroid/apisample` ships, ported to Rivendell's channel architecture.
+
+> **Note on AnkiDroid 2.24+:** the runtime `ActivityCompat.requestPermissions({READ_WRITE_PERMISSION})`
+> call is still the correct API. On 2.24 the user must additionally have AnkiDroid's global
+> "Enable AnkiDroid API" toggle ON for the grant to succeed; when it's off the request returns DENIED
+> and Rivendell surfaces a current-copy CTA (T16.3) — *not* the stale "Settings → Advanced → API →
+> allow Rivendell" guidance PR #41 shipped.
+
+### User stories
+* As a learner, I want "Send to Anki" to succeed against my AnkiDroid install without a manual
+  permission dance, or to tell me exactly what to flip if it can't.
+
+### Acceptance criteria
+* Tapping "Send to Anki" on a recording's word log, on a device with AnkiDroid installed + its API
+  enabled, completes the export (Type 1 + Type 2 notes land in the Rivendell deck) with **no**
+  `CardContentProvider.query /decks` SecurityException.
+* On first export, if the runtime grant is missing, the user gets a one-time prompt that drives
+  AnkiDroid's native grant screen; after granting, the export proceeds automatically (no second tap).
+* If AnkiDroid is missing → "Install AnkiDroid" CTA (Play Store). If the grant is denied or the
+  AnkiDroid API toggle is off → a clear snackbar/dialog with **current** copy: "Open AnkiDroid →
+  Settings → enable the AnkiDroid API, then retry." No stale per-app-permission wording.
+* Repeated exports never re-prompt once granted; the grant state is read via the API, not cached.
+
+### Tickets
+- **T16.1 — Kotlin gateway: permission API + install detection.** In
+  `app/android/app/src/main/kotlin/com/rivendell/app/AnkiGateway.kt`:
+  - Add `fun shouldRequestPermission(): Boolean` = API ≥ M and
+    `ContextCompat.checkSelfPermission(context, AddContentApi.READ_WRITE_PERMISSION) != GRANTED`
+    (this is `AnkiDroidHelper.shouldRequestPermission` from the apisample — reimplement inline; the
+    `api-1.1.0.aar` does **not** ship `shouldRequestPermission` on `AddContentApi`, so don't call a
+    missing method — use the `ContextCompat` check against the `READ_WRITE_PERMISSION` constant, which
+    the AAR does export).
+  - Switch `isInstalled()` from the `packageManager.getPackageInfo` probe to
+    `AddContentApi.getAnkiDroidPackageName(context) != null` (canonical, also false when the user has
+    disabled the API).
+  - (No change to `ensureDeck`/`ensureModel`/`addNote`/`addMedia` — they're correct once the grant
+    lands. Optional later: adopt `findDeckIdByName`/`findModelIdByName`-style rename-resilient lookup
+    to cut content-provider round-trips — out of scope here.)
+  - In `AndroidManifest.xml` ensure `<uses-permission android:name="<READ_WRITE_PERMISSION string>"/>`
+    is declared (the permission is defined by AnkiDroid; the manifest declares that this app holds it,
+    which the runtime request then grants). Use the `AddContentApi.READ_WRITE_PERMISSION` value verbatim.
+  *ACs:* M16 AC 1. *Deps:* T4.1.
+- **T16.2 — Channel + MainActivity runtime-grant flow.** In `MainActivity.kt`, add two
+  `rivendell/anki` channel methods:
+  - `"shouldRequestPermission"` → `result.success(ankiGateway.shouldRequestPermission())`.
+  - `"requestPermission"` → register an `ActivityResultLauncher<String>` via
+    `registerForActivityResult(ActivityResultContracts.RequestPermission())` (the modern, lifecycle-safe
+    equivalent of `ActivityCompat.requestPermissions` + `onRequestPermissionsResult`; matches the SAF
+    launcher pattern already in this file). Stash the `MethodChannel.Result` in a `pendingPermissionResult`
+    field (mirror `pendingResult`/`pendingPickResult`), launch the contract with
+    `READ_WRITE_PERMISSION`, and on the result callback `result.success(granted)` (and clear the
+    pending field). Guard re-entry like the other launchers.
+  Keep the existing `SecurityException` → `ANKI_NO_ACCESS` catch as a defensive backstop, but the
+  front-door `shouldRequestPermission`/`requestPermission` is now the primary path. *ACs:* M16 AC 2.
+  *Deps:* T16.1.
+- **T16.3 — Dart export gate + one-time grant dialog + current copy.**
+  - `AnkiGateway` interface (`features/anki/application/anki_gateway.dart`) +
+    `AnkiDroidGatewayService` (`features/anki/platform/ankidroid_gateway_service.dart`): add
+    `Future<bool> shouldRequestPermission()` + `Future<bool> requestPermission()` wrapping the two new
+    channel methods. (`FakeAnkiGateway` gets no-op stubs returning `false`/`true`.)
+  - Export flow (`anki_export_button.dart` + `anki_export_providers.dart`): before
+    `exportType1`/`exportType2`, gate on access:
+    1. `isInstalled()` false → show "Install AnkiDroid" dialog (Play Store deep link
+       `market://details?id=com.ichi2.anki` with an http fallback). Return.
+    2. `shouldRequestPermission()` true → show a one-time explainer dialog ("Rivendell needs AnkiDroid
+       API access to add cards. Tap Continue to grant."), Continue → `requestPermission()`.
+       Granted → proceed with the export. Denied → snackbar with current copy ("Open AnkiDroid →
+       Settings → enable the AnkiDroid API, then retry.") and return.
+    3. Else → proceed with the export (existing path).
+  - Update ALL user-facing strings in `app/lib/l10n/` (en + templates) so nothing references the stale
+    per-app permission screen or "Advanced → API" path. Add a `ankiEnableApiHint` string.
+  - Handle the `ANKI_NO_ACCESS` typed error on existing calls as a fallback that re-runs the gate.
+  Widget tests: faked gateway exercising the three branches (notInstalled / needsPermission-granted /
+  needsPermission-denied) assert the right dialog/snackbar/export path. *ACs:* M16 AC 1–4. *Deps:*
+  T16.2, T4.5.
+---
