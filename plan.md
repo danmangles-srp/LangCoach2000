@@ -763,6 +763,18 @@ MediaStore. No new scope — all sharpen existing surfaces.
   MediaStore visibility is additive). Gate the `IS_RECORDING` flag on `Build.VERSION.SDK_INT >= S`.
   *ACs:* M14 AC 5. *Deps:* T2.7, T10.3.
 
+  **COMPLETE (#55, dev `cdf9dc7`).** Kotlin `publishToMediaStore` on `rivendell/record` inserts
+  `MediaStore.Audio.Media.EXTERNAL_CONTENT_URI` (DISPLAY_NAME / `audio/mp4` /
+  `Recordings/Voice Recorder` / `IS_RECORDING=1`,`IS_MUSIC=0` on API 31+) + streams the doc-URI bytes
+  via `openOutputStream`. Dart: abstract port method, Saf impl (channel contract, throws
+  `FileSystemException`), `recorder_controller.stop` captures the `copyToFolder` doc URI and calls
+  publish best-effort (`on Object catch` → warn-log → continue). Tests: happy path asserts
+  `publishCalls==1` + args; new "publish failure still reaches idle" pins non-fatal. Gate green incl.
+  Android debug APK. **Note:** PR #55 squash-landed on `main` by mistake (`gh pr create` defaulted
+  base `main`); dev got the change via FF from the feature branch `cdf9dc7` (parent `43ca556` = dev).
+  `main`/`dev` now diverged — reconcile on next dev→main sync. **Device confirm still wanted:**
+  record in-app, verify capture appears under Samsung Voice Recorder "All recordings".
+
 ---
 
 ## Milestone 15: Architecture health pass — review, refactor, gate efficiency (post-M11)
