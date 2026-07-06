@@ -33,6 +33,14 @@ class _WeeklyReportSettingsSectionState
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _username = TextEditingController();
+    _password = TextEditingController();
+    _recipient = TextEditingController();
+  }
+
+  @override
   void dispose() {
     _username.dispose();
     _password.dispose();
