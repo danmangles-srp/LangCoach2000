@@ -1,6 +1,8 @@
 package com.rivendell.app
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
@@ -475,7 +477,9 @@ class MainActivity : AudioServiceFragmentActivity() {
     }
 
     /** Map an image MIME type to a lowercase extension (no dot), or null when
-     *  the type isn't a supported JPG/PNG. */
+     *  JPG/PNG only (FR-1.3.1). [copyImage] re-encodes through BitmapFactory so
+     *  the stored bytes are always a Flutter-renderable JPEG/PNG even when the
+     *  source streams bytes that don't match its mime (T9.2 root cause). */
     private fun mimeToExt(mime: String?): String? =
         when (mime) {
             "image/jpeg" -> "jpg"
@@ -484,17 +488,60 @@ class MainActivity : AudioServiceFragmentActivity() {
         }
 
     /**
-     * Stream a picked image's bytes ([sourceUriStr], a content:// URI from the
-     * photo picker) into app-private storage at [destRelativePath] under
-     * filesDir (FR-1.3.1). Creates parent dirs so the wordlog/<id>/ tree is
-     * implicit. App-private storage needs no permission.
+     * Normalize a picked image's bytes ([sourceUriStr], a content:// URI from
+     * the photo picker) into app-private storage at [destRelativePath] under
+     * filesDir (FR-1.3.1). Decodes via [BitmapFactory] and re-encodes to match
+     * the destination's extension (JPEG for `.jpg`/HEIC sources, PNG for
+     * `.png`) so the stored file always decodes in Flutter's `Image.file`,
+     * regardless of the source format. Downsamples to a 2048px max edge to
+     * bound memory + storage. Throws [java.io.IOException] on a corrupt or
+     * undecodable source so the caller surfaces the failure rather than
+     * writing a file that renders as a broken image.
      */
     private fun copyImage(sourceUriStr: String, destRelativePath: String) {
         val source = Uri.parse(sourceUriStr)
         val dest = File(filesDir, destRelativePath)
         dest.parentFile?.mkdirs()
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         contentResolver.openInputStream(source)?.use { input ->
-            dest.outputStream().use { output -> input.copyTo(output) }
+            BitmapFactory.decodeStream(input, null, bounds)
         } ?: throw java.io.IOException("could not open source URI")
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            throw java.io.IOException(
+                "could not read image bounds (corrupt or unsupported format)",
+            )
+        }
+        val sample = sampleSizeFor(bounds.outWidth, bounds.outHeight, maxEdge = 2048)
+        val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+        val bitmap = contentResolver.openInputStream(source)?.use { input ->
+            BitmapFactory.decodeStream(input, null, opts)
+        } ?: throw java.io.IOException("could not decode image bytes")
+        try {
+            if (bitmap == null) {
+                throw java.io.IOException("image decoded to null (unsupported format)")
+            }
+            val format =
+                if (dest.extension.equals("png", ignoreCase = true)) {
+                    Bitmap.CompressFormat.PNG
+                } else {
+                    Bitmap.CompressFormat.JPEG
+                }
+            dest.outputStream().use { out ->
+                if (!bitmap.compress(format, 92, out)) {
+                    throw java.io.IOException("could not compress image to $dest")
+                }
+            }
+        } finally {
+            bitmap?.recycle()
+        }
+    }
+
+    /** Largest power-of-two sample size keeping the longer edge ≤ [maxEdge]. */
+    private fun sampleSizeFor(width: Int, height: Int, maxEdge: Int): Int {
+        var sample = 1
+        val longest = maxOf(width, height)
+        while (longest / sample > maxEdge) sample *= 2
+        return sample
     }
 }
