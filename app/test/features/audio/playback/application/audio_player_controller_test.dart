@@ -43,6 +43,8 @@ PlaybackState _transport({
 }
 
 class _FakePlaybackService implements AudioPlaybackService {
+  _FakePlaybackService({this.emitMediaItemOnLoad = true});
+
   final StreamController<PlaybackState> _state =
       StreamController<PlaybackState>.broadcast();
   final StreamController<MediaItem?> _item =
@@ -50,6 +52,10 @@ class _FakePlaybackService implements AudioPlaybackService {
 
   int? _currentId;
   final List<String> calls = <String>[];
+  // When false, loadRecording sets the row id but emits no MediaItem —
+  // simulates a slow engine so the controller's seed duration can be asserted
+  // independently of the media-item stream.
+  final bool emitMediaItemOnLoad;
 
   @override
   Stream<PlaybackState> get playbackState => _state.stream;
@@ -66,7 +72,9 @@ class _FakePlaybackService implements AudioPlaybackService {
   Future<void> loadRecording(Recording recording) async {
     _currentId = recording.id;
     calls.add('load');
-    _item.add(mediaItemFromRecording(recording));
+    if (emitMediaItemOnLoad) {
+      _item.add(mediaItemFromRecording(recording));
+    }
   }
 
   @override
@@ -248,4 +256,26 @@ void main() {
       expect(snapshot.processingState, AudioProcessingState.idle);
     },
   );
+
+  // T14.3: the duration floor is seeded from the recording row before the
+  // engine emits MediaItem.duration, so an auto-advance shows a real duration
+  // instead of 0:00 in the gap.
+  test('loadAndPlay seeds the duration from the recording row before any '
+      'media-item event', () async {
+    // Suppress the engine's MediaItem so the only duration source is the
+    // seed — proves the controller doesn't wait for the stream.
+    final fake = _FakePlaybackService(emitMediaItemOnLoad: false);
+    final container = _containerWith(fake);
+    addTearDown(container.dispose);
+    final sub = container.listen(audioPlayerControllerProvider, (_, __) {});
+
+    await container
+        .read(audioPlayerControllerProvider.notifier)
+        .loadAndPlay(_recording(durationMs: 100000));
+    await _flush(container);
+
+    final snapshot = sub.read();
+    expect(snapshot.recordingId, 42);
+    expect(snapshot.duration, const Duration(seconds: 100));
+  });
 }
