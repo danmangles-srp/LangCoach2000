@@ -818,6 +818,19 @@ guarantee it's wired as a hook. No user-visible behavior change.
   missing user surfacing); (h) i18n — any hardcoded user-facing strings; (i) NFR-perf risks (N+1
   queries, main-isolate file work, unbounded list builders). Output = the doc + a severity-ordered
   refactor list that becomes T15.3+. *ACs:* M15 AC 1. *Deps:* none (read-only).
+
+  **COMPLETE (#56).** `docs/architecture-review.md` written — 9 dimensions, severity-tagged,
+  every `high`/`med` claim spot-checked against source. Headline: app is healthy; migrations
+  idempotent (schemaVersion 9); both invariants hold (append-only logs, derive-don't-store); no
+  N+1; indexer offloads correctly; no orphan codegen; all providers have live consumers. Actionable
+  debt concentrated in: dead M7 queue shape (`todayQueue` family), one silent FR-1.2.3 swallow
+  (`review_providers:56-59`), `coach` off the M0 pattern, two list-perf hotspots (`coach_note_dialog`
+  unbounded `ListView`; `_WarmedTile` no-`.select` rebuild storm), one un-localized onboarding screen,
+  SAF adapter stack-trace drops (incl. T14.5 publish path). Coverage 90.8% (floor 80%); holes at
+  `app_database` 32% (no migration-step tests), `recording_indexer` 62%, provider-glue files.
+  Emitted **T15.3–T15.16** (14 tickets, severity-ordered, appended below) — user picks subset before
+  work begins. Plan-spec staleness logged for T15.15: `WarmPlacement`, gamification, "three event
+  repos", `todayQueue` "parallel" all do not match the code.
 - **T15.2 — Gate efficiency + hook assurance.** (a) Teach `scripts/gate.sh` to skip the Android
   debug build (step 6) when `git diff` against the merge-base shows no change under
   `app/android/**`, `**/*.kt`, `**/*.gradle*`, or `AndroidManifest.xml` — print a clear
@@ -828,10 +841,65 @@ guarantee it's wired as a hook. No user-visible behavior change.
   `setup.md` bootstrap. (d) Add a `gate --fast` mode (`SKIP_ANDROID=1` + skip codegen when no
   `.g.dart`/`.freezed.dart` source changed) for the inner-loop cycle. No change to what "green"
   means on a real push. *ACs:* M15 AC 3. *Deps:* T0.1.
-- **T15.3…T15.n — Refactors emitted by T15.1.** Placeholder. Each high/medium finding in
-  `docs/architecture-review.md` becomes one ticket here (1 ticket = 1 PR), dependency-ordered. Scope
-  each to a PR-sized slice; do not bundle unrelated refactors. The user selects the subset to ship
-  before work begins. *ACs:* M15 AC 2. *Deps:* T15.1.
+- **T15.3 — Delete dead M7 queue shape.** `high`. Remove `todayQueue`, the gpa `QueueItem`,
+  `classifyQueueEntry`, `QueueEntryKind` (all dead in prod; `warmedQueue` is the live shape). Update
+  the tests that exercise them. *Deps:* none.
+- **T15.4 — Stop silent FR-1.2.3 review-event loss.** `high`. `review_providers.dart:56-59` swallows
+  the `recordReview` append on the 80%-crossing watcher: user sees "reviewed" but the row is lost, no
+  signal, no retry, no `reviewGenerationProvider` bump. Surface a non-blocking "couldn't save review"
+  snackbar, reset the latch so the next crossing retries, bump the generator on success.
+  *Deps:* none.
+- **T15.5 — Bring `coach` onto the M0 pattern.** `high`. Feature is the most off-pattern: no
+  `domain/` (DTOs in `data/coach_note_repository.dart`), presentation imports `data/` directly, and
+  `coach_bank_screen` mutates via `repo.create/update/delete` with no `application/` orchestrator. Add
+  `coach/domain/`, add a `CoachNoteCommands` write orchestrator, remove presentation→data imports.
+  *Deps:* none.
+- **T15.6 — `coach_note_dialog` unbounded list.** `high`. `coach_note_dialog.dart:236`
+  `ListView(shrinkWrap, children:[for o in options])` materializes the full recordings list (≤1000) +
+  a `shrinkWrap` measure pass on dialog open. Convert to `ListView.builder`. *Deps:* none.
+- **T15.7 — `_WarmedTile` rebuild storm.** `high`. `today_queue_screen.dart:138`
+  `ref.watch(audioPlayerControllerProvider)` takes the full snapshot; just_audio's position stream
+  re-emits ~5-8 Hz, so every visible tile rebuilds that fast during playback. Tile uses only
+  `recordingId` + `isPlaying` → switch to `.select`, mirroring `recordings_screen.dart:148-152`.
+  *Deps:* none.
+- **T15.8 — Localize folder onboarding.** `high`. `folder_onboarding_screen.dart` has zero
+  `AppStrings` calls — 6 hardcoded user-facing strings (title, body, button, 3 snackbars). Route them
+  through `AppStrings` (en + uz; the `_Bundle` `required` fields enforce parity). *Deps:* none.
+- **T15.9 — Preserve stack traces across SAF adapters.** `med`. Five sites catch `PlatformException`
+  and rethrow a new `FileSystemException(message)`, dropping the stack: `saf_image_writer_service`
+  (`:28-31`), `saf_recording_writer_service` (`:36-38` copyToFolder + `:51-55` T14.5 publishToMediaStore),
+  `saf_recording_file_service` (`:30-32` rename + `:43-45` delete). Use `Error.throwWithStackTrace`.
+  *Deps:* none.
+- **T15.10 — Move domain DTOs out of `data/`.** `med`. `ScannedFile` is used by the abstract
+  `AudioIndexerService` seam → it must live in `audio/domain/`, not `data/recording_repository.dart`.
+  Revisit gpa `QueueItem`/`WarmedItem` placement after T15.3 (the dead `QueueItem` goes; `WarmedItem`
+  moves to `domain/`). *Deps:* T15.3.
+- **T15.11 — Offload AI image write.** `med`. `fal_ai_image_service.dart:135` does
+  `file.writeAsBytes(bytes, flush: true)` for an MB-scale download on the main isolate. Move to
+  `compute()`. *Deps:* none.
+- **T15.12 — Extract shared timestamp-range selector.** `med`. `review_event_repository.eventTimestamps`
+  ≈ `word_log_repository.textLogTimestamps` (~85% identical). One parameterized helper over table +
+  column + kind. *Deps:* none.
+- **T15.13 — i18n + presentation-decode polish.** `med`. `weekly_report_settings_section 'Save failed'`
+  snackbar + `recording_detail 'D+7'` milestone label → `AppStrings`; move `word_log_section`
+  `Image.file` decode behind an application service. *Deps:* none.
+- **T15.14 — `domain/` Flutter-SDK-free.** `low`. 7 domain files import `package:flutter/foundation.dart`
+  only for `@immutable`. Switch to `package:meta/meta.dart` (or drop — `@freezed` implies immutability).
+  Files: gpa (`gpa_intervals`, `review_status`, `queue_warmup`), wordlog (`vocab_pair`), anki
+  (`anki_model_spec`), report (`report_schedule`), audio (`recording_state`, `playback_snapshot`).
+  *Deps:* none.
+- **T15.15 — Reconcile `plan.md` with reality.** `low` (doc). Prune stale refs in T15.1's spec:
+  `WarmPlacement` (never existed), gamification (no XP/streak/freeze-bank code), "three event repos"
+  (no xp repo), "two parallel queue shapes" (`todayQueue` is dead, not parallel). *Deps:* T15.3.
+- **T15.16 — Close coverage holes.** `low` (deferred). Add a v1→v9 migration-step upgrade test
+  (`app_database.dart` at 32%); `recording_indexer` parse-path tests (62%, NFR-2.2.1 surface); a
+  `review_providers` append-failure test that locks T15.4. *Deps:* T15.4.
+
+> The full severity-tagged detail, verified file:line evidence, and "clean" dimensions live in
+> `docs/architecture-review.md` (T15.1). Each ticket above is one PR; do not bundle unrelated
+> refactors. **The user selects the subset to ship before any T15.3+ work begins.** Suggested pairs
+> if fewer PRs are wanted: T15.3+T15.10+T15.12 (queue/DTO/helper cleanup), T15.6+T15.7 (list-perf),
+> T15.8+T15.13 (i18n). Keep T15.4 / T15.5 / T15.9 / T15.11 standalone.
 
 ---
 
