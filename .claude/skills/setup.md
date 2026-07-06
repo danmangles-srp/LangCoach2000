@@ -133,7 +133,14 @@ Committed harness, all under `scripts/` and app-agnostic (see `scripts/README.md
 
 - **`scripts/gate.sh`** — the **Standard Gate**, the single source of truth for "is this green". It
   auto-detects the app directory (override with `APP_DIR=<dir>`), then runs codegen → format → analyze →
-  `flutter test --coverage` → the coverage floor. The `pre-push` hook calls exactly this.
+  `flutter test --coverage` → the coverage floor → the Android debug build. The `pre-push` hook calls
+  exactly this. Two skip optimizations keep it cheap on a no-op change: (1) the Android build is
+  skipped automatically when the diff vs the upstream merge-base touches no native file
+  (`app/android/**`, `*.kt`, `*.gradle*`, `AndroidManifest.xml`) — force it with
+  `GATE_FORCE_ANDROID=1`; (2) `gate.sh fast` (or `--fast` / `GATE_FAST=1`) is the inner-loop cycle:
+  `SKIP_ANDROID=1` **and** codegen is skipped when no `.dart` with a generated `part` directive
+  changed. `build_runner` is incremental regardless (`.dart_tool/build` is reused across runs), so a
+  no-op codegen is already a fast cache hit — `--fast` just skips even that.
 - **`scripts/check_coverage.dart`** — a portable lcov parser enforcing **≥80% on the logic surface**
   (excludes generated code, `l10n/`, `main.dart`, app shells, `presentation/`, and `platform/` SDK
   adapters; tune with `COVERAGE_MIN`). It lives in `scripts/` — not inside the app — so the floor
@@ -158,6 +165,9 @@ Scripts in `scripts/git-hooks/`, activated once with `sh scripts/install-hooks.s
 
 ```bash
 sh scripts/gate.sh                               # THE GATE (run before every push)
+sh scripts/gate.sh fast                          # inner-loop: skip Android + skip codegen when no codegen-source changed
+SKIP_ANDROID=1 sh scripts/gate.sh                # Dart-only cycle (keep codegen)
+GATE_FORCE_ANDROID=1 sh scripts/gate.sh          # force the Android build even with no native change
 flutter pub get                                  # resolve deps
 dart run build_runner build --delete-conflicting-outputs  # codegen
 flutter analyze                                  # static analysis
