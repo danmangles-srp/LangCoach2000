@@ -252,7 +252,7 @@ the abstract service seams, the offline queue, and the gate green — before any
 
 ---
 
-## Milestone 6: Analytics Dashboard & Automated Email Reports (T6.1 done; T6.2–T6.6 pending)
+## Milestone 6: Analytics Dashboard & Automated Email Reports (T6.1–T6.6 done)
 
 **Objective:** Aesthetic summary of consistency. FR-1.5.x.
 
@@ -282,7 +282,8 @@ the abstract service seams, the offline queue, and the gate green — before any
   in encrypted local KV (user-supplied Gmail app-password); enqueue + drain on reconnect. *ACs:*
   FR-1.5.3, NFR-2.1.3, NFR-2.6.1. *Deps:* T0.3, T6.4. ✅ PR #46
 - **T6.6 — Weekly report scheduler.** `workmanager` periodic worker; dispatch the rendered HTML email
-  weekly; retry/backoff; in-app "last send / next send" indicator. *ACs:* FR-1.5.3, M6 AC 3. *Deps:* T6.5.
+  weekly; retry/backoff; in-app "last send / next send" indicator. *ACs:* FR-1.5.3, M6 AC 3. *Deps:*
+  T6.5. ✅ PR #47
 
 ---
 

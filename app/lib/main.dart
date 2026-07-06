@@ -19,6 +19,7 @@ import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/report/platform/email_providers.dart';
+import 'package:rivendell/features/report/platform/report_providers.dart';
 import 'package:rivendell/features/tasks/application/task_providers.dart';
 
 Future<void> main() async {
@@ -75,6 +76,7 @@ Future<void> main() async {
     registerAiImageHandler(container)
         .then((_) => registerEmailHandler(container))
         .then((_) => bootOfflineQueue(container))
+        .then((_) => dispatchWeeklyReportIfDue(container))
         .catchError(
           (Object e, StackTrace st) => FlutterError.reportError(
             FlutterErrorDetails(exception: e, stack: st),

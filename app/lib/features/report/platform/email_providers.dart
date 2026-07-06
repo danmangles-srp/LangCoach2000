@@ -64,6 +64,16 @@ Future<String?> readReportRecipient(
   return fallback;
 }
 
+/// Persist (or clear) the weekly-report recipient override. An empty/null
+/// value deletes the key so the SMTP-login fallback takes effect.
+Future<void> writeReportRecipient(KvRepository repo, String? recipient) async {
+  if (recipient == null || recipient.isEmpty) {
+    await repo.delete(_kSmtpRecipient);
+  } else {
+    await repo.write(_kSmtpRecipient, recipient);
+  }
+}
+
 /// Register the `email` queue handler on the shared worker. Call once from app
 /// boot, BEFORE [bootOfflineQueue] starts the worker, so the initial online
 /// drain already sees it. The handler reads [smtpConfigProvider] fresh per
