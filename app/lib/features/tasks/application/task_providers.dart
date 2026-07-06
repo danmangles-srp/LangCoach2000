@@ -38,3 +38,10 @@ final taskCommandsProvider = FutureProvider<TaskCommands>(
 final tasksProvider = FutureProvider<List<Task>>(
   (ref) async => (await ref.watch(taskRepositoryProvider.future)).all(),
 );
+
+/// One task by id. Drives the task detail screen (T9.4). Invalidate with the
+/// same id after an edit so the detail re-reads the updated row.
+final taskByIdProvider = FutureProvider.family<Task?, int>(
+  (ref, id) async =>
+      (await ref.watch(taskRepositoryProvider.future)).getById(id),
+);
