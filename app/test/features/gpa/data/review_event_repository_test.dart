@@ -409,7 +409,7 @@ void main() {
     });
   });
 
-  group('warmedQueue (T7.1, strict-only per T10.1 / M10 AC4–5)', () {
+  group('warmedQueue (T14.1: Today 2-week backlog, Tomorrow strict)', () {
     // Created 2026-03-15: D+1 due 03-16, D+2 due 03-17, D+4 due 03-19.
     test('empty store -> empty today + tomorrow', () async {
       final q = await reviews.warmedQueue(asOf: created);
@@ -421,7 +421,7 @@ void main() {
       'day-one library (all due tomorrow): Today empty, all in Tomorrow',
       () async {
         // Five recordings indexed today (asOf = created). Every active
-        // milestone is D+1, due tomorrow. Strict Today is empty (no top-up);
+        // milestone is D+1, due tomorrow. Today is empty (no top-up);
         // Tomorrow holds all 5 strict-due rows.
         for (var i = 1; i <= 5; i++) {
           await seed(path: '/r$i.m4a', name: 'r$i', createdAt: created);
@@ -447,7 +447,7 @@ void main() {
       'due-today + due-tomorrow split strictly across the windows',
       () async {
         // asOf 03-16.
-        // rec a created 03-15: D+1 due 03-16 = today (strict).
+        // rec a created 03-15: D+1 due 03-16 = today.
         // recs b/c/d created 03-16: D+1 due 03-17 = tomorrow (strict).
         await seed(path: '/a.m4a', name: 'a', createdAt: created);
         final asOf = created.add(const Duration(days: 1));
@@ -455,7 +455,7 @@ void main() {
         await seed(path: '/c.m4a', name: 'c', createdAt: asOf);
         await seed(path: '/d.m4a', name: 'd', createdAt: asOf);
         final q = await reviews.warmedQueue(asOf: asOf);
-        // Today: only the one strict-due row (no top-up).
+        // Today: only the one due row (no top-up).
         expect(q.today, hasLength(1));
         expect(q.today.single.recording.name, 'a');
         // Tomorrow: all three strict-due-tomorrow rows.
@@ -481,14 +481,18 @@ void main() {
       expect(q.tomorrow, isEmpty);
     });
 
-    test('2-day-stale recording falls out of both windows', () async {
-      await seed();
-      // asOf 03-18: D+1 (03-16) is 2-day stale -> dropped (FR-1.2.5 cutoff).
-      final q = await reviews.warmedQueue(
-        asOf: created.add(const Duration(days: 3)),
-      );
-      expect(q.today, isEmpty);
-      expect(q.tomorrow, isEmpty);
-    });
+    test(
+      '2-day-overdue recording stays in Today backlog (T14.1 window)',
+      () async {
+        await seed();
+        // asOf 03-18: D+1 (03-16) is 2 days overdue — inside the 0..13 backlog
+        // window, so it surfaces in Today (pre-T14.1 it was dropped).
+        final q = await reviews.warmedQueue(
+          asOf: created.add(const Duration(days: 3)),
+        );
+        expect(q.today, hasLength(1));
+        expect(q.tomorrow, isEmpty);
+      },
+    );
   });
 }

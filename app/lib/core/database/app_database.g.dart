@@ -2595,6 +2595,1096 @@ class TasksCompanion extends UpdateCompanion<Task> {
   }
 }
 
+class $CoachNotesTable extends CoachNotes
+    with TableInfo<$CoachNotesTable, CoachNote> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CoachNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, title, body, createdAt, updatedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'coach_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CoachNote> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CoachNote map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachNote(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CoachNotesTable createAlias(String alias) {
+    return $CoachNotesTable(attachedDatabase, alias);
+  }
+}
+
+class CoachNote extends DataClass implements Insertable<CoachNote> {
+  final int id;
+  final String title;
+  final String? body;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CoachNote({
+    required this.id,
+    required this.title,
+    this.body,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || body != null) {
+      map['body'] = Variable<String>(body);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CoachNotesCompanion toCompanion(bool nullToAbsent) {
+    return CoachNotesCompanion(
+      id: Value(id),
+      title: Value(title),
+      body: body == null && nullToAbsent ? const Value.absent() : Value(body),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CoachNote.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachNote(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      body: serializer.fromJson<String?>(json['body']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'body': serializer.toJson<String?>(body),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CoachNote copyWith({
+    int? id,
+    String? title,
+    Value<String?> body = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CoachNote(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    body: body.present ? body.value : this.body,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CoachNote copyWithCompanion(CoachNotesCompanion data) {
+    return CoachNote(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      body: data.body.present ? data.body.value : this.body,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachNote(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, title, body, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachNote &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.body == this.body &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CoachNotesCompanion extends UpdateCompanion<CoachNote> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String?> body;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const CoachNotesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.body = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  CoachNotesCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    this.body = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : title = Value(title);
+  static Insertable<CoachNote> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? body,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (body != null) 'body': body,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  CoachNotesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<String?>? body,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return CoachNotesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('body: $body, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CoachNoteRecordingsTable extends CoachNoteRecordings
+    with TableInfo<$CoachNoteRecordingsTable, CoachNoteRecording> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CoachNoteRecordingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<int> noteId = GeneratedColumn<int>(
+    'note_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES coach_notes (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _recordingIdMeta = const VerificationMeta(
+    'recordingId',
+  );
+  @override
+  late final GeneratedColumn<int> recordingId = GeneratedColumn<int>(
+    'recording_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recordings (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [noteId, recordingId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'coach_note_recordings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CoachNoteRecording> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('note_id')) {
+      context.handle(
+        _noteIdMeta,
+        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteIdMeta);
+    }
+    if (data.containsKey('recording_id')) {
+      context.handle(
+        _recordingIdMeta,
+        recordingId.isAcceptableOrUnknown(
+          data['recording_id']!,
+          _recordingIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recordingIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {noteId, recordingId};
+  @override
+  CoachNoteRecording map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachNoteRecording(
+      noteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}note_id'],
+      )!,
+      recordingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recording_id'],
+      )!,
+    );
+  }
+
+  @override
+  $CoachNoteRecordingsTable createAlias(String alias) {
+    return $CoachNoteRecordingsTable(attachedDatabase, alias);
+  }
+}
+
+class CoachNoteRecording extends DataClass
+    implements Insertable<CoachNoteRecording> {
+  final int noteId;
+  final int recordingId;
+  const CoachNoteRecording({required this.noteId, required this.recordingId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['note_id'] = Variable<int>(noteId);
+    map['recording_id'] = Variable<int>(recordingId);
+    return map;
+  }
+
+  CoachNoteRecordingsCompanion toCompanion(bool nullToAbsent) {
+    return CoachNoteRecordingsCompanion(
+      noteId: Value(noteId),
+      recordingId: Value(recordingId),
+    );
+  }
+
+  factory CoachNoteRecording.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachNoteRecording(
+      noteId: serializer.fromJson<int>(json['noteId']),
+      recordingId: serializer.fromJson<int>(json['recordingId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'noteId': serializer.toJson<int>(noteId),
+      'recordingId': serializer.toJson<int>(recordingId),
+    };
+  }
+
+  CoachNoteRecording copyWith({int? noteId, int? recordingId}) =>
+      CoachNoteRecording(
+        noteId: noteId ?? this.noteId,
+        recordingId: recordingId ?? this.recordingId,
+      );
+  CoachNoteRecording copyWithCompanion(CoachNoteRecordingsCompanion data) {
+    return CoachNoteRecording(
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      recordingId: data.recordingId.present
+          ? data.recordingId.value
+          : this.recordingId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachNoteRecording(')
+          ..write('noteId: $noteId, ')
+          ..write('recordingId: $recordingId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(noteId, recordingId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachNoteRecording &&
+          other.noteId == this.noteId &&
+          other.recordingId == this.recordingId);
+}
+
+class CoachNoteRecordingsCompanion extends UpdateCompanion<CoachNoteRecording> {
+  final Value<int> noteId;
+  final Value<int> recordingId;
+  final Value<int> rowid;
+  const CoachNoteRecordingsCompanion({
+    this.noteId = const Value.absent(),
+    this.recordingId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CoachNoteRecordingsCompanion.insert({
+    required int noteId,
+    required int recordingId,
+    this.rowid = const Value.absent(),
+  }) : noteId = Value(noteId),
+       recordingId = Value(recordingId);
+  static Insertable<CoachNoteRecording> custom({
+    Expression<int>? noteId,
+    Expression<int>? recordingId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (noteId != null) 'note_id': noteId,
+      if (recordingId != null) 'recording_id': recordingId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CoachNoteRecordingsCompanion copyWith({
+    Value<int>? noteId,
+    Value<int>? recordingId,
+    Value<int>? rowid,
+  }) {
+    return CoachNoteRecordingsCompanion(
+      noteId: noteId ?? this.noteId,
+      recordingId: recordingId ?? this.recordingId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (noteId.present) {
+      map['note_id'] = Variable<int>(noteId.value);
+    }
+    if (recordingId.present) {
+      map['recording_id'] = Variable<int>(recordingId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachNoteRecordingsCompanion(')
+          ..write('noteId: $noteId, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CoachNoteWordLogsTable extends CoachNoteWordLogs
+    with TableInfo<$CoachNoteWordLogsTable, CoachNoteWordLog> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CoachNoteWordLogsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<int> noteId = GeneratedColumn<int>(
+    'note_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES coach_notes (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _wordLogIdMeta = const VerificationMeta(
+    'wordLogId',
+  );
+  @override
+  late final GeneratedColumn<int> wordLogId = GeneratedColumn<int>(
+    'word_log_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES word_logs (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [noteId, wordLogId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'coach_note_word_logs';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CoachNoteWordLog> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('note_id')) {
+      context.handle(
+        _noteIdMeta,
+        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteIdMeta);
+    }
+    if (data.containsKey('word_log_id')) {
+      context.handle(
+        _wordLogIdMeta,
+        wordLogId.isAcceptableOrUnknown(data['word_log_id']!, _wordLogIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wordLogIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {noteId, wordLogId};
+  @override
+  CoachNoteWordLog map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CoachNoteWordLog(
+      noteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}note_id'],
+      )!,
+      wordLogId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}word_log_id'],
+      )!,
+    );
+  }
+
+  @override
+  $CoachNoteWordLogsTable createAlias(String alias) {
+    return $CoachNoteWordLogsTable(attachedDatabase, alias);
+  }
+}
+
+class CoachNoteWordLog extends DataClass
+    implements Insertable<CoachNoteWordLog> {
+  final int noteId;
+  final int wordLogId;
+  const CoachNoteWordLog({required this.noteId, required this.wordLogId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['note_id'] = Variable<int>(noteId);
+    map['word_log_id'] = Variable<int>(wordLogId);
+    return map;
+  }
+
+  CoachNoteWordLogsCompanion toCompanion(bool nullToAbsent) {
+    return CoachNoteWordLogsCompanion(
+      noteId: Value(noteId),
+      wordLogId: Value(wordLogId),
+    );
+  }
+
+  factory CoachNoteWordLog.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CoachNoteWordLog(
+      noteId: serializer.fromJson<int>(json['noteId']),
+      wordLogId: serializer.fromJson<int>(json['wordLogId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'noteId': serializer.toJson<int>(noteId),
+      'wordLogId': serializer.toJson<int>(wordLogId),
+    };
+  }
+
+  CoachNoteWordLog copyWith({int? noteId, int? wordLogId}) => CoachNoteWordLog(
+    noteId: noteId ?? this.noteId,
+    wordLogId: wordLogId ?? this.wordLogId,
+  );
+  CoachNoteWordLog copyWithCompanion(CoachNoteWordLogsCompanion data) {
+    return CoachNoteWordLog(
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      wordLogId: data.wordLogId.present ? data.wordLogId.value : this.wordLogId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachNoteWordLog(')
+          ..write('noteId: $noteId, ')
+          ..write('wordLogId: $wordLogId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(noteId, wordLogId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CoachNoteWordLog &&
+          other.noteId == this.noteId &&
+          other.wordLogId == this.wordLogId);
+}
+
+class CoachNoteWordLogsCompanion extends UpdateCompanion<CoachNoteWordLog> {
+  final Value<int> noteId;
+  final Value<int> wordLogId;
+  final Value<int> rowid;
+  const CoachNoteWordLogsCompanion({
+    this.noteId = const Value.absent(),
+    this.wordLogId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CoachNoteWordLogsCompanion.insert({
+    required int noteId,
+    required int wordLogId,
+    this.rowid = const Value.absent(),
+  }) : noteId = Value(noteId),
+       wordLogId = Value(wordLogId);
+  static Insertable<CoachNoteWordLog> custom({
+    Expression<int>? noteId,
+    Expression<int>? wordLogId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (noteId != null) 'note_id': noteId,
+      if (wordLogId != null) 'word_log_id': wordLogId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CoachNoteWordLogsCompanion copyWith({
+    Value<int>? noteId,
+    Value<int>? wordLogId,
+    Value<int>? rowid,
+  }) {
+    return CoachNoteWordLogsCompanion(
+      noteId: noteId ?? this.noteId,
+      wordLogId: wordLogId ?? this.wordLogId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (noteId.present) {
+      map['note_id'] = Variable<int>(noteId.value);
+    }
+    if (wordLogId.present) {
+      map['word_log_id'] = Variable<int>(wordLogId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CoachNoteWordLogsCompanion(')
+          ..write('noteId: $noteId, ')
+          ..write('wordLogId: $wordLogId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MetricsEventsTable extends MetricsEvents
+    with TableInfo<$MetricsEventsTable, MetricsEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MetricsEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<int> value = GeneratedColumn<int>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, kind, value, recordedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'metrics_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MetricsEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MetricsEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MetricsEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}value'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MetricsEventsTable createAlias(String alias) {
+    return $MetricsEventsTable(attachedDatabase, alias);
+  }
+}
+
+class MetricsEvent extends DataClass implements Insertable<MetricsEvent> {
+  final int id;
+
+  /// Which metric this increment belongs to (a metric_kind.dart name).
+  final String kind;
+
+  /// The delta recorded by this event (ms for lesson duration, count
+  /// otherwise). Always non-negative; the recorder sums across a window.
+  final int value;
+
+  /// When the increment happened. Drives the daily/weekly/monthly buckets.
+  final DateTime recordedAt;
+  const MetricsEvent({
+    required this.id,
+    required this.kind,
+    required this.value,
+    required this.recordedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['kind'] = Variable<String>(kind);
+    map['value'] = Variable<int>(value);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    return map;
+  }
+
+  MetricsEventsCompanion toCompanion(bool nullToAbsent) {
+    return MetricsEventsCompanion(
+      id: Value(id),
+      kind: Value(kind),
+      value: Value(value),
+      recordedAt: Value(recordedAt),
+    );
+  }
+
+  factory MetricsEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MetricsEvent(
+      id: serializer.fromJson<int>(json['id']),
+      kind: serializer.fromJson<String>(json['kind']),
+      value: serializer.fromJson<int>(json['value']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'kind': serializer.toJson<String>(kind),
+      'value': serializer.toJson<int>(value),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+    };
+  }
+
+  MetricsEvent copyWith({
+    int? id,
+    String? kind,
+    int? value,
+    DateTime? recordedAt,
+  }) => MetricsEvent(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    value: value ?? this.value,
+    recordedAt: recordedAt ?? this.recordedAt,
+  );
+  MetricsEvent copyWithCompanion(MetricsEventsCompanion data) {
+    return MetricsEvent(
+      id: data.id.present ? data.id.value : this.id,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      value: data.value.present ? data.value.value : this.value,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MetricsEvent(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('value: $value, ')
+          ..write('recordedAt: $recordedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, kind, value, recordedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MetricsEvent &&
+          other.id == this.id &&
+          other.kind == this.kind &&
+          other.value == this.value &&
+          other.recordedAt == this.recordedAt);
+}
+
+class MetricsEventsCompanion extends UpdateCompanion<MetricsEvent> {
+  final Value<int> id;
+  final Value<String> kind;
+  final Value<int> value;
+  final Value<DateTime> recordedAt;
+  const MetricsEventsCompanion({
+    this.id = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.value = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+  });
+  MetricsEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required String kind,
+    required int value,
+    this.recordedAt = const Value.absent(),
+  }) : kind = Value(kind),
+       value = Value(value);
+  static Insertable<MetricsEvent> custom({
+    Expression<int>? id,
+    Expression<String>? kind,
+    Expression<int>? value,
+    Expression<DateTime>? recordedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (kind != null) 'kind': kind,
+      if (value != null) 'value': value,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+    });
+  }
+
+  MetricsEventsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? kind,
+    Value<int>? value,
+    Value<DateTime>? recordedAt,
+  }) {
+    return MetricsEventsCompanion(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      value: value ?? this.value,
+      recordedAt: recordedAt ?? this.recordedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<int>(value.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MetricsEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('kind: $kind, ')
+          ..write('value: $value, ')
+          ..write('recordedAt: $recordedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2607,6 +3697,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AiImageCacheItemsTable aiImageCacheItems =
       $AiImageCacheItemsTable(this);
   late final $TasksTable tasks = $TasksTable(this);
+  late final $CoachNotesTable coachNotes = $CoachNotesTable(this);
+  late final $CoachNoteRecordingsTable coachNoteRecordings =
+      $CoachNoteRecordingsTable(this);
+  late final $CoachNoteWordLogsTable coachNoteWordLogs =
+      $CoachNoteWordLogsTable(this);
+  late final $MetricsEventsTable metricsEvents = $MetricsEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2619,6 +3715,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     wordLogs,
     aiImageCacheItems,
     tasks,
+    coachNotes,
+    coachNoteRecordings,
+    coachNoteWordLogs,
+    metricsEvents,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2635,6 +3735,34 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('word_logs', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'coach_notes',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('coach_note_recordings', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'recordings',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('coach_note_recordings', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'coach_notes',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('coach_note_word_logs', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'word_logs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('coach_note_word_logs', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3080,6 +4208,30 @@ final class $$RecordingsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $CoachNoteRecordingsTable,
+    List<CoachNoteRecording>
+  >
+  _coachNoteRecordingsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.coachNoteRecordings,
+        aliasName: 'recordings__id__coach_note_recordings__recording_id',
+      );
+
+  $$CoachNoteRecordingsTableProcessedTableManager get coachNoteRecordingsRefs {
+    final manager = $$CoachNoteRecordingsTableTableManager(
+      $_db,
+      $_db.coachNoteRecordings,
+    ).filter((f) => f.recordingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _coachNoteRecordingsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$RecordingsTableFilterComposer
@@ -3172,6 +4324,31 @@ class $$RecordingsTableFilterComposer
           }) => $$WordLogsTableFilterComposer(
             $db: $db,
             $table: $db.wordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> coachNoteRecordingsRefs(
+    Expression<bool> Function($$CoachNoteRecordingsTableFilterComposer f) f,
+  ) {
+    final $$CoachNoteRecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.coachNoteRecordings,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNoteRecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.coachNoteRecordings,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -3316,6 +4493,32 @@ class $$RecordingsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> coachNoteRecordingsRefs<T extends Object>(
+    Expression<T> Function($$CoachNoteRecordingsTableAnnotationComposer a) f,
+  ) {
+    final $$CoachNoteRecordingsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.coachNoteRecordings,
+          getReferencedColumn: (t) => t.recordingId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CoachNoteRecordingsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.coachNoteRecordings,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$RecordingsTableTableManager
@@ -3331,7 +4534,11 @@ class $$RecordingsTableTableManager
           $$RecordingsTableUpdateCompanionBuilder,
           (Recording, $$RecordingsTableReferences),
           Recording,
-          PrefetchHooks Function({bool reviewEventsRefs, bool wordLogsRefs})
+          PrefetchHooks Function({
+            bool reviewEventsRefs,
+            bool wordLogsRefs,
+            bool coachNoteRecordingsRefs,
+          })
         > {
   $$RecordingsTableTableManager(_$AppDatabase db, $RecordingsTable table)
     : super(
@@ -3393,12 +4600,17 @@ class $$RecordingsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({reviewEventsRefs = false, wordLogsRefs = false}) {
+              ({
+                reviewEventsRefs = false,
+                wordLogsRefs = false,
+                coachNoteRecordingsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (reviewEventsRefs) db.reviewEvents,
                     if (wordLogsRefs) db.wordLogs,
+                    if (coachNoteRecordingsRefs) db.coachNoteRecordings,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3445,6 +4657,27 @@ class $$RecordingsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (coachNoteRecordingsRefs)
+                        await $_getPrefetchedData<
+                          Recording,
+                          $RecordingsTable,
+                          CoachNoteRecording
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RecordingsTableReferences
+                              ._coachNoteRecordingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RecordingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).coachNoteRecordingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.recordingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -3465,7 +4698,11 @@ typedef $$RecordingsTableProcessedTableManager =
       $$RecordingsTableUpdateCompanionBuilder,
       (Recording, $$RecordingsTableReferences),
       Recording,
-      PrefetchHooks Function({bool reviewEventsRefs, bool wordLogsRefs})
+      PrefetchHooks Function({
+        bool reviewEventsRefs,
+        bool wordLogsRefs,
+        bool coachNoteRecordingsRefs,
+      })
     >;
 typedef $$ReviewEventsTableCreateCompanionBuilder =
     ReviewEventsCompanion Function({
@@ -3800,6 +5037,27 @@ final class $$WordLogsTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$CoachNoteWordLogsTable, List<CoachNoteWordLog>>
+  _coachNoteWordLogsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.coachNoteWordLogs,
+        aliasName: 'word_logs__id__coach_note_word_logs__word_log_id',
+      );
+
+  $$CoachNoteWordLogsTableProcessedTableManager get coachNoteWordLogsRefs {
+    final manager = $$CoachNoteWordLogsTableTableManager(
+      $_db,
+      $_db.coachNoteWordLogs,
+    ).filter((f) => f.wordLogId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _coachNoteWordLogsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$WordLogsTableFilterComposer
@@ -3852,6 +5110,31 @@ class $$WordLogsTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> coachNoteWordLogsRefs(
+    Expression<bool> Function($$CoachNoteWordLogsTableFilterComposer f) f,
+  ) {
+    final $$CoachNoteWordLogsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.coachNoteWordLogs,
+      getReferencedColumn: (t) => t.wordLogId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNoteWordLogsTableFilterComposer(
+            $db: $db,
+            $table: $db.coachNoteWordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -3951,6 +5234,32 @@ class $$WordLogsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> coachNoteWordLogsRefs<T extends Object>(
+    Expression<T> Function($$CoachNoteWordLogsTableAnnotationComposer a) f,
+  ) {
+    final $$CoachNoteWordLogsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.coachNoteWordLogs,
+          getReferencedColumn: (t) => t.wordLogId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CoachNoteWordLogsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.coachNoteWordLogs,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$WordLogsTableTableManager
@@ -3966,7 +5275,7 @@ class $$WordLogsTableTableManager
           $$WordLogsTableUpdateCompanionBuilder,
           (WordLog, $$WordLogsTableReferences),
           WordLog,
-          PrefetchHooks Function({bool recordingId})
+          PrefetchHooks Function({bool recordingId, bool coachNoteWordLogsRefs})
         > {
   $$WordLogsTableTableManager(_$AppDatabase db, $WordLogsTable table)
     : super(
@@ -4015,47 +5324,72 @@ class $$WordLogsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({recordingId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (recordingId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.recordingId,
-                                referencedTable: $$WordLogsTableReferences
-                                    ._recordingIdTable(db),
-                                referencedColumn: $$WordLogsTableReferences
-                                    ._recordingIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({recordingId = false, coachNoteWordLogsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (coachNoteWordLogsRefs) db.coachNoteWordLogs,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (recordingId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.recordingId,
+                                    referencedTable: $$WordLogsTableReferences
+                                        ._recordingIdTable(db),
+                                    referencedColumn: $$WordLogsTableReferences
+                                        ._recordingIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (coachNoteWordLogsRefs)
+                        await $_getPrefetchedData<
+                          WordLog,
+                          $WordLogsTable,
+                          CoachNoteWordLog
+                        >(
+                          currentTable: table,
+                          referencedTable: $$WordLogsTableReferences
+                              ._coachNoteWordLogsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$WordLogsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).coachNoteWordLogsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.wordLogId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -4072,7 +5406,7 @@ typedef $$WordLogsTableProcessedTableManager =
       $$WordLogsTableUpdateCompanionBuilder,
       (WordLog, $$WordLogsTableReferences),
       WordLog,
-      PrefetchHooks Function({bool recordingId})
+      PrefetchHooks Function({bool recordingId, bool coachNoteWordLogsRefs})
     >;
 typedef $$AiImageCacheItemsTableCreateCompanionBuilder =
     AiImageCacheItemsCompanion Function({
@@ -4480,6 +5814,1324 @@ typedef $$TasksTableProcessedTableManager =
       Task,
       PrefetchHooks Function()
     >;
+typedef $$CoachNotesTableCreateCompanionBuilder =
+    CoachNotesCompanion Function({
+      Value<int> id,
+      required String title,
+      Value<String?> body,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$CoachNotesTableUpdateCompanionBuilder =
+    CoachNotesCompanion Function({
+      Value<int> id,
+      Value<String> title,
+      Value<String?> body,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$CoachNotesTableReferences
+    extends BaseReferences<_$AppDatabase, $CoachNotesTable, CoachNote> {
+  $$CoachNotesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<
+    $CoachNoteRecordingsTable,
+    List<CoachNoteRecording>
+  >
+  _coachNoteRecordingsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.coachNoteRecordings,
+        aliasName: 'coach_notes__id__coach_note_recordings__note_id',
+      );
+
+  $$CoachNoteRecordingsTableProcessedTableManager get coachNoteRecordingsRefs {
+    final manager = $$CoachNoteRecordingsTableTableManager(
+      $_db,
+      $_db.coachNoteRecordings,
+    ).filter((f) => f.noteId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _coachNoteRecordingsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CoachNoteWordLogsTable, List<CoachNoteWordLog>>
+  _coachNoteWordLogsRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.coachNoteWordLogs,
+        aliasName: 'coach_notes__id__coach_note_word_logs__note_id',
+      );
+
+  $$CoachNoteWordLogsTableProcessedTableManager get coachNoteWordLogsRefs {
+    final manager = $$CoachNoteWordLogsTableTableManager(
+      $_db,
+      $_db.coachNoteWordLogs,
+    ).filter((f) => f.noteId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _coachNoteWordLogsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CoachNotesTableFilterComposer
+    extends Composer<_$AppDatabase, $CoachNotesTable> {
+  $$CoachNotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> coachNoteRecordingsRefs(
+    Expression<bool> Function($$CoachNoteRecordingsTableFilterComposer f) f,
+  ) {
+    final $$CoachNoteRecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.coachNoteRecordings,
+      getReferencedColumn: (t) => t.noteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNoteRecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.coachNoteRecordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> coachNoteWordLogsRefs(
+    Expression<bool> Function($$CoachNoteWordLogsTableFilterComposer f) f,
+  ) {
+    final $$CoachNoteWordLogsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.coachNoteWordLogs,
+      getReferencedColumn: (t) => t.noteId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNoteWordLogsTableFilterComposer(
+            $db: $db,
+            $table: $db.coachNoteWordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CoachNotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CoachNotesTable> {
+  $$CoachNotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get body => $composableBuilder(
+    column: $table.body,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CoachNotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CoachNotesTable> {
+  $$CoachNotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get body =>
+      $composableBuilder(column: $table.body, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> coachNoteRecordingsRefs<T extends Object>(
+    Expression<T> Function($$CoachNoteRecordingsTableAnnotationComposer a) f,
+  ) {
+    final $$CoachNoteRecordingsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.coachNoteRecordings,
+          getReferencedColumn: (t) => t.noteId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CoachNoteRecordingsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.coachNoteRecordings,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> coachNoteWordLogsRefs<T extends Object>(
+    Expression<T> Function($$CoachNoteWordLogsTableAnnotationComposer a) f,
+  ) {
+    final $$CoachNoteWordLogsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.coachNoteWordLogs,
+          getReferencedColumn: (t) => t.noteId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CoachNoteWordLogsTableAnnotationComposer(
+                $db: $db,
+                $table: $db.coachNoteWordLogs,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$CoachNotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CoachNotesTable,
+          CoachNote,
+          $$CoachNotesTableFilterComposer,
+          $$CoachNotesTableOrderingComposer,
+          $$CoachNotesTableAnnotationComposer,
+          $$CoachNotesTableCreateCompanionBuilder,
+          $$CoachNotesTableUpdateCompanionBuilder,
+          (CoachNote, $$CoachNotesTableReferences),
+          CoachNote,
+          PrefetchHooks Function({
+            bool coachNoteRecordingsRefs,
+            bool coachNoteWordLogsRefs,
+          })
+        > {
+  $$CoachNotesTableTableManager(_$AppDatabase db, $CoachNotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CoachNotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CoachNotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CoachNotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> body = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CoachNotesCompanion(
+                id: id,
+                title: title,
+                body: body,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                Value<String?> body = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => CoachNotesCompanion.insert(
+                id: id,
+                title: title,
+                body: body,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CoachNotesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                coachNoteRecordingsRefs = false,
+                coachNoteWordLogsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (coachNoteRecordingsRefs) db.coachNoteRecordings,
+                    if (coachNoteWordLogsRefs) db.coachNoteWordLogs,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (coachNoteRecordingsRefs)
+                        await $_getPrefetchedData<
+                          CoachNote,
+                          $CoachNotesTable,
+                          CoachNoteRecording
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CoachNotesTableReferences
+                              ._coachNoteRecordingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CoachNotesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).coachNoteRecordingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.noteId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (coachNoteWordLogsRefs)
+                        await $_getPrefetchedData<
+                          CoachNote,
+                          $CoachNotesTable,
+                          CoachNoteWordLog
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CoachNotesTableReferences
+                              ._coachNoteWordLogsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CoachNotesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).coachNoteWordLogsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.noteId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$CoachNotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CoachNotesTable,
+      CoachNote,
+      $$CoachNotesTableFilterComposer,
+      $$CoachNotesTableOrderingComposer,
+      $$CoachNotesTableAnnotationComposer,
+      $$CoachNotesTableCreateCompanionBuilder,
+      $$CoachNotesTableUpdateCompanionBuilder,
+      (CoachNote, $$CoachNotesTableReferences),
+      CoachNote,
+      PrefetchHooks Function({
+        bool coachNoteRecordingsRefs,
+        bool coachNoteWordLogsRefs,
+      })
+    >;
+typedef $$CoachNoteRecordingsTableCreateCompanionBuilder =
+    CoachNoteRecordingsCompanion Function({
+      required int noteId,
+      required int recordingId,
+      Value<int> rowid,
+    });
+typedef $$CoachNoteRecordingsTableUpdateCompanionBuilder =
+    CoachNoteRecordingsCompanion Function({
+      Value<int> noteId,
+      Value<int> recordingId,
+      Value<int> rowid,
+    });
+
+final class $$CoachNoteRecordingsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CoachNoteRecordingsTable,
+          CoachNoteRecording
+        > {
+  $$CoachNoteRecordingsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CoachNotesTable _noteIdTable(_$AppDatabase db) => db.coachNotes
+      .createAlias('coach_note_recordings__note_id__coach_notes__id');
+
+  $$CoachNotesTableProcessedTableManager get noteId {
+    final $_column = $_itemColumn<int>('note_id')!;
+
+    final manager = $$CoachNotesTableTableManager(
+      $_db,
+      $_db.coachNotes,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_noteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $RecordingsTable _recordingIdTable(_$AppDatabase db) => db.recordings
+      .createAlias('coach_note_recordings__recording_id__recordings__id');
+
+  $$RecordingsTableProcessedTableManager get recordingId {
+    final $_column = $_itemColumn<int>('recording_id')!;
+
+    final manager = $$RecordingsTableTableManager(
+      $_db,
+      $_db.recordings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recordingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CoachNoteRecordingsTableFilterComposer
+    extends Composer<_$AppDatabase, $CoachNoteRecordingsTable> {
+  $$CoachNoteRecordingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CoachNotesTableFilterComposer get noteId {
+    final $$CoachNotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.noteId,
+      referencedTable: $db.coachNotes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNotesTableFilterComposer(
+            $db: $db,
+            $table: $db.coachNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$RecordingsTableFilterComposer get recordingId {
+    final $$RecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CoachNoteRecordingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CoachNoteRecordingsTable> {
+  $$CoachNoteRecordingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CoachNotesTableOrderingComposer get noteId {
+    final $$CoachNotesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.noteId,
+      referencedTable: $db.coachNotes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNotesTableOrderingComposer(
+            $db: $db,
+            $table: $db.coachNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$RecordingsTableOrderingComposer get recordingId {
+    final $$RecordingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CoachNoteRecordingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CoachNoteRecordingsTable> {
+  $$CoachNoteRecordingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CoachNotesTableAnnotationComposer get noteId {
+    final $$CoachNotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.noteId,
+      referencedTable: $db.coachNotes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.coachNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$RecordingsTableAnnotationComposer get recordingId {
+    final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CoachNoteRecordingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CoachNoteRecordingsTable,
+          CoachNoteRecording,
+          $$CoachNoteRecordingsTableFilterComposer,
+          $$CoachNoteRecordingsTableOrderingComposer,
+          $$CoachNoteRecordingsTableAnnotationComposer,
+          $$CoachNoteRecordingsTableCreateCompanionBuilder,
+          $$CoachNoteRecordingsTableUpdateCompanionBuilder,
+          (CoachNoteRecording, $$CoachNoteRecordingsTableReferences),
+          CoachNoteRecording,
+          PrefetchHooks Function({bool noteId, bool recordingId})
+        > {
+  $$CoachNoteRecordingsTableTableManager(
+    _$AppDatabase db,
+    $CoachNoteRecordingsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CoachNoteRecordingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CoachNoteRecordingsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$CoachNoteRecordingsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> noteId = const Value.absent(),
+                Value<int> recordingId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachNoteRecordingsCompanion(
+                noteId: noteId,
+                recordingId: recordingId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int noteId,
+                required int recordingId,
+                Value<int> rowid = const Value.absent(),
+              }) => CoachNoteRecordingsCompanion.insert(
+                noteId: noteId,
+                recordingId: recordingId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CoachNoteRecordingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({noteId = false, recordingId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (noteId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.noteId,
+                                referencedTable:
+                                    $$CoachNoteRecordingsTableReferences
+                                        ._noteIdTable(db),
+                                referencedColumn:
+                                    $$CoachNoteRecordingsTableReferences
+                                        ._noteIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (recordingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.recordingId,
+                                referencedTable:
+                                    $$CoachNoteRecordingsTableReferences
+                                        ._recordingIdTable(db),
+                                referencedColumn:
+                                    $$CoachNoteRecordingsTableReferences
+                                        ._recordingIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CoachNoteRecordingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CoachNoteRecordingsTable,
+      CoachNoteRecording,
+      $$CoachNoteRecordingsTableFilterComposer,
+      $$CoachNoteRecordingsTableOrderingComposer,
+      $$CoachNoteRecordingsTableAnnotationComposer,
+      $$CoachNoteRecordingsTableCreateCompanionBuilder,
+      $$CoachNoteRecordingsTableUpdateCompanionBuilder,
+      (CoachNoteRecording, $$CoachNoteRecordingsTableReferences),
+      CoachNoteRecording,
+      PrefetchHooks Function({bool noteId, bool recordingId})
+    >;
+typedef $$CoachNoteWordLogsTableCreateCompanionBuilder =
+    CoachNoteWordLogsCompanion Function({
+      required int noteId,
+      required int wordLogId,
+      Value<int> rowid,
+    });
+typedef $$CoachNoteWordLogsTableUpdateCompanionBuilder =
+    CoachNoteWordLogsCompanion Function({
+      Value<int> noteId,
+      Value<int> wordLogId,
+      Value<int> rowid,
+    });
+
+final class $$CoachNoteWordLogsTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CoachNoteWordLogsTable,
+          CoachNoteWordLog
+        > {
+  $$CoachNoteWordLogsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CoachNotesTable _noteIdTable(_$AppDatabase db) => db.coachNotes
+      .createAlias('coach_note_word_logs__note_id__coach_notes__id');
+
+  $$CoachNotesTableProcessedTableManager get noteId {
+    final $_column = $_itemColumn<int>('note_id')!;
+
+    final manager = $$CoachNotesTableTableManager(
+      $_db,
+      $_db.coachNotes,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_noteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $WordLogsTable _wordLogIdTable(_$AppDatabase db) => db.wordLogs
+      .createAlias('coach_note_word_logs__word_log_id__word_logs__id');
+
+  $$WordLogsTableProcessedTableManager get wordLogId {
+    final $_column = $_itemColumn<int>('word_log_id')!;
+
+    final manager = $$WordLogsTableTableManager(
+      $_db,
+      $_db.wordLogs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_wordLogIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CoachNoteWordLogsTableFilterComposer
+    extends Composer<_$AppDatabase, $CoachNoteWordLogsTable> {
+  $$CoachNoteWordLogsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CoachNotesTableFilterComposer get noteId {
+    final $$CoachNotesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.noteId,
+      referencedTable: $db.coachNotes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNotesTableFilterComposer(
+            $db: $db,
+            $table: $db.coachNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WordLogsTableFilterComposer get wordLogId {
+    final $$WordLogsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.wordLogId,
+      referencedTable: $db.wordLogs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WordLogsTableFilterComposer(
+            $db: $db,
+            $table: $db.wordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CoachNoteWordLogsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CoachNoteWordLogsTable> {
+  $$CoachNoteWordLogsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CoachNotesTableOrderingComposer get noteId {
+    final $$CoachNotesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.noteId,
+      referencedTable: $db.coachNotes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNotesTableOrderingComposer(
+            $db: $db,
+            $table: $db.coachNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WordLogsTableOrderingComposer get wordLogId {
+    final $$WordLogsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.wordLogId,
+      referencedTable: $db.wordLogs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WordLogsTableOrderingComposer(
+            $db: $db,
+            $table: $db.wordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CoachNoteWordLogsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CoachNoteWordLogsTable> {
+  $$CoachNoteWordLogsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CoachNotesTableAnnotationComposer get noteId {
+    final $$CoachNotesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.noteId,
+      referencedTable: $db.coachNotes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CoachNotesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.coachNotes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$WordLogsTableAnnotationComposer get wordLogId {
+    final $$WordLogsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.wordLogId,
+      referencedTable: $db.wordLogs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WordLogsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.wordLogs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CoachNoteWordLogsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CoachNoteWordLogsTable,
+          CoachNoteWordLog,
+          $$CoachNoteWordLogsTableFilterComposer,
+          $$CoachNoteWordLogsTableOrderingComposer,
+          $$CoachNoteWordLogsTableAnnotationComposer,
+          $$CoachNoteWordLogsTableCreateCompanionBuilder,
+          $$CoachNoteWordLogsTableUpdateCompanionBuilder,
+          (CoachNoteWordLog, $$CoachNoteWordLogsTableReferences),
+          CoachNoteWordLog,
+          PrefetchHooks Function({bool noteId, bool wordLogId})
+        > {
+  $$CoachNoteWordLogsTableTableManager(
+    _$AppDatabase db,
+    $CoachNoteWordLogsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CoachNoteWordLogsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CoachNoteWordLogsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CoachNoteWordLogsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> noteId = const Value.absent(),
+                Value<int> wordLogId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CoachNoteWordLogsCompanion(
+                noteId: noteId,
+                wordLogId: wordLogId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int noteId,
+                required int wordLogId,
+                Value<int> rowid = const Value.absent(),
+              }) => CoachNoteWordLogsCompanion.insert(
+                noteId: noteId,
+                wordLogId: wordLogId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CoachNoteWordLogsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({noteId = false, wordLogId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (noteId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.noteId,
+                                referencedTable:
+                                    $$CoachNoteWordLogsTableReferences
+                                        ._noteIdTable(db),
+                                referencedColumn:
+                                    $$CoachNoteWordLogsTableReferences
+                                        ._noteIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (wordLogId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.wordLogId,
+                                referencedTable:
+                                    $$CoachNoteWordLogsTableReferences
+                                        ._wordLogIdTable(db),
+                                referencedColumn:
+                                    $$CoachNoteWordLogsTableReferences
+                                        ._wordLogIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CoachNoteWordLogsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CoachNoteWordLogsTable,
+      CoachNoteWordLog,
+      $$CoachNoteWordLogsTableFilterComposer,
+      $$CoachNoteWordLogsTableOrderingComposer,
+      $$CoachNoteWordLogsTableAnnotationComposer,
+      $$CoachNoteWordLogsTableCreateCompanionBuilder,
+      $$CoachNoteWordLogsTableUpdateCompanionBuilder,
+      (CoachNoteWordLog, $$CoachNoteWordLogsTableReferences),
+      CoachNoteWordLog,
+      PrefetchHooks Function({bool noteId, bool wordLogId})
+    >;
+typedef $$MetricsEventsTableCreateCompanionBuilder =
+    MetricsEventsCompanion Function({
+      Value<int> id,
+      required String kind,
+      required int value,
+      Value<DateTime> recordedAt,
+    });
+typedef $$MetricsEventsTableUpdateCompanionBuilder =
+    MetricsEventsCompanion Function({
+      Value<int> id,
+      Value<String> kind,
+      Value<int> value,
+      Value<DateTime> recordedAt,
+    });
+
+class $$MetricsEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $MetricsEventsTable> {
+  $$MetricsEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MetricsEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $MetricsEventsTable> {
+  $$MetricsEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MetricsEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MetricsEventsTable> {
+  $$MetricsEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<int> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$MetricsEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MetricsEventsTable,
+          MetricsEvent,
+          $$MetricsEventsTableFilterComposer,
+          $$MetricsEventsTableOrderingComposer,
+          $$MetricsEventsTableAnnotationComposer,
+          $$MetricsEventsTableCreateCompanionBuilder,
+          $$MetricsEventsTableUpdateCompanionBuilder,
+          (
+            MetricsEvent,
+            BaseReferences<_$AppDatabase, $MetricsEventsTable, MetricsEvent>,
+          ),
+          MetricsEvent,
+          PrefetchHooks Function()
+        > {
+  $$MetricsEventsTableTableManager(_$AppDatabase db, $MetricsEventsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MetricsEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MetricsEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MetricsEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> kind = const Value.absent(),
+                Value<int> value = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+              }) => MetricsEventsCompanion(
+                id: id,
+                kind: kind,
+                value: value,
+                recordedAt: recordedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String kind,
+                required int value,
+                Value<DateTime> recordedAt = const Value.absent(),
+              }) => MetricsEventsCompanion.insert(
+                id: id,
+                kind: kind,
+                value: value,
+                recordedAt: recordedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MetricsEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MetricsEventsTable,
+      MetricsEvent,
+      $$MetricsEventsTableFilterComposer,
+      $$MetricsEventsTableOrderingComposer,
+      $$MetricsEventsTableAnnotationComposer,
+      $$MetricsEventsTableCreateCompanionBuilder,
+      $$MetricsEventsTableUpdateCompanionBuilder,
+      (
+        MetricsEvent,
+        BaseReferences<_$AppDatabase, $MetricsEventsTable, MetricsEvent>,
+      ),
+      MetricsEvent,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -4498,4 +7150,12 @@ class $AppDatabaseManager {
       $$AiImageCacheItemsTableTableManager(_db, _db.aiImageCacheItems);
   $$TasksTableTableManager get tasks =>
       $$TasksTableTableManager(_db, _db.tasks);
+  $$CoachNotesTableTableManager get coachNotes =>
+      $$CoachNotesTableTableManager(_db, _db.coachNotes);
+  $$CoachNoteRecordingsTableTableManager get coachNoteRecordings =>
+      $$CoachNoteRecordingsTableTableManager(_db, _db.coachNoteRecordings);
+  $$CoachNoteWordLogsTableTableManager get coachNoteWordLogs =>
+      $$CoachNoteWordLogsTableTableManager(_db, _db.coachNoteWordLogs);
+  $$MetricsEventsTableTableManager get metricsEvents =>
+      $$MetricsEventsTableTableManager(_db, _db.metricsEvents);
 }

@@ -1,11 +1,11 @@
 // Today's review queue screen (T2.5, FR-1.2.5 / M2 AC 3 / NFR-2.4.1). The home
-// surface: reads [warmedQueueProvider] (T7.1, strict-only per T10.1) and maps
-// the AsyncValue to a sectioned Today + Tomorrow list. Today holds the strict
-// due-set (active milestone due today or 1-day-stale); Tomorrow holds only
-// what's due tomorrow exactly. Neither window is topped up — a recording
-// appears only when on or past its next review date. Tomorrow rows render
-// de-emphasized so Today stands out (T10.2). Each row is one-tap play
-// (M2 AC 3).
+// surface: reads [warmedQueueProvider] and maps the AsyncValue to a sectioned
+// Today + Tomorrow list. Today is a forgiving 2-week backlog (T14.1, amending
+// M10 AC4): any recording whose active milestone became due in the last 14
+// days, most-overdue first, capped at 4 — so a missed day doesn't drop
+// recordings out of sight. Tomorrow stays strict-only (due tomorrow exactly).
+// Tomorrow rows render de-emphasized so Today stands out (T10.2). Each row is
+// one-tap play (M2 AC 3).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -150,22 +150,15 @@ class _WarmedTile extends ConsumerWidget {
     void onTap() =>
         context.push('/recordings/${item.recording.id}', extra: navContext);
 
-    final isStale = item.isStale;
-    final dueLabel = isStale
-        ? strings.queueOverdue(1)
-        : (isTomorrow ? strings.queueDueTomorrow : strings.queueDueToday);
+    final dueLabel = isTomorrow
+        ? strings.queueDueTomorrow
+        : strings.queueDueToday;
     final milestoneLabel = milestone != null
         ? 'D+${milestone.intervalDays}'
         : '';
 
     Widget? trailing;
-    if (isStale) {
-      trailing = _PillBadge(
-        label: strings.queueStaleBadge,
-        background: theme.colorScheme.errorContainer,
-        foreground: theme.colorScheme.onErrorContainer,
-      );
-    } else if (isCurrent) {
+    if (isCurrent) {
       trailing = Text(
         strings.queueNowPlaying,
         style: theme.textTheme.labelSmall?.copyWith(
@@ -177,11 +170,9 @@ class _WarmedTile extends ConsumerWidget {
     final titleColor = isTomorrow
         ? theme.colorScheme.onSurfaceVariant
         : theme.colorScheme.onSurface;
-    final subtitleColor = isStale
-        ? theme.colorScheme.error
-        : (isTomorrow
-              ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
-              : theme.colorScheme.onSurfaceVariant);
+    final subtitleColor = isTomorrow
+        ? theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
+        : theme.colorScheme.onSurfaceVariant;
 
     return ListTile(
       onTap: onTap,
@@ -242,38 +233,6 @@ class _Leading extends StatelessWidget {
                   : Icons.play_arrow_rounded),
         color: colorScheme.onPrimaryContainer,
         size: compact ? 18 : 22,
-      ),
-    );
-  }
-}
-
-class _PillBadge extends StatelessWidget {
-  const _PillBadge({
-    required this.label,
-    required this.background,
-    required this.foreground,
-  });
-
-  final String label;
-  final Color background;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: foreground,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
       ),
     );
   }
