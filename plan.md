@@ -469,7 +469,7 @@ T8.3 also remains open.
 
 ---
 
-## Milestone 10: Real-use feedback batch 3 — capture naming, rename/delete, queue strictness (post-M9)
+## Milestone 10: Real-use feedback batch 3 — capture naming, rename/delete, queue strictness (post-M9) — T10.1/T10.2/T10.3/T10.4/T10.5 done (shipped together via PR #42)
 
 **Objective:** Four real-use findings. Two add file management the indexer-only
 model lacked (in-app rename + delete, both touching the physical file in the
@@ -516,17 +516,20 @@ de-emphasized). M10 AC4 amends M7 AC1.
   Remove `WarmPlacement` / `kWarmFloor` / `floor` param (single-value enum is
   dead weight). Amend M7 AC1 wording + queue-warmup unit tests. *ACs:*
   M10 AC4 + AC5(strict). *Deps:* T7.1.
+  ✅ PR #42.
 - **T10.2 — Tomorrow preview de-emphasis.** Render tomorrow-section rows in
   `today_queue_screen.dart` with muted color + reduced weight vs Today (e.g.
   `onSurfaceVariant` at reduced opacity, smaller leading badge). Today retains
   full emphasis. Pure presentation. *ACs:* M10 AC5. *Deps:* T2.5, T10.1.
+  ✅ PR #42.
 - **T10.3 — Name-on-capture.** Add an editable name field to the record sheet
   (visible while recording), pre-filled with `buildRecordingFileName` default.
   On stop, `RecorderController.stop` uses the entered name as both the writer's
   `displayName` and the indexed display name; blank or unchanged → default. The
   temp-path → folder-copy step preserves the file extension. *ACs:* M10 AC1.
   *Deps:* T2.7.
-- **T10.4 — Rename recording (DB + file).** ✅ Detail-screen AppBar menu
+  ✅ PR #42.
+- **T10.4 — Rename recording (DB + file).** ✅ PR #42. Detail-screen AppBar menu
   → Rename dialog. `RecordingManagementService.renameRecording` sanitizes the
   base name (shared `sanitizeRecordingBaseName`), SAF-renames the doc via
   `rivendell/record` → `renameDocument`, and writes the DB row's `name` +
@@ -535,9 +538,9 @@ de-emphasized). M10 AC4 amends M7 AC1.
   the next rescan keys on the new path — no re-add. Falls back to a
   timestamped base if the input sanitizes to empty; throws on SAF failure
   without mutating the DB. *ACs:* M10 AC2. *Deps:* T1.3, T10.3.
-- **T10.5 — Delete recording (DB + file, cascade).** ✅ Detail-screen AppBar
-  menu → hard-confirm dialog ("Delete <name>? This removes the audio file and
-  all its vocab and review data.", no undo). `RecordingManagementService.
+- **T10.5 — Delete recording (DB + file, cascade).** ✅ PR #42. Detail-screen
+  AppBar menu → hard-confirm dialog ("Delete <name>? This removes the audio
+  file and all its vocab and review data.", no undo). `RecordingManagementService.
   deleteRecording` best-effort wipes `wordlog/<id>/` (dart:io, app-private),
   best-effort SAF-deletes the audio (`deleteDocument`), then a single
   `recordings.deleteById` whose FK cascade drops `review_events`, `word_logs`,
