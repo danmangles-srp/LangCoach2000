@@ -841,6 +841,22 @@ guarantee it's wired as a hook. No user-visible behavior change.
   `setup.md` bootstrap. (d) Add a `gate --fast` mode (`SKIP_ANDROID=1` + skip codegen when no
   `.g.dart`/`.freezed.dart` source changed) for the inner-loop cycle. No change to what "green"
   means on a real push. *ACs:* M15 AC 3. *Deps:* T0.1.
+
+  **COMPLETE (#57).** `scripts/gate.sh` rewritten:
+  (a) Android debug build skipped automatically when `git diff <upstream-merge-base>..HEAD` touches
+  no native file (`app/android/**`, `*.kt`, `*.gradle*`, `AndroidManifest.xml`) — prints
+  `gate: android skipped (no native change)`; `GATE_FORCE_ANDROID=1` overrides.
+  (b) `build_runner` already incremental (`.dart_tool/build` reused; `--delete-conflicting-outputs`
+  only clears conflicting outputs, not the cache) — documented in the gate header + `setup.md`.
+  (c) `pre-push` still `exec`s `gate.sh` verbatim; `install-hooks.sh` already installs all three
+  hooks (commit-msg + pre-commit + pre-push) via `core.hooksPath`; `setup.md` command reference now
+  documents the skip modes + `install-hooks` re-run.
+  (d) `gate.sh fast` / `--fast` / `GATE_FAST=1` = `SKIP_ANDROID=1` **and** codegen skipped when no
+  `.dart` declaring a generated `part` (`*.g.dart`/`*.freezed.dart`) changed vs the merge-base —
+  prints `gate: codegen skipped (--fast, no codegen source changed)`.
+  Verified end-to-end on this branch: full gate → `android skipped (no native change)`, 513 tests
+  pass, coverage 90.8%; `--fast` → `codegen skipped (--fast, no codegen source changed)`. Safe
+  default preserved: unknown merge-base → run everything.
 - **T15.3 — Delete dead M7 queue shape.** `high`. Remove `todayQueue`, the gpa `QueueItem`,
   `classifyQueueEntry`, `QueueEntryKind` (all dead in prod; `warmedQueue` is the live shape). Update
   the tests that exercise them. *Deps:* none.
