@@ -135,6 +135,10 @@ class AppStrings {
     taskDelete: 'Delete',
     taskOverdue: 'Overdue',
     taskDueOnN: 'Due {date}',
+    taskDetailTitle: 'Task',
+    taskEditAction: 'Edit',
+    taskCreatedOnN: 'Created {date}',
+    taskNotFound: 'This task is no longer available.',
     coachTitle: 'Coach Bank',
     coachEmptyTitle: 'No notes yet',
     coachEmptyBody:
@@ -307,6 +311,10 @@ class AppStrings {
     taskDelete: 'O‘chirish',
     taskOverdue: 'Muddati o‘tgan',
     taskDueOnN: 'Muddati: {date}',
+    taskDetailTitle: 'Vazifa',
+    taskEditAction: 'Tahrirlash',
+    taskCreatedOnN: 'Yaratilgan: {date}',
+    taskNotFound: 'Bu vazifa endi mavjud emas.',
     coachTitle: 'Murabbiy banki',
     coachEmptyTitle: 'Hali yozuvlar yo‘q',
     coachEmptyBody:
@@ -467,6 +475,11 @@ class AppStrings {
   String get taskOverdue => _bundle.taskOverdue;
   String taskDueOn(String date) =>
       _bundle.taskDueOnN.replaceAll('{date}', date);
+  String get taskDetailTitle => _bundle.taskDetailTitle;
+  String get taskEditAction => _bundle.taskEditAction;
+  String taskCreatedOn(String date) =>
+      _bundle.taskCreatedOnN.replaceAll('{date}', date);
+  String get taskNotFound => _bundle.taskNotFound;
 
   String get coachTitle => _bundle.coachTitle;
   String get coachEmptyTitle => _bundle.coachEmptyTitle;
@@ -634,6 +647,10 @@ class _Bundle {
     required this.taskDelete,
     required this.taskOverdue,
     required this.taskDueOnN,
+    required this.taskDetailTitle,
+    required this.taskEditAction,
+    required this.taskCreatedOnN,
+    required this.taskNotFound,
     required this.coachTitle,
     required this.coachEmptyTitle,
     required this.coachEmptyBody,
@@ -779,6 +796,10 @@ class _Bundle {
   final String taskDelete;
   final String taskOverdue;
   final String taskDueOnN;
+  final String taskDetailTitle;
+  final String taskEditAction;
+  final String taskCreatedOnN;
+  final String taskNotFound;
   final String coachTitle;
   final String coachEmptyTitle;
   final String coachEmptyBody;

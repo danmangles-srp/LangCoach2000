@@ -456,7 +456,16 @@ T8.3 also remains open.
   agree on what "now playing" looks like. *ACs:* M9 AC 3. *Deps:* T1.5.
   ✅ PR #49.
 - **T9.4 — Tasks tap-to-detail.** Task row tap → detail view; further tap →
-  edit (Todoist-style). *ACs:* M9 AC 4. *Deps:* T5.2.
+  edit (Todoist-style). Tap a row in the tasks list now pushes `/tasks/:id`
+  (a new route + `TaskDetailScreen` reading the task by id via a
+  `taskByIdProvider` family). The detail screen renders the title, completion
+  toggle, optional due date (with the overdue pill), notes, and created date.
+  Its AppBar Edit action opens the shared `TaskEditDialog` (lifted out of
+  `tasks_screen.dart` so the list's add FAB and the detail's edit action share
+  one form); Delete removes the task and pops back to the list. A stale
+  deep-link falls back to the not-found view (and a non-numeric id to the home
+  shell). *ACs:* M9 AC 4. *Deps:* T5.2.
+  ✅ PR #50.
 
 ---
 

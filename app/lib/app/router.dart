@@ -14,6 +14,7 @@ import 'package:rivendell/features/audio/presentation/recording_detail_screen.da
 import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/audio/presentation/recordings_screen.dart';
 import 'package:rivendell/features/settings/presentation/settings_screen.dart';
+import 'package:rivendell/features/tasks/presentation/task_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -55,6 +56,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const FolderOnboardingScreen(),
+      ),
+      GoRoute(
+        // T9.4: tap a task -> detail. A non-numeric id (stale link) falls back
+        // to the home shell rather than rendering a broken detail screen.
+        path: '/tasks/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (id == null) return const HomeShell();
+          return TaskDetailScreen(taskId: id);
+        },
       ),
       GoRoute(
         path: '/settings',
