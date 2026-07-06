@@ -13,6 +13,7 @@ import androidx.core.content.FileProvider
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.ByteArrayInputStream
 import java.io.File
 import kotlin.concurrent.thread
 
@@ -497,16 +498,24 @@ class MainActivity : AudioServiceFragmentActivity() {
      * bound memory + storage. Throws [java.io.IOException] on a corrupt or
      * undecodable source so the caller surfaces the failure rather than
      * writing a file that renders as a broken image.
+     *
+     * The picker URI is read exactly ONCE — into a byte buffer that both the
+     * bounds probe and the decode reuse. The PickVisualMedia read grant is
+     * not reliably reusable across opens on some OEMs (Samsung): a second
+     * openInputStream() on the same URI can throw SecurityException, which
+     * surfaced as "could not decode image bytes" → the attach-failed snackbar
+     * (T14.4 root cause). Buffering collapses the two opens into one.
      */
     private fun copyImage(sourceUriStr: String, destRelativePath: String) {
         val source = Uri.parse(sourceUriStr)
         val dest = File(filesDir, destRelativePath)
         dest.parentFile?.mkdirs()
 
+        val bytes = contentResolver.openInputStream(source)?.use { it.readBytes() }
+            ?: throw java.io.IOException("could not open source URI")
+
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        contentResolver.openInputStream(source)?.use { input ->
-            BitmapFactory.decodeStream(input, null, bounds)
-        } ?: throw java.io.IOException("could not open source URI")
+        BitmapFactory.decodeStream(ByteArrayInputStream(bytes), null, bounds)
         if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
             throw java.io.IOException(
                 "could not read image bounds (corrupt or unsupported format)",
@@ -514,9 +523,7 @@ class MainActivity : AudioServiceFragmentActivity() {
         }
         val sample = sampleSizeFor(bounds.outWidth, bounds.outHeight, maxEdge = 2048)
         val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-        val bitmap = contentResolver.openInputStream(source)?.use { input ->
-            BitmapFactory.decodeStream(input, null, opts)
-        } ?: throw java.io.IOException("could not decode image bytes")
+        val bitmap = BitmapFactory.decodeStream(ByteArrayInputStream(bytes), null, opts)
         try {
             if (bitmap == null) {
                 throw java.io.IOException("image decoded to null (unsupported format)")
