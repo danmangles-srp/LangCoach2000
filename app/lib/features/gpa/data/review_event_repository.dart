@@ -27,8 +27,9 @@ class QueueItem {
   final bool isStale;
 }
 
-/// One row of a queue window (T7.1, strict-only per T10.1): the recording, its
-/// derived status, and the stale flag (1-day-stale today rows only).
+/// One row of a queue window (T7.1, T14.1): the recording, its derived status,
+/// and the stale flag (always false post-T14.1 — the Today backlog dropped the
+/// stale distinction; Tomorrow was never stale).
 class WarmedItem {
   const WarmedItem({
     required this.recording,
@@ -41,7 +42,7 @@ class WarmedItem {
   final bool isStale;
 }
 
-/// Strict Today + Tomorrow windows (T7.1, M7 AC 1 amended by M10 AC4–5).
+/// Today (2-week backlog, cap 4 — T14.1) + Tomorrow (strict) windows.
 class WarmedQueue {
   const WarmedQueue({required this.today, required this.tomorrow});
 
@@ -165,11 +166,12 @@ class ReviewEventRepository {
     return out;
   }
 
-  /// Warmed Today + Tomorrow windows (T7.1, M7 AC 1). Loads every recording +
-  /// its derived status, hands the candidate set to the pure [warmUpQueue]
-  /// selector, then maps selections back to recordings. The canonical GPA
-  /// intervals are untouched — top-ups present the soonest-next-due recordings
-  /// as "up next", not a reschedule. Two queries regardless of recording count,
+  /// Warmed Today + Tomorrow windows (T14.1). Loads every recording + its
+  /// derived status, hands the candidate set to the pure [warmUpQueue]
+  /// selector, then maps selections back to recordings. Today is a 2-week
+  /// backlog (active milestone overdue 0..13 days), most-overdue first, capped
+  /// at 4; Tomorrow is strict (overdue == -1 exactly). The canonical GPA
+  /// intervals are untouched. Two queries regardless of recording count,
   /// grouped in Dart (same shape as [todayQueue]).
   Future<WarmedQueue> warmedQueue({required DateTime asOf}) async {
     final recordings =

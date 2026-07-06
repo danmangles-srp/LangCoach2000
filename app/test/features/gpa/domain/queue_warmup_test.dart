@@ -1,9 +1,12 @@
-// Queue selector tests (T7.1, superseded by T10.1 / M10 AC4–5). Both windows
-// strict-only. Pure — builds [RecordingReviewStatus] directly with a
-// controlled active-milestone due day so the day-math is independent of the GPA
-// derivation (covered in its own suite). `overdue` is the active milestone's
-// daysOverdue at asOf: 0 = due today, 1 = 1-day-stale, -1 = due tomorrow,
-// <= -2 = further future (excluded).
+// Queue selector tests (T14.1, amending M10 AC4–5). Today is a 2-week backlog:
+// any recording whose active milestone became due in the last 14 days (overdue
+// 0..13), most-overdue first, capped at 4. The stale distinction is gone —
+// every Today row is simply "due". Tomorrow stays strict-only (overdue == -1
+// exactly). Pure — builds [RecordingReviewStatus] directly with a controlled
+// active-milestone due day so the day-math is independent of the GPA derivation
+// (covered in its own suite). `overdue` is the active milestone's daysOverdue
+// at asOf: 0 = due today, 13 = 13 days overdue (still in), 14 = dropped,
+// -1 = due tomorrow, <= -2 = further future (excluded).
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,7 +41,7 @@ WarmCandidate _c({required int id, required int? overdue, int index = 1}) {
 }
 
 void main() {
-  group('warmUpQueue', () {
+  group('warmUpQueue — Today backlog', () {
     test('empty input yields empty today + tomorrow', () {
       final q = warmUpQueue(all: const [], asOf: asOf);
       expect(q.today, isEmpty);
@@ -54,69 +57,122 @@ void main() {
       expect(q.tomorrow, isEmpty);
     });
 
-    test(
-      'strict due-today rows render in Today, sorted stale-first then id desc',
-      () {
-        final q = warmUpQueue(
-          all: [
-            _c(id: 1, overdue: 0),
-            _c(id: 2, overdue: 0),
-            _c(id: 3, overdue: 0),
-          ],
-          asOf: asOf,
-        );
-        expect(q.today.map((s) => s.candidate.id), [3, 2, 1]);
-        expect(q.today.every((s) => s.isStale == false), isTrue);
-        expect(q.tomorrow, isEmpty);
-      },
-    );
-
-    test('T10.1: Today is NEVER topped up — a single due-today item renders '
-        'alone even though far-future items exist', () {
+    test('T14.1: overdue 0, 1, 5, 13 all land in Today; 14+ excluded', () {
       final q = warmUpQueue(
         all: [
           _c(id: 1, overdue: 0),
-          _c(id: 2, overdue: -3),
-          _c(id: 3, overdue: -4),
-          _c(id: 4, overdue: -5),
+          _c(id: 2, overdue: 1),
+          _c(id: 3, overdue: 5),
+          _c(id: 4, overdue: 13),
+          _c(id: 5, overdue: 14), // one day past the window — dropped
+          _c(id: 6, overdue: 30), // well past — dropped
+        ],
+        asOf: asOf,
+      );
+      // Most-overdue first: 13, 5, 1, 0 → ids 4, 3, 2, 1.
+      expect(q.today.map((s) => s.candidate.id), [4, 3, 2, 1]);
+      expect(q.tomorrow, isEmpty);
+    });
+
+    test('T14.1: Today is capped at 4 (most-overdue wins)', () {
+      final q = warmUpQueue(
+        all: [
+          _c(id: 1, overdue: 0),
+          _c(id: 2, overdue: 1),
+          _c(id: 3, overdue: 2),
+          _c(id: 4, overdue: 3),
+          _c(id: 5, overdue: 4),
+          _c(id: 6, overdue: 5),
+        ],
+        asOf: asOf,
+      );
+      // Most-overdue first: 5, 4, 3, 2 → ids 6, 5, 4, 3. The two least-overdue
+      // (ids 2, 1) fall off the cap.
+      expect(q.today.map((s) => s.candidate.id), [6, 5, 4, 3]);
+      expect(q.today.length, 4);
+    });
+
+    test('T14.1: under cap — all due rows surface (no filler, no floor)', () {
+      final q = warmUpQueue(
+        all: [_c(id: 1, overdue: 0), _c(id: 2, overdue: 2)],
+        asOf: asOf,
+      );
+      expect(q.today.map((s) => s.candidate.id), [2, 1]);
+    });
+
+    test(
+      'T14.1: Today ordering is most-overdue first (dueOn asc) then id desc',
+      () {
+        final q = warmUpQueue(
+          all: [
+            _c(id: 10, overdue: 0),
+            _c(id: 20, overdue: 0), // same dueOn as 10 → id desc: 20 before 10
+            _c(id: 30, overdue: 7),
+          ],
+          asOf: asOf,
+        );
+        // overdue 7 (id 30) first, then overdue 0 tie → id desc (20, 10).
+        expect(q.today.map((s) => s.candidate.id), [30, 20, 10]);
+      },
+    );
+
+    test('T14.1: no stale distinction — every Today row isStale == false', () {
+      final q = warmUpQueue(
+        all: [
+          _c(id: 1, overdue: 0),
+          _c(id: 2, overdue: 1), // would have been "stale" pre-T14.1
+          _c(id: 3, overdue: 13),
+        ],
+        asOf: asOf,
+      );
+      expect(q.today.every((s) => s.isStale == false), isTrue);
+    });
+
+    test('T14.1: far-future rows (overdue < -1) appear in neither window', () {
+      final q = warmUpQueue(
+        all: [
+          _c(id: 1, overdue: 0), // today
+          _c(id: 2, overdue: -3), // neither
+          _c(id: 3, overdue: -4), // neither
         ],
         asOf: asOf,
       );
       expect(q.today.map((s) => s.candidate.id), [1]);
-      // Far-future (overdue < -1) appear in neither window.
       expect(q.tomorrow, isEmpty);
     });
+  });
 
-    test('T10.1: Tomorrow is strict too — only overdue == -1 shown', () {
-      final q = warmUpQueue(
-        all: [
-          _c(id: 1, overdue: -1), // due tomorrow
-          _c(id: 2, overdue: -2), // day after — excluded
-          _c(id: 3, overdue: -1), // due tomorrow
-          _c(id: 4, overdue: -10), // far — excluded
-        ],
-        asOf: asOf,
-      );
-      // Tomorrow: only the two due-tomorrow rows, id desc (same dueOn).
-      expect(q.tomorrow.map((s) => s.candidate.id), [3, 1]);
-      expect(q.today, isEmpty);
-    });
+  group('warmUpQueue — Tomorrow (unchanged by T14.1)', () {
+    test(
+      'Tomorrow stays strict: only overdue == -1 shown, id desc tiebreak',
+      () {
+        final q = warmUpQueue(
+          all: [
+            _c(id: 1, overdue: -1),
+            _c(id: 2, overdue: -2), // excluded
+            _c(id: 3, overdue: -1),
+            _c(id: 4, overdue: -10), // excluded
+          ],
+          asOf: asOf,
+        );
+        expect(q.tomorrow.map((s) => s.candidate.id), [3, 1]);
+        expect(q.today, isEmpty);
+      },
+    );
 
-    test('day-one library (everything due tomorrow): Today empty, all 5 in '
-        'Tomorrow', () {
-      final q = warmUpQueue(
-        all: [
-          _c(id: 1, overdue: -1),
-          _c(id: 2, overdue: -1),
-          _c(id: 3, overdue: -1),
-          _c(id: 4, overdue: -1),
-          _c(id: 5, overdue: -1),
-        ],
-        asOf: asOf,
-      );
-      expect(q.today, isEmpty);
-      expect(q.tomorrow.map((s) => s.candidate.id), [5, 4, 3, 2, 1]);
-    });
+    test(
+      'day-one library (all due tomorrow): Today empty, all in Tomorrow',
+      () {
+        final q = warmUpQueue(
+          all: [
+            for (final id in [1, 2, 3, 4, 5]) _c(id: id, overdue: -1),
+          ],
+          asOf: asOf,
+        );
+        expect(q.today, isEmpty);
+        expect(q.tomorrow.map((s) => s.candidate.id), [5, 4, 3, 2, 1]);
+      },
+    );
 
     test('a candidate is never shown in both windows', () {
       final q = warmUpQueue(
@@ -132,46 +188,14 @@ void main() {
       expect(todayIds.intersection(tomorrowIds), isEmpty);
     });
 
-    test('1-day-stale rows land in today and sort first', () {
+    test('Tomorrow is not capped (cap is Today-only)', () {
       final q = warmUpQueue(
         all: [
-          _c(id: 1, overdue: 0), // due today
-          _c(id: 2, overdue: 1), // stale
-          _c(id: 3, overdue: 0), // due today
+          for (final id in [1, 2, 3, 4, 5, 6]) _c(id: id, overdue: -1),
         ],
         asOf: asOf,
       );
-      // Stale (id 2) leads, then the two due-today by id desc (3 before 1).
-      expect(q.today.map((s) => s.candidate.id), [2, 3, 1]);
-      expect(q.today.first.isStale, isTrue);
-      expect(q.today[1].isStale, isFalse);
-    });
-
-    test('2+ day stale recordings are excluded entirely', () {
-      final q = warmUpQueue(
-        all: [
-          _c(id: 1, overdue: 2), // too stale — dropped
-          _c(id: 2, overdue: 5), // too stale — dropped
-          _c(id: 3, overdue: 0), // due today
-        ],
-        asOf: asOf,
-      );
-      expect(q.today.map((s) => s.candidate.id), [3]);
-      expect(q.tomorrow, isEmpty);
-    });
-
-    test('tomorrow ordering is soonest-due (dueOn asc) then id desc', () {
-      final q = warmUpQueue(
-        all: [
-          _c(id: 1, overdue: 0), // today strict
-          _c(id: 2, overdue: -1), // tomorrow
-          _c(id: 3, overdue: -1), // tomorrow
-        ],
-        asOf: asOf,
-      );
-      expect(q.today.map((s) => s.candidate.id), [1]);
-      // Same dueOn → id desc.
-      expect(q.tomorrow.map((s) => s.candidate.id), [3, 2]);
+      expect(q.tomorrow.length, 6);
     });
   });
 }
