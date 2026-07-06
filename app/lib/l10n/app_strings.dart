@@ -171,6 +171,24 @@ class AppStrings {
     settingsThemeSystem: 'System',
     settingsThemeLight: 'Light',
     settingsThemeDark: 'Dark',
+    settingsReportTitle: 'Weekly email report',
+    settingsReportDayLabel: 'Send day',
+    settingsReportTimeLabel: 'Send time',
+    settingsReportRecipientLabel: 'Recipient email',
+    settingsReportRecipientHint: 'you@example.com',
+    settingsReportRecipientHelp:
+        'Defaults to your Gmail address when left blank.',
+    settingsReportSmtpUserLabel: 'Gmail address',
+    settingsReportSmtpPasswordLabel: 'App password',
+    settingsReportSmtpPasswordHelp:
+        'A 16-character Google app password (2FA required).',
+    settingsReportSaveCredentials: 'Save credentials',
+    settingsReportCredentialsSaved: 'Credentials saved',
+    settingsReportLastSentLabel: 'Last sent',
+    settingsReportNextSendLabel: 'Next send',
+    settingsReportNeverSent: 'Never',
+    settingsReportNotConfigured:
+        'Add your Gmail address + app password to enable weekly reports.',
   );
 
   static const _uz = _Bundle(
@@ -325,6 +343,25 @@ class AppStrings {
     settingsThemeSystem: 'Tizim',
     settingsThemeLight: 'Yorug‘',
     settingsThemeDark: 'Qorong‘i',
+    settingsReportTitle: 'Haftalik hisobot xati',
+    settingsReportDayLabel: 'Yuborish kuni',
+    settingsReportTimeLabel: 'Yuborish vaqti',
+    settingsReportRecipientLabel: 'Qabul qiluvchi pochta',
+    settingsReportRecipientHint: 'you@example.com',
+    settingsReportRecipientHelp:
+        'Bo‘sh qoldirilsa, Gmail manzilingizdan foydalaniladi.',
+    settingsReportSmtpUserLabel: 'Gmail manzili',
+    settingsReportSmtpPasswordLabel: 'Ilova paroli',
+    settingsReportSmtpPasswordHelp:
+        '16 belgidan iborat Google ilova paroli (2FA kerak).',
+    settingsReportSaveCredentials: 'Maxfiy maʼlumotni saqlash',
+    settingsReportCredentialsSaved: 'Maxfiy maʼlumot saqlandi',
+    settingsReportLastSentLabel: 'Oxirgi yuborilgan',
+    settingsReportNextSendLabel: 'Keyingi yuborish',
+    settingsReportNeverSent: 'Hech qachon',
+    settingsReportNotConfigured:
+        'Haftalik hisobotni yoqish uchun Gmail manzil + ilova '
+        'parolini kiriting.',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -467,6 +504,26 @@ class AppStrings {
   String get settingsThemeSystem => _bundle.settingsThemeSystem;
   String get settingsThemeLight => _bundle.settingsThemeLight;
   String get settingsThemeDark => _bundle.settingsThemeDark;
+  String get settingsReportTitle => _bundle.settingsReportTitle;
+  String get settingsReportDayLabel => _bundle.settingsReportDayLabel;
+  String get settingsReportTimeLabel => _bundle.settingsReportTimeLabel;
+  String get settingsReportRecipientLabel =>
+      _bundle.settingsReportRecipientLabel;
+  String get settingsReportRecipientHint => _bundle.settingsReportRecipientHint;
+  String get settingsReportRecipientHelp => _bundle.settingsReportRecipientHelp;
+  String get settingsReportSmtpUserLabel => _bundle.settingsReportSmtpUserLabel;
+  String get settingsReportSmtpPasswordLabel =>
+      _bundle.settingsReportSmtpPasswordLabel;
+  String get settingsReportSmtpPasswordHelp =>
+      _bundle.settingsReportSmtpPasswordHelp;
+  String get settingsReportSaveCredentials =>
+      _bundle.settingsReportSaveCredentials;
+  String get settingsReportCredentialsSaved =>
+      _bundle.settingsReportCredentialsSaved;
+  String get settingsReportLastSentLabel => _bundle.settingsReportLastSentLabel;
+  String get settingsReportNextSendLabel => _bundle.settingsReportNextSendLabel;
+  String get settingsReportNeverSent => _bundle.settingsReportNeverSent;
+  String get settingsReportNotConfigured => _bundle.settingsReportNotConfigured;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -608,6 +665,21 @@ class _Bundle {
     required this.settingsThemeSystem,
     required this.settingsThemeLight,
     required this.settingsThemeDark,
+    required this.settingsReportTitle,
+    required this.settingsReportDayLabel,
+    required this.settingsReportTimeLabel,
+    required this.settingsReportRecipientLabel,
+    required this.settingsReportRecipientHint,
+    required this.settingsReportRecipientHelp,
+    required this.settingsReportSmtpUserLabel,
+    required this.settingsReportSmtpPasswordLabel,
+    required this.settingsReportSmtpPasswordHelp,
+    required this.settingsReportSaveCredentials,
+    required this.settingsReportCredentialsSaved,
+    required this.settingsReportLastSentLabel,
+    required this.settingsReportNextSendLabel,
+    required this.settingsReportNeverSent,
+    required this.settingsReportNotConfigured,
   });
 
   final String recordingsTitle;
@@ -738,6 +810,21 @@ class _Bundle {
   final String settingsThemeSystem;
   final String settingsThemeLight;
   final String settingsThemeDark;
+  final String settingsReportTitle;
+  final String settingsReportDayLabel;
+  final String settingsReportTimeLabel;
+  final String settingsReportRecipientLabel;
+  final String settingsReportRecipientHint;
+  final String settingsReportRecipientHelp;
+  final String settingsReportSmtpUserLabel;
+  final String settingsReportSmtpPasswordLabel;
+  final String settingsReportSmtpPasswordHelp;
+  final String settingsReportSaveCredentials;
+  final String settingsReportCredentialsSaved;
+  final String settingsReportLastSentLabel;
+  final String settingsReportNextSendLabel;
+  final String settingsReportNeverSent;
+  final String settingsReportNotConfigured;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

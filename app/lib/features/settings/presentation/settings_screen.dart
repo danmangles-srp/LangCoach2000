@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:rivendell/features/report/presentation/weekly_report_settings_section.dart';
 import 'package:rivendell/features/settings/application/settings_providers.dart';
 import 'package:rivendell/features/settings/domain/app_settings.dart';
 import 'package:rivendell/l10n/app_strings.dart';
@@ -55,6 +56,8 @@ class SettingsScreen extends ConsumerWidget {
                   ref.read(appSettingsProvider.notifier).setThemePreference(v),
             ),
           ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          const WeeklyReportSettingsSection(),
           const SizedBox(height: 24),
         ],
       ),
