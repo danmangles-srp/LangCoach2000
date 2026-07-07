@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/coach/application/coach_providers.dart';
-import 'package:rivendell/features/coach/data/coach_note_repository.dart';
+import 'package:rivendell/features/coach/domain/coach_note.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class CoachNoteDraft {
