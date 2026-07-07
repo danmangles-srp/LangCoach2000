@@ -233,28 +233,34 @@ class _CoachNoteDialogState extends ConsumerState<_CoachNoteDialog> {
                     )
                   else
                     Flexible(
-                      child: ListView(
+                      // Builder, not `children: [for ...]`: a 1000-row
+                      // recordings library would otherwise materialize every
+                      // CheckboxListTile on sheet open (T15.6). shrinkWrap
+                      // stays so the sheet sizes to the Column, but tiles
+                      // build lazily as the user scrolls.
+                      child: ListView.builder(
                         shrinkWrap: true,
-                        children: [
-                          for (final o in options)
-                            CheckboxListTile(
-                              value: working.contains(o.id),
-                              onChanged: (checked) {
-                                setSheetState(() {
-                                  if (checked ?? false) {
-                                    working.add(o.id);
-                                  } else {
-                                    working.remove(o.id);
-                                  }
-                                });
-                              },
-                              title: Text(
-                                o.label,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        itemCount: options.length,
+                        itemBuilder: (context, i) {
+                          final o = options[i];
+                          return CheckboxListTile(
+                            value: working.contains(o.id),
+                            onChanged: (checked) {
+                              setSheetState(() {
+                                if (checked ?? false) {
+                                  working.add(o.id);
+                                } else {
+                                  working.remove(o.id);
+                                }
+                              });
+                            },
+                            title: Text(
+                              o.label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                        ],
+                          );
+                        },
                       ),
                     ),
                 ],
