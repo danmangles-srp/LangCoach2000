@@ -93,32 +93,3 @@ RecordingReviewStatus computeReviewStatus({
     isComplete: reached >= lastIndex,
   );
 }
-
-/// Where a recording sits relative to today's review queue (FR-1.2.5).
-enum QueueEntryKind {
-  /// Active milestone is due today (0 days overdue).
-  dueToday,
-
-  /// Active milestone became due yesterday — still presented, marked stale
-  /// (1-day grace window).
-  stale,
-
-  /// Not in today's queue: not yet due, complete, or ≥2 days overdue (the
-  /// stale prompt disappears on the 2nd stale day).
-  excluded,
-}
-
-/// Classify a recording's derived status against today's queue (FR-1.2.5).
-/// Day-granularity: time-of-day is ignored.
-QueueEntryKind classifyQueueEntry(
-  RecordingReviewStatus status, {
-  required DateTime asOf,
-}) {
-  final active = status.activeMilestone;
-  if (active == null) return QueueEntryKind.excluded; // complete
-  if (!active.isDueOn(asOf)) return QueueEntryKind.excluded; // not yet due
-  final overdue = active.daysOverdue(asOf);
-  if (overdue <= 0) return QueueEntryKind.dueToday;
-  if (overdue == 1) return QueueEntryKind.stale;
-  return QueueEntryKind.excluded; // ≥2 days stale
-}
