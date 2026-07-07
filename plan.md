@@ -894,7 +894,11 @@ guarantee it's wired as a hook. No user-visible behavior change.
   reads `isError`, so it joins the tuple. Behavior-preserving; 506 tests, 91.2%, android auto-skipped.
 - **T15.8 — Localize folder onboarding.** `high`. `folder_onboarding_screen.dart` has zero
   `AppStrings` calls — 6 hardcoded user-facing strings (title, body, button, 3 snackbars). Route them
-  through `AppStrings` (en + uz; the `_Bundle` `required` fields enforce parity). *Deps:* none.
+  through `AppStrings` (en + uz; the `_Bundle` `required` fields enforce parity). *Deps:* none. ✅
+  PR #63 — 6 strings routed through `AppStrings` (title, body parameterized on Voice Recorder folder
+  name, pick, none, non-SVR warning, save failed); en + uz bundles + getter/ctor/field plumbing.
+  Strings captured before async gaps so `BuildContext` is safe across awaits. Behavior-preserving;
+  506 tests, 91.2%, android auto-skipped.
 - **T15.9 — Preserve stack traces across SAF adapters.** `med`. Five sites catch `PlatformException`
   and rethrow a new `FileSystemException(message)`, dropping the stack: `saf_image_writer_service`
   (`:28-31`), `saf_recording_writer_service` (`:36-38` copyToFolder + `:51-55` T14.5 publishToMediaStore),
@@ -930,6 +934,16 @@ guarantee it's wired as a hook. No user-visible behavior change.
 > refactors. **The user selects the subset to ship before any T15.3+ work begins.** Suggested pairs
 > if fewer PRs are wanted: T15.3+T15.10+T15.12 (queue/DTO/helper cleanup), T15.6+T15.7 (list-perf),
 > T15.8+T15.13 (i18n). Keep T15.4 / T15.5 / T15.9 / T15.11 standalone.
+
+**Milestone 15 COMPLETE.** All three ACs met: (1) `docs/architecture-review.md`
+shipped (#56), severity-ordered refactor list emitted as T15.3+; (2) `gate.sh`
+rewritten to skip the Android debug build on no-native-change + reuse
+build_runner cache (#57), pre-push hook is canonical; (3) the user-selected
+subset of refactors — the 6 `high`s, T15.3–T15.8 — shipped one PR each (#58 dead
+queue shape, #59 silent FR-1.2.3 review-event loss + retry, #60 coach onto M0
+pattern, #61 unbounded list builder, #62 `_WarmedTile` `.select` rebuild fix,
+#63 folder-onboarding i18n). The `med`/`low` tickets (T15.9–T15.16) remain open
+as backlog — out of scope for this pass.
 
 ---
 
