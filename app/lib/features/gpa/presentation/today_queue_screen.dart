@@ -135,11 +135,19 @@ class _WarmedTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final strings = AppStrings.of(context);
-    final snap = ref.watch(audioPlayerControllerProvider);
+    // Select only the bits this tile uses, not the whole snapshot — a position
+    // tick emits a new PlaybackSnapshot ~every 150ms and would otherwise
+    // rebuild every tile in the queue (T15.7). The record compares by value,
+    // so a tick that only moves position doesn't trigger a rebuild.
+    final (recordingId, isPlaying, isError) = ref.watch(
+      audioPlayerControllerProvider.select(
+        (s) => (s.recordingId, s.isPlaying, s.isError),
+      ),
+    );
     final milestone = item.status.activeMilestone;
 
-    final isCurrent = snap.recordingId == item.recording.id;
-    final isPlaying = isCurrent && snap.isPlaying;
+    final isCurrent = recordingId == item.recording.id;
+    final isTilePlaying = isCurrent && isPlaying;
     // T10.2: Tomorrow rows render de-emphasized (muted title, compact leading
     // badge, lower-contrast subtitle) so Today — the actionable window —
     // stands out. Today rows keep full emphasis.
@@ -177,8 +185,8 @@ class _WarmedTile extends ConsumerWidget {
     return ListTile(
       onTap: onTap,
       leading: _Leading(
-        isPlaying: isPlaying,
-        isError: snap.isError,
+        isPlaying: isTilePlaying,
+        isError: isError,
         compact: isTomorrow,
       ),
       title: Text(
