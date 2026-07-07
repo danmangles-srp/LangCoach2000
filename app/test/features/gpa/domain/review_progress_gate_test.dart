@@ -67,4 +67,19 @@ void main() {
     final gate = ReviewProgressGate();
     expect(gate.evaluate(_snap(recordingId: 1, positionMs: 80_000)), isTrue);
   });
+
+  test('rearm() forces the next >=80% snapshot to fire again (T15.4)', () {
+    // The watcher retries a failed append on the next >=80% snapshot. There is
+    // no recording-id change and progress never drops below 80%, so the latch
+    // needs an explicit reset — that's what rearm() is.
+    final gate = ReviewProgressGate();
+    expect(gate.evaluate(_snap(recordingId: 1, positionMs: 80_000)), isTrue);
+    // Consumed.
+    expect(gate.evaluate(_snap(recordingId: 1, positionMs: 90_000)), isFalse);
+    gate.rearm();
+    // Same recording, still above 80% — rearm makes the crossing fire again.
+    expect(gate.evaluate(_snap(recordingId: 1, positionMs: 90_000)), isTrue);
+    // And it consumes again.
+    expect(gate.evaluate(_snap(recordingId: 1, positionMs: 95_000)), isFalse);
+  });
 }

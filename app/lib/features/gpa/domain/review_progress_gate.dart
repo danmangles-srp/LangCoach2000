@@ -36,4 +36,10 @@ class ReviewProgressGate {
     _crossed = false;
     return false;
   }
+
+  /// Force the latch back to its armed state for the current recording, so the
+  /// next >=80% snapshot fires again without a recording change or a drop
+  /// below the threshold (T15.4). The watcher calls this to retry an append
+  /// that failed — playback is still past 80%, so there's no natural re-cross.
+  void rearm() => _crossed = false;
 }

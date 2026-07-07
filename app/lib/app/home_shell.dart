@@ -6,27 +6,37 @@
 // IndexedStack so switching is instant and transport/scroll state survives.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/features/audio/presentation/recordings_screen.dart';
 import 'package:rivendell/features/coach/presentation/coach_bank_screen.dart';
+import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/presentation/today_queue_screen.dart';
 import 'package:rivendell/features/metrics/presentation/stats_screen.dart';
 import 'package:rivendell/features/tasks/presentation/tasks_screen.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
   @override
-  State<HomeShell> createState() => _HomeShellState();
+  ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
 
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    // T15.4: when a review-event append exhausts its retries, the watcher ticks
+    // this counter — surface a one-shot snackbar so the loss isn't silent. The
+    // recovery path is the manual "mark reviewed" affordance on the recording.
+    ref.listen(reviewSaveFailureTickProvider, (_, __) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(strings.reviewSaveFailed)));
+    });
     return Scaffold(
       body: IndexedStack(
         index: _index,
