@@ -13,6 +13,7 @@ import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/domain/voice_recorder_paths.dart';
 import 'package:rivendell/features/audio/platform/folder_selection_providers.dart';
+import 'package:rivendell/l10n/app_strings.dart';
 
 class FolderOnboardingScreen extends ConsumerWidget {
   const FolderOnboardingScreen({super.key});
@@ -20,6 +21,7 @@ class FolderOnboardingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final strings = AppStrings.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -35,16 +37,14 @@ class FolderOnboardingScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Point Rivendell at your recordings',
+                  strings.folderOnboardingTitle,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Choose your Samsung Voice Recorder folder so Rivendell can '
-                  "index your .m4a, .mp3, and .wav files. It's usually "
-                  'called "$voiceRecorderFolderName".',
+                  strings.folderOnboardingBody(voiceRecorderFolderName),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -54,7 +54,7 @@ class FolderOnboardingScreen extends ConsumerWidget {
                 FilledButton.icon(
                   onPressed: () => _pick(context, ref),
                   icon: const Icon(Icons.folder_open_rounded),
-                  label: const Text('Choose folder'),
+                  label: Text(strings.folderOnboardingPick),
                 ),
               ],
             ),
@@ -66,6 +66,7 @@ class FolderOnboardingScreen extends ConsumerWidget {
 
   Future<void> _pick(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final strings = AppStrings.of(context);
     try {
       final picked = await ref
           .read(folderSelectionServiceProvider)
@@ -73,7 +74,7 @@ class FolderOnboardingScreen extends ConsumerWidget {
       if (!context.mounted) return;
       if (picked == null) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('No folder selected.')),
+          SnackBar(content: Text(strings.folderOnboardingNone)),
         );
         return;
       }
@@ -84,12 +85,7 @@ class FolderOnboardingScreen extends ConsumerWidget {
       if (nonSvr && await repo.shouldShowNonSvrWarning()) {
         await repo.markNonSvrWarningShown();
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              "That isn't the usual Voice Recorder folder — "
-              'indexing it anyway.',
-            ),
-          ),
+          SnackBar(content: Text(strings.folderOnboardingNonSvrWarning)),
         );
       }
 
@@ -114,7 +110,7 @@ class FolderOnboardingScreen extends ConsumerWidget {
       // Picker or persistence failure: surface a plain-language retry. A
       // typed Failure + Result<T> lands with the repo-seam work (T0.x).
       messenger.showSnackBar(
-        const SnackBar(content: Text("Couldn't save that folder. Try again.")),
+        SnackBar(content: Text(strings.folderOnboardingSaveFailed)),
       );
     }
   }

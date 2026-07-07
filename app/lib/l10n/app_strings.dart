@@ -38,6 +38,16 @@ class AppStrings {
     scanTooltip: 'Refresh library',
     scanFailed: "Couldn't scan that folder.",
     scannedCountN: 'Indexed {n} recordings.',
+    folderOnboardingTitle: 'Point Rivendell at your recordings',
+    folderOnboardingBodyN:
+        'Choose your Samsung Voice Recorder folder so Rivendell can '
+        "index your .m4a, .mp3, and .wav files. It's usually called "
+        '"{name}".',
+    folderOnboardingPick: 'Choose folder',
+    folderOnboardingNone: 'No folder selected.',
+    folderOnboardingNonSvrWarning:
+        "That isn't the usual Voice Recorder folder — indexing it anyway.",
+    folderOnboardingSaveFailed: "Couldn't save that folder. Try again.",
     unknownDuration: '—:—',
     unknownFormat: 'audio',
     metaDate: 'Recorded',
@@ -212,6 +222,15 @@ class AppStrings {
     scanTooltip: 'Kutubxonani yangilash',
     scanFailed: 'Bu jildni skanerlab bo‘lmadi.',
     scannedCountN: '{n} ta yozuv indekslandi.',
+    folderOnboardingTitle: "Rivendell'ni yozuvlaringizga yo'naltiring",
+    folderOnboardingBodyN:
+        'Samsung Voice Recorder jildini tanlang — Rivendell .m4a, .mp3 va '
+        '.wav fayllaringizni indekslay oladi. Odatda u "{name}" deb ataladi.',
+    folderOnboardingPick: 'Jildni tanlang',
+    folderOnboardingNone: 'Jild tanlanmadi.',
+    folderOnboardingNonSvrWarning:
+        'Bu odatdagidek Voice Recorder jildi emas — baribir indekslanmoqda.',
+    folderOnboardingSaveFailed: "Jildni saqlab bo'lmadi. Qayta urinib ko'ring.",
     unknownDuration: '—:—',
     unknownFormat: 'audio',
     metaDate: 'Yozilgan',
@@ -391,6 +410,14 @@ class AppStrings {
   String get scanTooltip => _bundle.scanTooltip;
   String get scanFailed => _bundle.scanFailed;
   String scannedCount(int n) => _bundle.scannedCountN.replaceAll('{n}', '$n');
+  String get folderOnboardingTitle => _bundle.folderOnboardingTitle;
+  String folderOnboardingBody(String name) =>
+      _bundle.folderOnboardingBodyN.replaceAll('{name}', name);
+  String get folderOnboardingPick => _bundle.folderOnboardingPick;
+  String get folderOnboardingNone => _bundle.folderOnboardingNone;
+  String get folderOnboardingNonSvrWarning =>
+      _bundle.folderOnboardingNonSvrWarning;
+  String get folderOnboardingSaveFailed => _bundle.folderOnboardingSaveFailed;
   String get unknownDuration => _bundle.unknownDuration;
   String get unknownFormat => _bundle.unknownFormat;
   String get metaDate => _bundle.metaDate;
@@ -567,6 +594,12 @@ class _Bundle {
     required this.scanTooltip,
     required this.scanFailed,
     required this.scannedCountN,
+    required this.folderOnboardingTitle,
+    required this.folderOnboardingBodyN,
+    required this.folderOnboardingPick,
+    required this.folderOnboardingNone,
+    required this.folderOnboardingNonSvrWarning,
+    required this.folderOnboardingSaveFailed,
     required this.unknownDuration,
     required this.unknownFormat,
     required this.metaDate,
@@ -717,6 +750,12 @@ class _Bundle {
   final String scanTooltip;
   final String scanFailed;
   final String scannedCountN;
+  final String folderOnboardingTitle;
+  final String folderOnboardingBodyN;
+  final String folderOnboardingPick;
+  final String folderOnboardingNone;
+  final String folderOnboardingNonSvrWarning;
+  final String folderOnboardingSaveFailed;
   final String unknownDuration;
   final String unknownFormat;
   final String metaDate;
