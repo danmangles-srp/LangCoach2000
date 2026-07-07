@@ -882,7 +882,9 @@ guarantee it's wired as a hook. No user-visible behavior change.
   delegation test added; 506 tests, 91.2% coverage, android auto-skipped.
 - **T15.6 — `coach_note_dialog` unbounded list.** `high`. `coach_note_dialog.dart:236`
   `ListView(shrinkWrap, children:[for o in options])` materializes the full recordings list (≤1000) +
-  a `shrinkWrap` measure pass on dialog open. Convert to `ListView.builder`. *Deps:* none.
+  a `shrinkWrap` measure pass on dialog open. Convert to `ListView.builder`. *Deps:* none. ✅ PR #61
+  — picker sheet now `ListView.builder`; tiles build lazily on scroll instead of all-at-once on
+  sheet open. Behavior-preserving; 506 tests, 91.2% coverage, android auto-skipped.
 - **T15.7 — `_WarmedTile` rebuild storm.** `high`. `today_queue_screen.dart:138`
   `ref.watch(audioPlayerControllerProvider)` takes the full snapshot; just_audio's position stream
   re-emits ~5-8 Hz, so every visible tile rebuilds that fast during playback. Tile uses only
