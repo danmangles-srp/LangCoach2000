@@ -889,7 +889,9 @@ guarantee it's wired as a hook. No user-visible behavior change.
   `ref.watch(audioPlayerControllerProvider)` takes the full snapshot; just_audio's position stream
   re-emits ~5-8 Hz, so every visible tile rebuilds that fast during playback. Tile uses only
   `recordingId` + `isPlaying` → switch to `.select`, mirroring `recordings_screen.dart:148-152`.
-  *Deps:* none.
+  *Deps:* none. ✅ PR #62 — `_WarmedTile` now `ref.watch(... .select((s) => (recordingId, isPlaying,
+  isError)))`; tiles rebuild on cue / play-pause / error only, not every position tick. The tile also
+  reads `isError`, so it joins the tuple. Behavior-preserving; 506 tests, 91.2%, android auto-skipped.
 - **T15.8 — Localize folder onboarding.** `high`. `folder_onboarding_screen.dart` has zero
   `AppStrings` calls — 6 hardcoded user-facing strings (title, body, button, 3 snackbars). Route them
   through `AppStrings` (en + uz; the `_Bundle` `required` fields enforce parity). *Deps:* none.
