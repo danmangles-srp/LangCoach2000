@@ -870,12 +870,16 @@ guarantee it's wired as a hook. No user-visible behavior change.
   the `recordReview` append on the 80%-crossing watcher: user sees "reviewed" but the row is lost, no
   signal, no retry, no `reviewGenerationProvider` bump. Surface a non-blocking "couldn't save review"
   snackbar, reset the latch so the next crossing retries, bump the generator on success.
-  *Deps:* none.
+  *Deps:* none. ✅ PR #59 — added `ReviewProgressGate.rearm()`; watcher retries 3× then ticks
+  `reviewSaveFailureTickProvider` → `HomeShell` snackbar. Gate + new watcher unit tests; 503 tests,
+  91.1% coverage, android auto-skipped.
 - **T15.5 — Bring `coach` onto the M0 pattern.** `high`. Feature is the most off-pattern: no
   `domain/` (DTOs in `data/coach_note_repository.dart`), presentation imports `data/` directly, and
   `coach_bank_screen` mutates via `repo.create/update/delete` with no `application/` orchestrator. Add
   `coach/domain/`, add a `CoachNoteCommands` write orchestrator, remove presentation→data imports.
-  *Deps:* none.
+  *Deps:* none. ✅ PR #60 — moved `CoachNoteWithLinks` to `coach/domain/`; added `CoachNoteCommands` +
+  `coachNoteCommandsProvider`; presentation writes through commands, no `data/` imports. Commands
+  delegation test added; 506 tests, 91.2% coverage, android auto-skipped.
 - **T15.6 — `coach_note_dialog` unbounded list.** `high`. `coach_note_dialog.dart:236`
   `ListView(shrinkWrap, children:[for o in options])` materializes the full recordings list (≤1000) +
   a `shrinkWrap` measure pass on dialog open. Convert to `ListView.builder`. *Deps:* none.

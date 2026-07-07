@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/features/coach/application/coach_providers.dart';
-import 'package:rivendell/features/coach/data/coach_note_repository.dart';
+import 'package:rivendell/features/coach/domain/coach_note.dart';
 import 'package:rivendell/features/coach/presentation/coach_note_dialog.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -63,8 +63,8 @@ class CoachBankScreen extends ConsumerWidget {
   Future<void> _createOrEdit(BuildContext context, WidgetRef ref) async {
     final draft = await showCoachNoteDialog(context);
     if (draft == null) return;
-    final repo = await ref.read(coachNoteRepositoryProvider.future);
-    await repo.create(
+    final commands = await ref.read(coachNoteCommandsProvider.future);
+    await commands.create(
       title: draft.title,
       body: draft.body,
       recordingIds: draft.recordingIds.toList(),
@@ -96,8 +96,8 @@ class _CoachTile extends ConsumerWidget {
         ),
       ),
       confirmDismiss: (_) async {
-        final repo = await ref.read(coachNoteRepositoryProvider.future);
-        await repo.delete(note.note.id);
+        final commands = await ref.read(coachNoteCommandsProvider.future);
+        await commands.delete(note.note.id);
         ref.invalidate(coachNotesProvider);
         return true;
       },
@@ -157,8 +157,8 @@ class _CoachTile extends ConsumerWidget {
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
     final draft = await showCoachNoteDialog(context, existing: note);
     if (draft == null) return;
-    final repo = await ref.read(coachNoteRepositoryProvider.future);
-    await repo.update(
+    final commands = await ref.read(coachNoteCommandsProvider.future);
+    await commands.update(
       note.note.id,
       title: draft.title,
       body: draft.body,

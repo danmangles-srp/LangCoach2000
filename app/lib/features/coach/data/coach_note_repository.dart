@@ -9,18 +9,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
-
-class CoachNoteWithLinks {
-  const CoachNoteWithLinks({
-    required this.note,
-    required this.recordingIds,
-    required this.wordLogIds,
-  });
-
-  final CoachNote note;
-  final List<int> recordingIds;
-  final List<int> wordLogIds;
-}
+import 'package:rivendell/features/coach/domain/coach_note.dart';
 
 class CoachNoteRepository {
   CoachNoteRepository(this._db);
