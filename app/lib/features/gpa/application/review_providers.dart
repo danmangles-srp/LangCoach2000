@@ -38,12 +38,40 @@ final reviewGenerationProvider = NotifierProvider<ReviewGeneration, int>(
   ReviewGeneration.new,
 );
 
+/// How many times the watcher retries a failed append before giving up on a
+/// single 80%-crossing (T15.4). Snapshots arrive every ~150ms while playing, so
+/// three attempts span well under a second — long enough to ride out a one-off
+/// DB contention, short enough to surface failure promptly.
+const int maxReviewSaveAttempts = 3;
+
+/// Monotonic tick the UI watches to show a snackbar when a review-event append
+/// gives up after [maxReviewSaveAttempts] retries (T15.4). The app shell
+/// listens and bumps a localized banner. Incremented, never reset, so multiple
+/// terminal failures each surface.
+class ReviewSaveFailureTick extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void tick() => state++;
+}
+
+final reviewSaveFailureTickProvider =
+    NotifierProvider<ReviewSaveFailureTick, int>(ReviewSaveFailureTick.new);
+
 /// Always-on listener that appends a review event when playback crosses 80%
 /// (FR-1.2.3). The latch ([ReviewProgressGate]) guarantees one append per
 /// upward crossing per recording. Watched once by the app shell so it survives
 /// for the app's lifetime and keeps observing background playback.
+///
+/// A failed append is not silent (T15.4): the watcher rearms the latch and
+/// retries on the next >=80% snapshot up to [maxReviewSaveAttempts] times,
+/// then ticks [reviewSaveFailureTickProvider] so the shell can tell the user
+/// (the recovery path is the manual "mark reviewed" affordance on the
+/// recording's detail screen). Playback never breaks — the failure path only
+/// logs + retries + signals.
 final reviewProgressWatcherProvider = Provider<void>((ref) {
   final gate = ReviewProgressGate();
+  final attempts = <int, int>{};
   ref.listen(audioPlayerControllerProvider, (_, snap) async {
     if (!gate.evaluate(snap)) return;
     final recordingId = snap.recordingId;
@@ -52,10 +80,23 @@ final reviewProgressWatcherProvider = Provider<void>((ref) {
       final repo = await ref.read(reviewEventRepositoryProvider.future);
       await repo.recordReview(recordingId, completedAt: DateTime.now());
       // A real append changes the queue; bump so live consumers refresh.
+      attempts.remove(recordingId);
       ref.read(reviewGenerationProvider.notifier).bump();
     } on Object catch (e, st) {
-      // A failed append must never break playback — log and swallow.
+      // A failed append must never break playback — log and retry.
       ref.read(appLoggerProvider).e(LogTag.db, 'review append failed: $e\n$st');
+      final n = (attempts[recordingId] ?? 0) + 1;
+      if (n < maxReviewSaveAttempts) {
+        attempts[recordingId] = n;
+        // Playback is still past 80%, so there's no natural re-cross —
+        // rearm so the next snapshot retries.
+        gate.rearm();
+      } else {
+        // Out of retries: surface it and leave the latch consumed so this
+        // crossing isn't retried again. A new recording gets a fresh budget.
+        attempts.remove(recordingId);
+        ref.read(reviewSaveFailureTickProvider.notifier).tick();
+      }
     }
   });
 });

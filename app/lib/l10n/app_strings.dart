@@ -69,6 +69,8 @@ class AppStrings {
     reviewMarkReviewed: 'Mark reviewed',
     reviewUndo: 'Undo',
     reviewDueLabel: 'Due',
+    reviewSaveFailed:
+        "Couldn't save this review. Mark it reviewed on the recording.",
     recordTooltip: 'Record',
     recordSheetTitle: 'Record',
     recordStart: 'Record',
@@ -241,6 +243,8 @@ class AppStrings {
     reviewMarkReviewed: 'Belgilash',
     reviewUndo: 'Bekor qilish',
     reviewDueLabel: 'Muddati',
+    reviewSaveFailed:
+        'Bu takrorlashni saqlab bo‘lmadi. Yozuvdan qo‘lda belgilang.',
     recordTooltip: 'Yozib olish',
     recordSheetTitle: 'Yozib olish',
     recordStart: 'Yozib olish',
@@ -416,6 +420,7 @@ class AppStrings {
   String get reviewMarkReviewed => _bundle.reviewMarkReviewed;
   String get reviewUndo => _bundle.reviewUndo;
   String get reviewDueLabel => _bundle.reviewDueLabel;
+  String get reviewSaveFailed => _bundle.reviewSaveFailed;
   String get recordTooltip => _bundle.recordTooltip;
   String get recordSheetTitle => _bundle.recordSheetTitle;
   String get recordStart => _bundle.recordStart;
@@ -591,6 +596,7 @@ class _Bundle {
     required this.reviewMarkReviewed,
     required this.reviewUndo,
     required this.reviewDueLabel,
+    required this.reviewSaveFailed,
     required this.recordTooltip,
     required this.recordSheetTitle,
     required this.recordStart,
@@ -740,6 +746,7 @@ class _Bundle {
   final String reviewMarkReviewed;
   final String reviewUndo;
   final String reviewDueLabel;
+  final String reviewSaveFailed;
   final String recordTooltip;
   final String recordSheetTitle;
   final String recordStart;
