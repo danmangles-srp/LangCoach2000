@@ -860,6 +860,12 @@ guarantee it's wired as a hook. No user-visible behavior change.
 - **T15.3 — Delete dead M7 queue shape.** `high`. Remove `todayQueue`, the gpa `QueueItem`,
   `classifyQueueEntry`, `QueueEntryKind` (all dead in prod; `warmedQueue` is the live shape). Update
   the tests that exercise them. *Deps:* none.
+
+  **COMPLETE (#58).** Removed `ReviewEventRepository.todayQueue`, the gpa `QueueItem` class,
+  `classifyQueueEntry`, `QueueEntryKind`, + the two test groups that exercised them + a stale dartdoc
+  backreference. Live `core/queue QueueItem` (offline queue) + the warmed path untouched. Pure
+  deletion: 4 files, +1/−271. Gate green — 499 tests (14 dead removed), coverage 90.6%, android
+  auto-skipped (no native change).
 - **T15.4 — Stop silent FR-1.2.3 review-event loss.** `high`. `review_providers.dart:56-59` swallows
   the `recordReview` append on the 80%-crossing watcher: user sees "reviewed" but the row is lost, no
   signal, no retry, no `reviewGenerationProvider` bump. Surface a non-blocking "couldn't save review"
