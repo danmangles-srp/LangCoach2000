@@ -129,9 +129,13 @@ class AppStrings {
     ankiPendingHint:
         'Queued images generate on reconnect and attach on your next send.',
     ankiGotIt: 'Got it',
-    ankiPermissionHint:
-        'Rivendell needs AnkiDroid API access. Open AnkiDroid → Settings → '
-        'Advanced → API → allow Rivendell, then retry.',
+    ankiGrantTitle: 'Allow AnkiDroid access',
+    ankiGrantBody:
+        'Rivendell needs AnkiDroid API access to add cards. Tap Continue to '
+        'grant.',
+    ankiGrantContinue: 'Continue',
+    ankiEnableApiHint:
+        'Open AnkiDroid → Settings → enable the AnkiDroid API, then retry.',
     tasksTitle: 'Tasks',
     tasksEmptyTitle: 'No tasks yet',
     tasksEmptyBody:
@@ -316,9 +320,14 @@ class AppStrings {
         'Navbatdagi rasmlar aloqada tiklanganda yaratiladi va keyingi '
         'yuborishda biriktiriladi.',
     ankiGotIt: 'Tushunarli',
-    ankiPermissionHint:
-        "Rivendell'ga AnkiDroid API ruxsati kerak. AnkiDroid'da: Sozlamalar → "
-        "Qo‘shimcha → API → Rivendell'ga ruxsat bering, so‘ng qayta urining.",
+    ankiGrantTitle: 'AnkiDroid ruxsatini bering',
+    ankiGrantBody:
+        "Rivendell'ga kartalarni qo‘shish uchun AnkiDroid API ruxsati kerak. "
+        'Ruxsat berish uchun Davom etishni bosing.',
+    ankiGrantContinue: 'Davom etish',
+    ankiEnableApiHint:
+        "AnkiDroid'ni oching → Sozlamalar → AnkiDroid API ni yoqing, so‘ng "
+        'qayta urining.',
     tasksTitle: 'Vazifalar',
     tasksEmptyTitle: 'Hozircha vazifalar yo‘q',
     tasksEmptyBody:
@@ -492,7 +501,10 @@ class AppStrings {
   String ankiPending(int n) => _bundle.ankiPendingN.replaceAll('{n}', '$n');
   String get ankiPendingHint => _bundle.ankiPendingHint;
   String get ankiGotIt => _bundle.ankiGotIt;
-  String get ankiPermissionHint => _bundle.ankiPermissionHint;
+  String get ankiGrantTitle => _bundle.ankiGrantTitle;
+  String get ankiGrantBody => _bundle.ankiGrantBody;
+  String get ankiGrantContinue => _bundle.ankiGrantContinue;
+  String get ankiEnableApiHint => _bundle.ankiEnableApiHint;
   String get tasksTitle => _bundle.tasksTitle;
   String get tasksEmptyTitle => _bundle.tasksEmptyTitle;
   String get tasksEmptyBody => _bundle.tasksEmptyBody;
@@ -672,7 +684,10 @@ class _Bundle {
     required this.ankiPendingN,
     required this.ankiPendingHint,
     required this.ankiGotIt,
-    required this.ankiPermissionHint,
+    required this.ankiGrantTitle,
+    required this.ankiGrantBody,
+    required this.ankiGrantContinue,
+    required this.ankiEnableApiHint,
     required this.tasksTitle,
     required this.tasksEmptyTitle,
     required this.tasksEmptyBody,
@@ -828,7 +843,10 @@ class _Bundle {
   final String ankiPendingN;
   final String ankiPendingHint;
   final String ankiGotIt;
-  final String ankiPermissionHint;
+  final String ankiGrantTitle;
+  final String ankiGrantBody;
+  final String ankiGrantContinue;
+  final String ankiEnableApiHint;
   final String tasksTitle;
   final String tasksEmptyTitle;
   final String tasksEmptyBody;

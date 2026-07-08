@@ -24,19 +24,25 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           calls.add(call);
-          final args = call.arguments as Map<Object?, Object?>;
+          // shouldRequestPermission / requestPermission / isInstalled carry no
+          // args; the arg-bearing ops cast inline.
+          final args = call.arguments as Map<Object?, Object?>?;
           switch (call.method) {
             case 'isInstalled':
               return true;
+            case 'shouldRequestPermission':
+              return true;
+            case 'requestPermission':
+              return false;
             case 'ensureDeck':
               return 7;
             case 'ensureModel':
               return 9;
             case 'noteExists':
-              return knownFirstFields.contains(args['firstField']);
+              return knownFirstFields.contains(args?['firstField']);
             case 'addNote':
               final fields =
-                  (args['fields'] as List?)?.cast<String>() ?? const [];
+                  (args?['fields'] as List?)?.cast<String>() ?? const [];
               if (fields.isNotEmpty) knownFirstFields.add(fields.first);
               return 11; // always inserts — no dupe-null
             default:
@@ -59,6 +65,38 @@ void main() {
       expect(await AnkiDroidGatewayService().isInstalled(), isFalse);
     },
   );
+
+  test('shouldRequestPermission maps to the channel (T16.2)', () async {
+    final result = await AnkiDroidGatewayService().shouldRequestPermission();
+    expect(result, isTrue);
+    expect(calls.single.method, 'shouldRequestPermission');
+    expect(calls.single.arguments, isNull);
+  });
+
+  test(
+    'shouldRequestPermission defaults to false on a null channel reply',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (_) async => null);
+      expect(
+        await AnkiDroidGatewayService().shouldRequestPermission(),
+        isFalse,
+      );
+    },
+  );
+
+  test('requestPermission maps to the channel (T16.2)', () async {
+    final result = await AnkiDroidGatewayService().requestPermission();
+    expect(result, isFalse);
+    expect(calls.single.method, 'requestPermission');
+    expect(calls.single.arguments, isNull);
+  });
+
+  test('requestPermission defaults to false on a null channel reply', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (_) async => null);
+    expect(await AnkiDroidGatewayService().requestPermission(), isFalse);
+  });
 
   test('ensureDeck sends name and returns the id', () async {
     final id = await AnkiDroidGatewayService().ensureDeck('Rivendell::L1');

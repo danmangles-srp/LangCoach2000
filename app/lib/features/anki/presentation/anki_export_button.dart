@@ -16,6 +16,7 @@ import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/features/anki/application/anki_export_providers.dart';
 import 'package:rivendell/features/anki/application/anki_export_service.dart';
+import 'package:rivendell/features/anki/application/anki_gateway.dart';
 import 'package:rivendell/features/anki/application/anki_providers.dart';
 import 'package:rivendell/features/metrics/application/metrics_providers.dart';
 import 'package:rivendell/features/metrics/domain/metric_kind.dart';
@@ -48,55 +49,131 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
   String? _errorDetail;
 
   Future<void> _send() async {
-    setState(() {
-      _phase = _Phase.busy;
-      _errorDetail = null;
-    });
+    _errorDetail = null;
+    final gateway = ref.read(ankiGatewayProvider);
     try {
-      final installed = await ref.read(ankiGatewayProvider).isInstalled();
+      final installed = await gateway.isInstalled();
       if (!installed) {
         if (mounted) _showNotInstalledDialog();
         if (mounted) setState(() => _phase = _Phase.notInstalled);
         return;
       }
-      final service = await ref.read(ankiExportServiceProvider.future);
-      final type1 = await service.exportType1(
-        tag: widget.recordingName,
-        pairs: widget.pairs,
-      );
-      final type2 = await service.exportType2(pairs: widget.pairs);
-      final added = type1.added + type2.added;
-      // FR-1.5.1: count newly added cards as flashcards reviewed. Fire-and-
-      // forget — a metrics miss must never block or surface in the export UI.
-      if (added > 0) {
-        unawaited(
-          ref
-              .read(metricsRepositoryProvider.future)
-              .then((m) => m.record(MetricKind.flashcardsReviewed, added))
-              .catchError((Object _) {}),
-        );
+      // T16.3: front-door runtime-grant gate. Drives AnkiDroid's native grant
+      // screen before the first content-provider query, so the export never
+      // hits the "Permission not granted for: CardContentProvider.query"
+      // SecurityException. The gate + its dialog run with the button idle (no
+      // spinner): the modal dialog blocks double-taps, and a busy spinner here
+      // would animate its infinite ticker across the await, deadlocking
+      // pumpAndSettle in widget tests (and spinning under a dialog in prod).
+      if (!await _ensurePermission(gateway)) return;
+      await _doExport();
+    } on PlatformException catch (e, st) {
+      // ANKI_NO_ACCESS = the Kotlin SecurityException backstop fired despite
+      // the front-door gate (e.g. the user revoked access between
+      // shouldRequestPermission and the call). Re-run the gate once; if the
+      // user grants, retry the export. Anything else falls through to the
+      // generic failure path.
+      if (e.code == 'ANKI_NO_ACCESS') {
+        ref.read(appLoggerProvider).e(LogTag.anki, 'ANKI_NO_ACCESS fallback');
+        if (await _ensurePermission(gateway)) {
+          try {
+            await _doExport();
+            return;
+          } on Object catch (e2, st2) {
+            _failWith(e2, st2);
+            return;
+          }
+        }
+        return;
       }
-      if (mounted) {
-        setState(() {
-          _result = AnkiExportResult(
-            added: added,
-            skipped: type1.skipped + type2.skipped,
-            failed: type1.failed + type2.failed,
-            pending: type2.pending,
-          );
-          _phase = _Phase.done;
-        });
-      }
+      _failWith(e, st);
     } on Object catch (e, st) {
-      final detail = _describe(e);
-      ref.read(appLoggerProvider).e(LogTag.anki, 'export failed: $detail\n$st');
-      if (mounted) {
-        setState(() {
-          _result = null;
-          _errorDetail = detail;
-          _phase = _Phase.error;
-        });
-      }
+      _failWith(e, st);
+    }
+  }
+
+  /// Run the export (Type 1 + Type 2) + record metrics + flip to done. Shared
+  /// by the front-door path and the ANKI_NO_ACCESS retry so neither duplicates
+  /// the result/metrics wiring. Sets busy at the start so the spinner shows
+  /// only while work is actually in flight.
+  Future<void> _doExport() async {
+    if (mounted) setState(() => _phase = _Phase.busy);
+    final service = await ref.read(ankiExportServiceProvider.future);
+    final type1 = await service.exportType1(
+      tag: widget.recordingName,
+      pairs: widget.pairs,
+    );
+    final type2 = await service.exportType2(pairs: widget.pairs);
+    final added = type1.added + type2.added;
+    // FR-1.5.1: count newly added cards as flashcards reviewed. Fire-and-
+    // forget — a metrics miss must never block or surface in the export UI.
+    if (added > 0) {
+      unawaited(
+        ref
+            .read(metricsRepositoryProvider.future)
+            .then((m) => m.record(MetricKind.flashcardsReviewed, added))
+            .catchError((Object _) {}),
+      );
+    }
+    if (mounted) {
+      setState(() {
+        _result = AnkiExportResult(
+          added: added,
+          skipped: type1.skipped + type2.skipped,
+          failed: type1.failed + type2.failed,
+          pending: type2.pending,
+        );
+        _phase = _Phase.done;
+      });
+    }
+  }
+
+  /// Returns true when the export may proceed (permission already held, or just
+  /// granted via the one-time prompt). False means the user denied or dismissed
+  /// — the enable-API hint snackbar is shown and the phase reset to idle.
+  Future<bool> _ensurePermission(AnkiGateway gateway) async {
+    if (!await gateway.shouldRequestPermission()) return true;
+    final granted = await _promptForGrant();
+    if (granted) return true;
+    if (mounted) _showEnableApiHint();
+    if (mounted) setState(() => _phase = _Phase.idle);
+    return false;
+  }
+
+  /// One-time explainer → Continue → drives the runtime grant. Returns false
+  /// if the user cancelled the dialog or AnkiDroid denied the grant.
+  Future<bool> _promptForGrant() async {
+    final strings = AppStrings.of(context);
+    final cont = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(strings.ankiGrantTitle),
+        content: Text(strings.ankiGrantBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(strings.wordLogCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(strings.ankiGrantContinue),
+          ),
+        ],
+      ),
+    );
+    if (cont != true) return false;
+    return ref.read(ankiGatewayProvider).requestPermission();
+  }
+
+  void _failWith(Object e, StackTrace st) {
+    final detail = _describe(e);
+    ref.read(appLoggerProvider).e(LogTag.anki, 'export failed: $detail\n$st');
+    if (mounted) {
+      setState(() {
+        _result = null;
+        _errorDetail = detail;
+        _phase = _Phase.error;
+      });
     }
   }
 
@@ -112,18 +189,11 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
     return error.toString();
   }
 
-  /// The surfaced error looks like AnkiDroid refusing the content-provider
-  /// query for lack of the READ_WRITE_DATABASE permission grant. Drives the
-  /// actionable hint (the usual cause is granting Rivendell in AnkiDroid's API
-  /// settings, or the manifest permission not yet declared on the installed
-  /// build).
-  bool get _looksLikePermissionError {
-    final d = _errorDetail;
-    if (d == null) return false;
-    final lower = d.toLowerCase();
-    return lower.contains('permission not granted') ||
-        lower.contains('read_write_database') ||
-        lower.contains('securityexception');
+  void _showEnableApiHint() {
+    final strings = AppStrings.of(context);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(strings.ankiEnableApiHint)));
   }
 
   void _showNotInstalledDialog() {
@@ -235,15 +305,6 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
             // Selectable so the user can copy the real cause into a bug report.
             SelectableText(
               _errorDetail!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if (_looksLikePermissionError) ...[
-            const SizedBox(height: 6),
-            Text(
-              strings.ankiPermissionHint,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
