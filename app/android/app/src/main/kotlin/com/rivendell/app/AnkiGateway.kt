@@ -1,8 +1,9 @@
 package com.rivendell.app
 
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import androidx.core.content.ContextCompat
 import com.ichi2.anki.api.AddContentApi
 
 // Thin Kotlin wrapper over AnkiDroid's [AddContentApi] (FR-1.3.3, T4.1). Resolves
@@ -14,17 +15,40 @@ import com.ichi2.anki.api.AddContentApi
 // AnkiDroid's addNote performs NO duplicate checking — it always inserts.
 // Re-save safety comes from [noteExists] (Anki keys uniqueness on a model's
 // first field).
+//
+// T16.1: install detection + the runtime-permission gate live here so the
+// channel (T16.2) + Dart UI (T16.3) drive AnkiDroid's native grant flow before
+// the first content-provider query — without it every deckList/addNote call is
+// rejected with "Permission not granted for: CardContentProvider.query".
 class AnkiGateway(private val context: Context) {
 
     private val api: AddContentApi by lazy { AddContentApi(context) }
 
-    /** Whether AnkiDroid (com.ichi2.anki) is installed on the device. */
-    fun isInstalled(): Boolean = try {
-        context.packageManager.getPackageInfo(ANKI_PACKAGE, 0)
-        true
-    } catch (_: PackageManager.NameNotFoundException) {
-        false
-    }
+    /**
+     * Whether AnkiDroid is installed AND its API is exposed (T16.1). Uses
+     * [AddContentApi.getAnkiDroidPackageName] — the canonical check from the
+     * official apisample — which returns null when AnkiDroid is absent or when
+     * its global "Enable AnkiDroid API" toggle is off (AnkiDroid 2.24+).
+     * Replaces the raw packageManager probe, which reported "installed" even
+     * when the API was disabled.
+     */
+    fun isInstalled(): Boolean = AddContentApi.getAnkiDroidPackageName(context) != null
+
+    /**
+     * Whether the AnkiDroid READ_WRITE permission still needs a runtime grant
+     * (T16.1). The v1.1.0 aar ships no `shouldRequestPermission` on
+     * [AddContentApi], so this reimplements the apisample's
+     * `AnkiDroidHelper.shouldRequestPermission` inline: post-M material release
+     * + [ContextCompat.checkSelfPermission] against the aar's exported
+     * [AddContentApi.READ_WRITE_PERMISSION] constant. Mirrors what
+     * `AddContentApi.hasReadWritePermission()` (private) checks internally.
+     */
+    fun shouldRequestPermission(): Boolean =
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            ContextCompat.checkSelfPermission(
+                context,
+                AddContentApi.READ_WRITE_PERMISSION,
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
 
     /** Create-or-find the named deck. Returns its id. */
     fun ensureDeck(name: String): Long {
@@ -78,8 +102,4 @@ class AnkiGateway(private val context: Context) {
      */
     fun addMedia(fileUri: Uri, preferredName: String): String? =
         api.addMediaFromUri(fileUri, preferredName, "image")
-
-    private companion object {
-        const val ANKI_PACKAGE = "com.ichi2.anki"
-    }
 }
