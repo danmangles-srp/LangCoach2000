@@ -209,6 +209,14 @@ class AppStrings {
     settingsReportNeverSent: 'Never',
     settingsReportNotConfigured:
         'Add your Gmail address + app password to enable weekly reports.',
+    settingsAiImageTitle: 'AI image generation',
+    settingsAiImageKeyLabel: 'Fal.ai API key',
+    settingsAiImageKeyHelp:
+        'Used to generate concept images. Stored encrypted on this device.',
+    settingsAiImageKeySave: 'Save key',
+    settingsAiImageKeySaved: 'Key saved',
+    settingsAiImageKeyClear: 'Clear',
+    settingsAiImageKeyNotSet: 'Not set — images queue until a key is added.',
   );
 
   static const _uz = _Bundle(
@@ -402,6 +410,16 @@ class AppStrings {
     settingsReportNotConfigured:
         'Haftalik hisobotni yoqish uchun Gmail manzil + ilova '
         'parolini kiriting.',
+    settingsAiImageTitle: 'Tasvir generatsiyasi',
+    settingsAiImageKeyLabel: 'Fal.ai API kaliti',
+    settingsAiImageKeyHelp:
+        'Tushuncha tasvirlarini generatsiyasi uchun. Shu qurilmada '
+        'shifrlangan saqlanadi.',
+    settingsAiImageKeySave: 'Kalitni saqlash',
+    settingsAiImageKeySaved: 'Kalit saqlandi',
+    settingsAiImageKeyClear: 'Tozalash',
+    settingsAiImageKeyNotSet:
+        'Kalit yo‘q — qo‘shilguncha tasvirlar navbatda turadi.',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -581,6 +599,13 @@ class AppStrings {
   String get settingsReportNextSendLabel => _bundle.settingsReportNextSendLabel;
   String get settingsReportNeverSent => _bundle.settingsReportNeverSent;
   String get settingsReportNotConfigured => _bundle.settingsReportNotConfigured;
+  String get settingsAiImageTitle => _bundle.settingsAiImageTitle;
+  String get settingsAiImageKeyLabel => _bundle.settingsAiImageKeyLabel;
+  String get settingsAiImageKeyHelp => _bundle.settingsAiImageKeyHelp;
+  String get settingsAiImageKeySave => _bundle.settingsAiImageKeySave;
+  String get settingsAiImageKeySaved => _bundle.settingsAiImageKeySaved;
+  String get settingsAiImageKeyClear => _bundle.settingsAiImageKeyClear;
+  String get settingsAiImageKeyNotSet => _bundle.settingsAiImageKeyNotSet;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -751,6 +776,13 @@ class _Bundle {
     required this.settingsReportNextSendLabel,
     required this.settingsReportNeverSent,
     required this.settingsReportNotConfigured,
+    required this.settingsAiImageTitle,
+    required this.settingsAiImageKeyLabel,
+    required this.settingsAiImageKeyHelp,
+    required this.settingsAiImageKeySave,
+    required this.settingsAiImageKeySaved,
+    required this.settingsAiImageKeyClear,
+    required this.settingsAiImageKeyNotSet,
   });
 
   final String recordingsTitle;
@@ -910,6 +942,13 @@ class _Bundle {
   final String settingsReportNextSendLabel;
   final String settingsReportNeverSent;
   final String settingsReportNotConfigured;
+  final String settingsAiImageTitle;
+  final String settingsAiImageKeyLabel;
+  final String settingsAiImageKeyHelp;
+  final String settingsAiImageKeySave;
+  final String settingsAiImageKeySaved;
+  final String settingsAiImageKeyClear;
+  final String settingsAiImageKeyNotSet;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

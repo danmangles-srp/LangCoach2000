@@ -1,13 +1,9 @@
 // coverage:ignore-file — compile-time env reads, no logic.
-// Fal.ai connection config (T4.3, FR-1.3.4). All three are supplied at build
-// time via --dart-define so nothing secret or deploy-specific lives in the
-// repo. Defaults make the app run (and fail clearly at the first generation
-// attempt) when a key isn't defined.
-
-/// Fal.ai API key. REQUIRED at runtime for image generation; empty until a real
-/// key is passed via `--dart-define=RIVENDELL_FAL_KEY=...`. The service throws
-/// a clear StateError on an empty key rather than silently failing.
-const String falApiKey = String.fromEnvironment('RIVENDELL_FAL_KEY');
+// Fal.ai connection config (T4.3, FR-1.3.4). The API key is a runtime setting
+// stored in the SQLCipher KV store (set via Settings) — not a build-time
+// define — so it never lives in the repo and can rotate without a rebuild.
+// Only the non-secret host + model remain here, supplied at build time via
+// --dart-define with safe defaults.
 
 /// Fal.ai REST host. Override only for staging/test routing.
 const String falBaseUrl = String.fromEnvironment(

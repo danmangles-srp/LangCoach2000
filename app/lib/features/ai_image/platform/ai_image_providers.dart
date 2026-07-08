@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
@@ -16,6 +17,33 @@ import 'package:rivendell/features/ai_image/application/fal_ai_image_service.dar
 import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart';
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/platform/fal_ai_config.dart';
+import 'package:rivendell/features/settings/application/settings_providers.dart';
+
+// KV key for the Fal.ai API key. Stored in the SQLCipher-encrypted KV store
+// (NFR-2.4.2); never in the repo, never in --dart-define. The encrypted local
+// DB is per-install and not checked in, so a user-entered key is acceptable
+// here (mirrors the SMTP-credential override already in place for reports).
+const _kFalApiKey = 'ai_image.fal_api_key';
+
+/// Read the configured Fal.ai API key, or null when unset.
+Future<String?> readFalApiKey(KvRepository repo) => repo.read(_kFalApiKey);
+
+/// Persist (or clear) the Fal.ai API key. An empty value deletes the key so the
+/// service's empty-key guard fires clearly on the next generation.
+Future<void> writeFalApiKey(KvRepository repo, String key) async {
+  if (key.isEmpty) {
+    await repo.delete(_kFalApiKey);
+  } else {
+    await repo.write(_kFalApiKey, key);
+  }
+}
+
+/// The current Fal.ai API key (empty string when unset). Read fresh per drain
+/// so a Settings change takes effect without re-queueing pending items.
+final falApiKeyProvider = FutureProvider<String>((ref) async {
+  final repo = await ref.watch(settingsRepositoryProvider.future);
+  return await repo.read(_kFalApiKey) ?? '';
+});
 
 /// App-documents path for cached AI images. Defined here (not reused from
 /// wordlog) so the ai_image feature has no feature→feature wiring dependency;
@@ -41,7 +69,7 @@ final aiImageServiceProvider = FutureProvider<AiImageService>((ref) async {
     cache: cache,
     queue: queue,
     docsDir: Directory(docsDir),
-    apiKey: falApiKey,
+    readApiKey: () => ref.read(falApiKeyProvider.future),
     client: http.Client(),
     logger: ref.watch(appLoggerProvider),
     baseUrl: falBaseUrl,
