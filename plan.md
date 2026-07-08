@@ -999,7 +999,11 @@ canonical flow the official `ankidroid/apisample` ships, ported to Rivendell's c
   - In `AndroidManifest.xml` ensure `<uses-permission android:name="<READ_WRITE_PERMISSION string>"/>`
     is declared (the permission is defined by AnkiDroid; the manifest declares that this app holds it,
     which the runtime request then grants). Use the `AddContentApi.READ_WRITE_PERMISSION` value verbatim.
-  *ACs:* M16 AC 1. *Deps:* T4.1.
+  *ACs:* M16 AC 1. *Deps:* T4.1. ✅ PR #64 — `shouldRequestPermission()` reimplemented inline
+  (API ≥ M + `ContextCompat.checkSelfPermission` vs `AddContentApi.READ_WRITE_PERMISSION`, verified
+  via `javap` that the v1.1.0 aar exports the constant but not the method); `isInstalled()` switched
+  to `getAnkiDroidPackageName(context) != null`; manifest comment refreshed (permission already
+  declared by #41).
 - **T16.2 — Channel + MainActivity runtime-grant flow.** In `MainActivity.kt`, add two
   `rivendell/anki` channel methods:
   - `"shouldRequestPermission"` → `result.success(ankiGateway.shouldRequestPermission())`.
@@ -1012,7 +1016,10 @@ canonical flow the official `ankidroid/apisample` ships, ported to Rivendell's c
     pending field). Guard re-entry like the other launchers.
   Keep the existing `SecurityException` → `ANKI_NO_ACCESS` catch as a defensive backstop, but the
   front-door `shouldRequestPermission`/`requestPermission` is now the primary path. *ACs:* M16 AC 2.
-  *Deps:* T16.1.
+  *Deps:* T16.1. ✅ PR #64 — `requestPermissionLauncher` via `registerForActivityResult(RequestPermission())`
+  mirroring the SAF/image launchers, `pendingPermissionResult` + `REENTRY` guard, both methods handled
+  on the main thread before the worker-thread content-provider block. `ANKI_NO_ACCESS` backstop retained.
+  Bundled with T16.1 (one atomic native unit).
 - **T16.3 — Dart export gate + one-time grant dialog + current copy.**
   - `AnkiGateway` interface (`features/anki/application/anki_gateway.dart`) +
     `AnkiDroidGatewayService` (`features/anki/platform/ankidroid_gateway_service.dart`): add
@@ -1032,5 +1039,23 @@ canonical flow the official `ankidroid/apisample` ships, ported to Rivendell's c
   - Handle the `ANKI_NO_ACCESS` typed error on existing calls as a fallback that re-runs the gate.
   Widget tests: faked gateway exercising the three branches (notInstalled / needsPermission-granted /
   needsPermission-denied) assert the right dialog/snackbar/export path. *ACs:* M16 AC 1–4. *Deps:*
-  T16.2, T4.5.
+  T16.2, T4.5. ✅ PR #65 — gateway/service/fake gain both methods (configurable stubs + call counter);
+  `_send()` runs the 3-branch gate; `ANKI_NO_ACCESS` re-runs the gate once; stale
+  `_looksLikePermissionError` text-sniff removed; l10n swapped stale `ankiPermissionHint` for
+  `ankiEnableApiHint` + grant-dialog strings (en + uz). **Deviation:** the Play Store deep-link CTA was
+  deferred (no `url_launcher` dep — would be a new platform channel); the existing "Install AnkiDroid
+  from Google Play" dialog copy stays. Busy phase moved off the gate path into `_doExport` to stop the
+  `CircularProgressIndicator` ticker deadlocking `pumpAndSettle` across the dialog await. 514 tests
+  (+8), 91.2%, android auto-skipped.
+
+**Milestone 16 COMPLETE (pending device-confirm).** All three tickets shipped (T16.1+T16.2 bundled as
+PR #64, T16.3 as PR #65). The runtime-grant flow that the v1.1.0 aar exposed but Rivendell never drove
+is now wired end-to-end: the export gates on `shouldRequestPermission`, drives AnkiDroid's native grant
+screen via `registerForActivityResult(RequestPermission())`, and surfaces current copy on deny. The
+`ankidroid_api_model` memory flagged a v2-aar migration as required; verified via `javap` that the
+v1.1.0 aar already exports `READ_WRITE_PERMISSION` + `getAnkiDroidPackageName`, so no swap was needed —
+the missing piece was the runtime request flow itself. **Device-confirm remains the unblockable
+caveat** (mirrors T14.4/T14.5): on AnkiDroid 2.24 with the global API toggle ON, the first "Send to
+Anki" should complete with no `CardContentProvider.query` SecurityException; with the toggle OFF, the
+request returns DENIED and the enable-API snackbar shows current copy.
 ---
