@@ -14,11 +14,15 @@
          we fall back to inexact scheduling). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <!-- AnkiDroid content-provider access (FR-1.3.3). Without this declaration
-         Android never grants Rivendell the custom permission, so every query
-         (deckList / addNote / addMedia) is rejected with "Permission not granted
-         for: CardContentProvider.query". The user separately allows Rivendell
-         in AnkiDroid → Settings → API the first time the API is used. -->
+    <!-- AnkiDroid content-provider access (FR-1.3.3, T16.1). Declares the
+         READ_WRITE_DATABASE custom permission AnkiDroid defines; the runtime
+         grant itself is driven by AnkiGateway.shouldRequestPermission + the
+         rivendell/anki requestPermission launcher (T16.2) before the first
+         content-provider query. Without this declaration Android never
+         considers the permission grantable, so every query is rejected with
+         "Permission not granted for: CardContentProvider.query". On AnkiDroid
+         2.24+ the user must also have the global "Enable AnkiDroid API" toggle
+         ON for the grant to succeed. -->
     <uses-permission android:name="com.ichi2.anki.permission.READ_WRITE_DATABASE"/>
     <application
         android:label="Rivendell"

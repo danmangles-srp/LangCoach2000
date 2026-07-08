@@ -13,6 +13,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
+import com.ichi2.anki.api.AddContentApi
 import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -29,7 +30,8 @@ import kotlin.concurrent.thread
 //   rivendell/scan     :: listAudioFiles(treeUri) -> [{path,name,size,lastModified}]
 //   rivendell/record   :: copyToFolder(treeUri, sourcePath, displayName) -> doc URI
 //   rivendell/wordlog  :: copyImage(sourceUri, destRelativePath) -> void
-//   rivendell/anki     :: isInstalled/ensureDeck/ensureModel/noteExists/addNote/addMedia
+//   rivendell/anki     :: isInstalled/shouldRequestPermission/requestPermission/
+//                          ensureDeck/ensureModel/noteExists/addNote/addMedia
 //
 // Extends [AudioServiceFragmentActivity] (a [FlutterFragmentActivity], i.e. an
 // androidx [FragmentActivity] -> [ComponentActivity]) for two reasons:
@@ -53,6 +55,7 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     private var pendingResult: MethodChannel.Result? = null
     private var pendingPickResult: MethodChannel.Result? = null
+    private var pendingPermissionResult: MethodChannel.Result? = null
 
     private val ankiGateway: AnkiGateway by lazy { AnkiGateway(this) }
 
@@ -99,6 +102,19 @@ class MainActivity : AudioServiceFragmentActivity() {
                 return@registerForActivityResult
             }
             result.success(mapOf("uri" to uri.toString(), "ext" to ext))
+        }
+
+    // AnkiDroid READ_WRITE runtime-grant (T16.2, FR-1.3.3). The modern,
+    // lifecycle-safe equivalent of ActivityCompat.requestPermissions +
+    // onRequestPermissionsResult — same contract family as the SAF + image
+    // launchers above. Launched with AddContentApi.READ_WRITE_PERMISSION; the
+    // callback resumes the pending MethodChannel result so Dart can proceed
+    // with the export on grant (or surface current-copy guidance on deny).
+    private val requestPermissionLauncher: ActivityResultLauncher<String> =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val result = pendingPermissionResult
+            pendingPermissionResult = null
+            result?.success(granted)
         }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -265,7 +281,32 @@ class MainActivity : AudioServiceFragmentActivity() {
         }
 
         MethodChannel(messenger, ANKI_CHANNEL).setMethodCallHandler { call, result ->
-            // Every op hits AnkiDroid's content provider — off the main thread.
+            // Permission flow runs on the platform main thread:
+            // registerForActivityResult launchers + the pending-result field
+            // must touch the UI thread, and shouldRequestPermission is a cheap
+            // ContextCompat check (no provider round-trip). Content-provider
+            // ops below stay off-main (T16.2).
+            when (call.method) {
+                "shouldRequestPermission" -> {
+                    result.success(ankiGateway.shouldRequestPermission())
+                    return@setMethodCallHandler
+                }
+
+                "requestPermission" -> {
+                    if (pendingPermissionResult != null) {
+                        result.error(
+                            "REENTRY",
+                            "a permission request is already in flight",
+                            null,
+                        )
+                        return@setMethodCallHandler
+                    }
+                    pendingPermissionResult = result
+                    requestPermissionLauncher.launch(AddContentApi.READ_WRITE_PERMISSION)
+                    return@setMethodCallHandler
+                }
+            }
+            // Every other op hits AnkiDroid's content provider — off main.
             thread(start = true) {
                 try {
                     when (call.method) {
