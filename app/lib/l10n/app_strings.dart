@@ -217,6 +217,15 @@ class AppStrings {
     settingsAiImageKeySaved: 'Key saved',
     settingsAiImageKeyClear: 'Clear',
     settingsAiImageKeyNotSet: 'Not set — images queue until a key is added.',
+    settingsAiImageQueueTitle: 'AI image queue',
+    settingsAiImageQueueSubtitle: 'Review pending image generations',
+    aiQueuePendingHeader: 'Pending',
+    aiQueuePendingEmpty: 'No pending images.',
+    aiQueueGeneratedHeader: 'Generated',
+    aiQueueGeneratedEmpty: 'No images generated yet.',
+    aiQueueAttemptsN: 'Attempts: {n}',
+    aiQueueLastErrorLabel: 'Last error',
+    aiQueueEnqueuedLabel: 'Enqueued',
   );
 
   static const _uz = _Bundle(
@@ -420,6 +429,15 @@ class AppStrings {
     settingsAiImageKeyClear: 'Tozalash',
     settingsAiImageKeyNotSet:
         'Kalit yo‘q — qo‘shilguncha tasvirlar navbatda turadi.',
+    settingsAiImageQueueTitle: 'Tasvir navbati',
+    settingsAiImageQueueSubtitle: 'Kutilayotgan tasvir generatsiyasini ko‘rish',
+    aiQueuePendingHeader: 'Kutilmoqda',
+    aiQueuePendingEmpty: 'Kutilayotgan tasvir yo‘q.',
+    aiQueueGeneratedHeader: 'Yaratilgan',
+    aiQueueGeneratedEmpty: 'Hali tasvir yaratilmagan.',
+    aiQueueAttemptsN: 'Urinishlar: {n}',
+    aiQueueLastErrorLabel: 'So‘nggi xato',
+    aiQueueEnqueuedLabel: 'Navbatga olindi',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -606,6 +624,17 @@ class AppStrings {
   String get settingsAiImageKeySaved => _bundle.settingsAiImageKeySaved;
   String get settingsAiImageKeyClear => _bundle.settingsAiImageKeyClear;
   String get settingsAiImageKeyNotSet => _bundle.settingsAiImageKeyNotSet;
+  String get settingsAiImageQueueTitle => _bundle.settingsAiImageQueueTitle;
+  String get settingsAiImageQueueSubtitle =>
+      _bundle.settingsAiImageQueueSubtitle;
+  String get aiQueuePendingHeader => _bundle.aiQueuePendingHeader;
+  String get aiQueuePendingEmpty => _bundle.aiQueuePendingEmpty;
+  String get aiQueueGeneratedHeader => _bundle.aiQueueGeneratedHeader;
+  String get aiQueueGeneratedEmpty => _bundle.aiQueueGeneratedEmpty;
+  String aiQueueAttempts(int n) =>
+      _bundle.aiQueueAttemptsN.replaceAll('{n}', '$n');
+  String get aiQueueLastErrorLabel => _bundle.aiQueueLastErrorLabel;
+  String get aiQueueEnqueuedLabel => _bundle.aiQueueEnqueuedLabel;
 
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
@@ -783,6 +812,15 @@ class _Bundle {
     required this.settingsAiImageKeySaved,
     required this.settingsAiImageKeyClear,
     required this.settingsAiImageKeyNotSet,
+    required this.settingsAiImageQueueTitle,
+    required this.settingsAiImageQueueSubtitle,
+    required this.aiQueuePendingHeader,
+    required this.aiQueuePendingEmpty,
+    required this.aiQueueGeneratedHeader,
+    required this.aiQueueGeneratedEmpty,
+    required this.aiQueueAttemptsN,
+    required this.aiQueueLastErrorLabel,
+    required this.aiQueueEnqueuedLabel,
   });
 
   final String recordingsTitle;
@@ -949,6 +987,15 @@ class _Bundle {
   final String settingsAiImageKeySaved;
   final String settingsAiImageKeyClear;
   final String settingsAiImageKeyNotSet;
+  final String settingsAiImageQueueTitle;
+  final String settingsAiImageQueueSubtitle;
+  final String aiQueuePendingHeader;
+  final String aiQueuePendingEmpty;
+  final String aiQueueGeneratedHeader;
+  final String aiQueueGeneratedEmpty;
+  final String aiQueueAttemptsN;
+  final String aiQueueLastErrorLabel;
+  final String aiQueueEnqueuedLabel;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {

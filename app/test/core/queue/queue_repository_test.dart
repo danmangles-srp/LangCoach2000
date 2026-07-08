@@ -85,4 +85,42 @@ void main() {
       expect(tables, hasLength(1));
     },
   );
+
+  test('pending carries the createdAt timestamp', () async {
+    await queue.enqueue(type: 't', payload: 'x');
+    final items = await queue.pending();
+    expect(items.single.createdAt, isNotNull);
+  });
+
+  test('pendingByType filters by type and skips done items', () async {
+    await queue.enqueue(type: 'ai_image', payload: 'a');
+    await queue.enqueue(type: 'email', payload: 'b');
+    final done = await queue.enqueue(type: 'ai_image', payload: 'c');
+    await queue.markDone(done);
+
+    final items = await queue.pendingByType('ai_image');
+    expect(items, hasLength(1));
+    expect(items.single.payload, 'a');
+  });
+
+  test('resetAttempts zeroes attempts + clears lastError', () async {
+    final id = await queue.enqueue(type: 't', payload: 'x');
+    await queue.markFailed(id, error: 'boom');
+    await queue.markFailed(id, error: 'again');
+    expect((await queue.pending()).single.attempts, 2);
+
+    await queue.resetAttempts(id);
+    final item = (await queue.pending()).single;
+    expect(item.attempts, 0);
+    expect(item.lastError, isNull);
+  });
+
+  test('delete hard-removes a row (not just marks done)', () async {
+    final id = await queue.enqueue(type: 't', payload: 'x');
+    await queue.delete(id);
+    expect(await queue.pending(), isEmpty);
+    // Confirms the row is gone entirely (cancel), not flipped to done.
+    final remaining = await db.select(db.offlineQueueItems).get();
+    expect(remaining, isEmpty);
+  });
 }

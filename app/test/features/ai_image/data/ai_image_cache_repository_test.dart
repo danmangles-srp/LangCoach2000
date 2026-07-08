@@ -63,4 +63,22 @@ void main() {
       expect(await cache.pathFor('Салом'), 'c.png');
     },
   );
+
+  test('recent returns all generated words and honours the limit', () async {
+    await cache.remember(uzbekWord: 'one', relativePath: 'a.png');
+    await cache.remember(uzbekWord: 'two', relativePath: 'b.png');
+    await cache.remember(uzbekWord: 'three', relativePath: 'c.png');
+
+    final entries = await cache.recent();
+    // createdAt defaults to currentDateAndTime (second resolution), so three
+    // tight-loop inserts tie and the DESC order across them isn't stable in a
+    // unit test — assert membership + the cap, not the tiebroken sequence.
+    expect(entries.map((e) => e.uzbekWord).toSet(), {'one', 'two', 'three'});
+    expect(entries.map((e) => e.relativePath).toSet(), {
+      'a.png',
+      'b.png',
+      'c.png',
+    });
+    expect(await cache.recent(limit: 2), hasLength(2));
+  });
 }
