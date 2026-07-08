@@ -25,8 +25,31 @@ class FakeAnkiGateway implements AnkiGateway {
   /// failure. The value is the formatted field string a real gateway returns.
   final Map<String, String?> mediaResults = {};
 
+  /// What [shouldRequestPermission] returns. Default false = "already granted"
+  /// so the happy-path export proceeds without a prompt (mirrors a device that
+  /// already granted READ_WRITE). Tests flip this true to drive the gate.
+  bool shouldRequestPermissionResult = false;
+
+  /// What [requestPermission] returns. Default true = "user granted" so the
+  /// one-time prompt proceeds into the export. Tests flip this false to drive
+  /// the denied branch.
+  bool requestPermissionResult = true;
+
+  /// Times [requestPermission] was called — lets a test assert the prompt fired
+  /// exactly once (no re-prompt loop).
+  int requestPermissionCalls = 0;
+
   @override
   Future<bool> isInstalled() async => true;
+
+  @override
+  Future<bool> shouldRequestPermission() async => shouldRequestPermissionResult;
+
+  @override
+  Future<bool> requestPermission() async {
+    requestPermissionCalls++;
+    return requestPermissionResult;
+  }
 
   @override
   Future<int> ensureDeck(String name) async {

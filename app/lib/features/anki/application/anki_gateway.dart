@@ -15,6 +15,18 @@ abstract class AnkiGateway {
   /// the "install AnkiDroid" affordance in the UI.
   Future<bool> isInstalled();
 
+  /// Whether the AnkiDroid READ_WRITE permission still needs a runtime grant
+  /// (T16.1). True → the UI shows a one-time explainer, then calls
+  /// [requestPermission]. Read live from the API, never cached — repeated
+  /// exports must not re-prompt once granted.
+  Future<bool> shouldRequestPermission();
+
+  /// Drive AnkiDroid's native runtime-permission grant screen (T16.2).
+  /// Returns true if the grant succeeded. On AnkiDroid 2.24+ the user must
+  /// also have the global "Enable AnkiDroid API" toggle ON, else this returns
+  /// false and the UI surfaces current-copy guidance.
+  Future<bool> requestPermission();
+
   /// Create the deck [name] if absent, else return its id. Stable across calls.
   Future<int> ensureDeck(String name);
 

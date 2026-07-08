@@ -1,10 +1,11 @@
-// AnkiExportButton widget test (T4.5). Presentation is coverage-excluded, so
-// this guards the state machine — installed → status chips, not-installed →
-// dialog, export throw → "send failed" + retry — against the real export
-// service over the in-memory gateway + AI fake. No device, no channel.
+// AnkiExportButton widget test (T4.5 / T16.3). Presentation is coverage-
+// excluded, so this guards the state machine — installed → status chips,
+// not-installed → install dialog, the runtime-grant gate (needs-permission-
+// granted / -denied / cancel), and export throw → "send failed" + retry —
+// against the real export service over the in-memory gateway + AI fake. No
+// device, no channel.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,22 +25,6 @@ import 'package:rivendell/l10n/app_strings.dart';
 class _NotInstalledGateway extends FakeAnkiGateway {
   @override
   Future<bool> isInstalled() async => false;
-}
-
-/// Mirrors the production failure: AnkiDroid rejects the content-provider
-/// query (deckList) when Rivendell lacks the READ_WRITE_DATABASE grant, and the
-/// Kotlin AddContentApi surfaces it as a PlatformException. The service calls
-/// ensureDeck first, so that's where the throw lands.
-class _PermissionDeniedGateway extends FakeAnkiGateway {
-  @override
-  Future<int> ensureDeck(String name) async {
-    throw PlatformException(
-      code: 'PERMISSION_DENIED',
-      message:
-          'Permission not granted for: CardContentProvider.query / '
-          'decks (com.rivendell.app)',
-    );
-  }
 }
 
 List<VocabPair> _pairs() => const [
@@ -142,21 +127,71 @@ void main() {
     expect(find.textContaining('AnkiDroid API access'), findsNothing);
   });
 
-  testWidgets('a permission-denied throw surfaces the AnkiDroid API hint', (
+  testWidgets(
+    'needs permission → grant dialog → Continue grants → export runs once',
+    (tester) async {
+      final gateway = FakeAnkiGateway()
+        ..shouldRequestPermissionResult = true
+        ..requestPermissionResult = true;
+      await tester.pumpWidget(
+        _host(gateway: gateway, service: _realService(gateway)),
+      );
+
+      await tester.tap(find.text('Send to Anki'));
+      await tester.pumpAndSettle();
+
+      // One-time explainer dialog (T16.3).
+      expect(find.text('Allow AnkiDroid access'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      // Runtime grant fired exactly once; export proceeded past the gate.
+      expect(gateway.requestPermissionCalls, 1);
+      expect(find.text('Added: 2'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'needs permission → Continue → denied → enable-API hint, no export',
+    (tester) async {
+      final gateway = FakeAnkiGateway()
+        ..shouldRequestPermissionResult = true
+        ..requestPermissionResult = false;
+      await tester.pumpWidget(
+        _host(gateway: gateway, service: _realService(gateway)),
+      );
+
+      await tester.tap(find.text('Send to Anki'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+
+      expect(gateway.requestPermissionCalls, 1);
+      // Current-copy enable-API snackbar (no stale "Advanced → API" wording).
+      expect(find.textContaining('enable the AnkiDroid API'), findsOneWidget);
+      // Export never ran.
+      expect(find.text('Added: 2'), findsNothing);
+    },
+  );
+
+  testWidgets('needs permission → cancel dialog → no export, no grant call', (
     tester,
   ) async {
-    // Faithful reproduction: the gateway's deck query is rejected with the
-    // same PlatformException AnkiDroid raises when READ_WRITE_DATABASE isn't
-    // granted. The service resolves, then exportType1 hits ensureDeck → throw.
-    final gateway = _PermissionDeniedGateway();
+    final gateway = FakeAnkiGateway()..shouldRequestPermissionResult = true;
     await tester.pumpWidget(
       _host(gateway: gateway, service: _realService(gateway)),
     );
 
     await tester.tap(find.text('Send to Anki'));
     await tester.pumpAndSettle();
+    // Cancel the explainer (wordLogCancel renders as 'Cancel' in en).
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
 
-    expect(find.textContaining('Permission not granted'), findsOneWidget);
-    expect(find.textContaining('AnkiDroid API access'), findsOneWidget);
+    // Dismissed before Continue → requestPermission never fired, no export.
+    expect(gateway.requestPermissionCalls, 0);
+    expect(find.text('Added: 2'), findsNothing);
   });
 }

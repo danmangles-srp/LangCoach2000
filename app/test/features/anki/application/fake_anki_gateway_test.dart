@@ -113,5 +113,23 @@ void main() {
         isFalse,
       );
     });
+
+    test(
+      'shouldRequestPermission defaults to false (already granted)',
+      () async {
+        expect(await gateway.shouldRequestPermission(), isFalse);
+      },
+    );
+
+    test(
+      'requestPermission returns the configured result + counts calls',
+      () async {
+        gateway.requestPermissionResult = true;
+        expect(await gateway.requestPermission(), isTrue);
+        gateway.requestPermissionResult = false;
+        expect(await gateway.requestPermission(), isFalse);
+        expect(gateway.requestPermissionCalls, 2);
+      },
+    );
   });
 }

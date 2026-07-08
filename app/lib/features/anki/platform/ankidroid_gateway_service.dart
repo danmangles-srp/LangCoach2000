@@ -21,6 +21,18 @@ class AnkiDroidGatewayService implements AnkiGateway {
   }
 
   @override
+  Future<bool> shouldRequestPermission() async {
+    final result = await _channel.invokeMethod<bool>('shouldRequestPermission');
+    return result ?? false;
+  }
+
+  @override
+  Future<bool> requestPermission() async {
+    final result = await _channel.invokeMethod<bool>('requestPermission');
+    return result ?? false;
+  }
+
+  @override
   Future<int> ensureDeck(String name) async {
     final id = await _channel.invokeMethod<int>('ensureDeck', {'name': name});
     if (id == null || id < 0) {
