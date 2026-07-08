@@ -68,7 +68,7 @@ void main() {
       cache: cache,
       queue: queue,
       docsDir: docsDir,
-      apiKey: apiKey,
+      readApiKey: () async => apiKey,
       client: client,
       logger: AppLogger(sink: RecordingSink()),
       baseUrl: 'https://fal.run',
