@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/app/home_shell.dart';
+import 'package:rivendell/features/ai_image/presentation/ai_image_queue_screen.dart';
 import 'package:rivendell/features/audio/application/folder_providers.dart';
 import 'package:rivendell/features/audio/presentation/folder_onboarding_screen.dart';
 import 'package:rivendell/features/audio/presentation/recording_detail_screen.dart';
@@ -70,6 +71,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/settings/ai-image-queue',
+        builder: (context, state) => const AiImageQueueScreen(),
       ),
     ],
   );

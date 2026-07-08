@@ -5,7 +5,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/ai_image/presentation/fal_api_key_settings_section.dart';
 import 'package:rivendell/features/report/presentation/weekly_report_settings_section.dart';
 import 'package:rivendell/features/settings/application/settings_providers.dart';
@@ -61,8 +63,59 @@ class SettingsScreen extends ConsumerWidget {
           const WeeklyReportSettingsSection(),
           const Divider(height: 1, indent: 16, endIndent: 16),
           const FalApiKeySettingsSection(),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          const _AiImageQueueTile(),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+}
+
+class _AiImageQueueTile extends ConsumerWidget {
+  const _AiImageQueueTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    final snap = ref.watch(aiImageQueueSnapshotProvider).value;
+    final pending = snap?.pending.length ?? 0;
+
+    return ListTile(
+      leading: const Icon(Icons.auto_awesome_motion_outlined),
+      title: Text(strings.settingsAiImageQueueTitle),
+      subtitle: Text(
+        strings.settingsAiImageQueueSubtitle,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: pending > 0 ? _PendingBadge(count: pending) : null,
+      onTap: () => context.push('/settings/ai-image-queue'),
+    );
+  }
+}
+
+class _PendingBadge extends StatelessWidget {
+  const _PendingBadge({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$count',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: scheme.onPrimaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

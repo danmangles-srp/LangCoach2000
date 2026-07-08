@@ -1,0 +1,176 @@
+// AI image queue-review screen (FR-1.3.4). Lists pending Fal.ai generations
+// with their failure history ("upload logs": attempts + last error + enqueue
+// time) and the recently generated words. Retry zeroes the attempt counter +
+// forces a drain; Cancel hard-deletes the pending item. Reached from a Settings
+// tile.
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import 'package:rivendell/core/queue/platform/queue_providers.dart';
+import 'package:rivendell/core/queue/queue_repository.dart';
+import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
+import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
+import 'package:rivendell/l10n/app_strings.dart';
+
+class AiImageQueueScreen extends ConsumerWidget {
+  const AiImageQueueScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    final async = ref.watch(aiImageQueueSnapshotProvider);
+    final stampFormat = DateFormat('EEE, MMM d, y – HH:mm');
+
+    return Scaffold(
+      appBar: AppBar(title: Text(strings.settingsAiImageQueueTitle)),
+      body: async.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('$e')),
+        data: (snap) {
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: [
+              _SectionHeader(label: strings.aiQueuePendingHeader),
+              if (snap.pending.isEmpty)
+                _EmptyLine(text: strings.aiQueuePendingEmpty)
+              else
+                for (final item in snap.pending)
+                  _PendingItemCard(item: item, stampFormat: stampFormat),
+              const Divider(height: 32, indent: 16, endIndent: 16),
+              _SectionHeader(label: strings.aiQueueGeneratedHeader),
+              if (snap.generated.isEmpty)
+                _EmptyLine(text: strings.aiQueueGeneratedEmpty)
+              else
+                for (final entry in snap.generated)
+                  ListTile(
+                    leading: const Icon(Icons.image_outlined),
+                    title: Text(entry.uzbekWord),
+                    trailing: Text(
+                      stampFormat.format(entry.createdAt),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+              const SizedBox(height: 24),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Text(
+        label,
+        style: theme.textTheme.titleSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyLine extends StatelessWidget {
+  const _EmptyLine({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Text(
+        text,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingItemCard extends ConsumerWidget {
+  const _PendingItemCard({required this.item, required this.stampFormat});
+  final QueueItem item;
+  final DateFormat stampFormat;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    final word = wordFromAiImagePayload(item.payload);
+    final labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(word, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              '${strings.aiQueueEnqueuedLabel}: '
+              '${stampFormat.format(item.createdAt)}',
+              style: labelStyle,
+            ),
+            Text(strings.aiQueueAttempts(item.attempts), style: labelStyle),
+            if (item.lastError != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                strings.aiQueueLastErrorLabel,
+                style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              // Selectable so a real failure message can be copied out.
+              SelectableText(item.lastError!, style: theme.textTheme.bodySmall),
+            ],
+            OverflowBar(
+              spacing: 8,
+              alignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => _cancel(ref, item),
+                  child: Text(strings.wordLogCancel),
+                ),
+                FilledButton.tonal(
+                  onPressed: () => _retry(ref, item),
+                  child: Text(strings.ankiRetry),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _retry(WidgetRef ref, QueueItem item) async {
+    final queue = await ref.read(queueRepositoryProvider.future);
+    await queue.resetAttempts(item.id);
+    final worker = await ref.read(queueProcessorProvider.future);
+    await worker.drain();
+    ref.invalidate(aiImageQueueSnapshotProvider);
+  }
+
+  Future<void> _cancel(WidgetRef ref, QueueItem item) async {
+    final queue = await ref.read(queueRepositoryProvider.future);
+    await queue.delete(item.id);
+    ref.invalidate(aiImageQueueSnapshotProvider);
+  }
+}

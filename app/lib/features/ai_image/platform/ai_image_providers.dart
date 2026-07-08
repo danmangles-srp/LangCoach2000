@@ -12,6 +12,7 @@ import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
+import 'package:rivendell/core/queue/queue_repository.dart';
 import 'package:rivendell/features/ai_image/application/ai_image_service.dart';
 import 'package:rivendell/features/ai_image/application/fal_ai_image_service.dart';
 import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart';
@@ -75,6 +76,26 @@ final aiImageServiceProvider = FutureProvider<AiImageService>((ref) async {
     baseUrl: falBaseUrl,
     modelId: falModelId,
   );
+});
+
+/// A read model for the AI-image queue-review screen: pending generation
+/// attempts (with their failure history) + the recently generated words.
+class AiImageQueueSnapshot {
+  const AiImageQueueSnapshot({required this.pending, required this.generated});
+  final List<QueueItem> pending;
+  final List<AiImageCacheEntry> generated;
+}
+
+/// The current queue-review snapshot. Invalidate after a retry/cancel to
+/// refresh.
+final aiImageQueueSnapshotProvider = FutureProvider<AiImageQueueSnapshot>((
+  ref,
+) async {
+  final queue = await ref.watch(queueRepositoryProvider.future);
+  final cache = await ref.watch(aiImageCacheRepositoryProvider.future);
+  final pending = await queue.pendingByType(aiImageQueueType);
+  final generated = await cache.recent();
+  return AiImageQueueSnapshot(pending: pending, generated: generated);
 });
 
 /// Register the `ai_image` queue handler on the shared worker. Call once from

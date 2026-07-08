@@ -9,6 +9,18 @@ import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 
+/// One successfully generated image (the read model for the queue-review UI).
+class AiImageCacheEntry {
+  const AiImageCacheEntry({
+    required this.uzbekWord,
+    required this.relativePath,
+    required this.createdAt,
+  });
+  final String uzbekWord;
+  final String relativePath;
+  final DateTime createdAt;
+}
+
 class AiImageCacheRepository {
   AiImageCacheRepository(this._db);
 
@@ -26,6 +38,26 @@ class AiImageCacheRepository {
   /// True iff a generated image exists for [uzbekWord].
   Future<bool> has(String uzbekWord) async =>
       (await pathFor(uzbekWord)) != null;
+
+  /// Recently generated words, newest first. Backs the queue-review "completed"
+  /// list — the authoritative success log (one row per word, written only after
+  /// a Fal.ai round-trip + file write succeeds).
+  Future<List<AiImageCacheEntry>> recent({int limit = 20}) async {
+    final rows =
+        await (_db.select(_db.aiImageCacheItems)
+              ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+              ..limit(limit))
+            .get();
+    return rows
+        .map(
+          (r) => AiImageCacheEntry(
+            uzbekWord: r.uzbekWord,
+            relativePath: r.relativePath,
+            createdAt: r.createdAt,
+          ),
+        )
+        .toList();
+  }
 
   /// Record a successful generation. INSERT OR REPLACE on the `uzbekWord`
   /// unique key so a re-generation (e.g. after a manual "regenerate image"

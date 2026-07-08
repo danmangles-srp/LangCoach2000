@@ -12,12 +12,14 @@ class QueueItem {
     required this.type,
     required this.payload,
     required this.attempts,
+    required this.createdAt,
     this.lastError,
   });
   final int id;
   final String type;
   final String payload;
   final int attempts;
+  final DateTime createdAt;
   final String? lastError;
 }
 
@@ -43,18 +45,28 @@ class QueueRepository {
               ..where((t) => t.done.equals(false))
               ..orderBy([(t) => OrderingTerm.asc(t.id)]))
             .get();
-    return rows
-        .map(
-          (r) => QueueItem(
-            id: r.id,
-            type: r.type,
-            payload: r.payload,
-            attempts: r.attempts,
-            lastError: r.lastError,
-          ),
-        )
-        .toList();
+    return rows.map(_toItem).toList();
   }
+
+  /// Pending items of a single [type], in enqueue order. Backs the per-feature
+  /// queue-review UI (e.g. AI image attempts awaiting drain).
+  Future<List<QueueItem>> pendingByType(String type) async {
+    final rows =
+        await (_db.select(_db.offlineQueueItems)
+              ..where((t) => t.done.equals(false) & t.type.equals(type))
+              ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+            .get();
+    return rows.map(_toItem).toList();
+  }
+
+  QueueItem _toItem(OfflineQueueItem r) => QueueItem(
+    id: r.id,
+    type: r.type,
+    payload: r.payload,
+    attempts: r.attempts,
+    createdAt: r.createdAt,
+    lastError: r.lastError,
+  );
 
   /// Count of pending items (for UI badges / status).
   Future<int> pendingCount() async {
@@ -82,6 +94,28 @@ class QueueRepository {
       'WHERE id = ?',
       [error, id],
     );
+  }
+
+  /// Reset the attempt counter + error for a pending item (a manual "retry"
+  /// affordance zeroes the failure history before the next drain).
+  Future<void> resetAttempts(int id) {
+    return (_db.update(
+      _db.offlineQueueItems,
+    )..where((t) => t.id.equals(id))).write(
+      const OfflineQueueItemsCompanion(
+        attempts: Value(0),
+        lastError: Value(null),
+      ),
+    );
+  }
+
+  /// Hard-delete an item. Used by the queue-review "cancel" affordance to drop
+  /// a pending item the user no longer wants retried (markDone would leave the
+  /// row in the completed history).
+  Future<void> delete(int id) {
+    return (_db.delete(
+      _db.offlineQueueItems,
+    )..where((t) => t.id.equals(id))).go();
   }
 
   /// Remove completed items older than [before]. Keeps recent history for the
