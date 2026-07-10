@@ -55,7 +55,7 @@ void main() {
     await TaskRepository(db).create(
       title: 'Memorize Yor-Yor',
       description: 'Lines 1-8 by Friday',
-      dueDate: DateTime(2026, 7, 10),
+      dueDate: DateTime(2026, 12, 25),
     );
 
     await tester.pumpWidget(_host(container, taskId: 1));
@@ -63,7 +63,7 @@ void main() {
 
     expect(find.text('Memorize Yor-Yor'), findsOneWidget);
     expect(find.text('Lines 1-8 by Friday'), findsOneWidget);
-    expect(find.textContaining('Jul 10, 2026'), findsOneWidget);
+    expect(find.textContaining('Dec 25, 2026'), findsOneWidget);
   });
 
   testWidgets('shows the not-found view when the task id is missing', (
