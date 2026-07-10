@@ -14,8 +14,11 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:rivendell/app/app.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/core/logging/app_logger.dart';
+import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
+import 'package:rivendell/features/anki/application/anki_export_providers.dart';
 import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/report/platform/email_providers.dart';
@@ -73,7 +76,21 @@ Future<void> main() async {
   // silently swallowed. The ai_image + email handlers are registered BEFORE
   // the worker starts so the initial online drain already sees them.
   unawaited(
-    registerAiImageHandler(container)
+    registerAiImageHandler(
+          container,
+          // When an image finishes generating, attach its Type 2 Anki card —
+          // the first Export deferred it as pending (no image yet), and without
+          // this hook nothing re-exported once the image landed. Best-effort +
+          // swallowed inside the handler, so an AnkiDroid miss (not installed /
+          // no grant) never fails the image-generation queue item.
+          onGenerated: (word) async {
+            final anki = await container.read(ankiExportServiceProvider.future);
+            final res = await anki.exportType2Word(word);
+            container
+                .read(appLoggerProvider)
+                .i(LogTag.anki, 'auto type2 re-export for "$word": $res');
+          },
+        )
         .then((_) => registerEmailHandler(container))
         .then((_) => bootOfflineQueue(container))
         .then((_) => dispatchWeeklyReportIfDue(container))

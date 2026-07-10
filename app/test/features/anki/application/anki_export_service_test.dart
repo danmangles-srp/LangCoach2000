@@ -240,6 +240,47 @@ void main() {
       expect(result.added, 0);
       expect(aiImages.enqueued, contains('rahmat'));
     });
+
+    test('logs a warning when addMedia returns null', () async {
+      await aiImages.generateNow('salom'); // cached, no mediaResults → null
+      await service.exportType2(pairs: pairs([('hello', 'salom')]));
+
+      final warns = sink.lines
+          .where((l) => l.startsWith('[ANKI][WARNING]'))
+          .toList();
+      expect(warns, isNotEmpty);
+      expect(warns.any((l) => l.contains('addMedia returned null')), isTrue);
+    });
+
+    test('logs an info line per word deferred pending', () async {
+      await service.exportType2(pairs: pairs([('hello', 'salom')]));
+
+      final infos = sink.lines
+          .where((l) => l.startsWith('[ANKI][INFO]'))
+          .toList();
+      expect(infos.any((l) => l.contains('not cached')), isTrue);
+    });
+  });
+
+  group('exportType2Word (post-generation re-export)', () {
+    test('attaches one Type 2 card for a cached word', () async {
+      await aiImages.generateNow('salom');
+      gateway.mediaResults['ai_images/fake_salom.png'] = '<img src="s.png" />';
+
+      final result = await service.exportType2Word('salom');
+
+      expect(result.added, 1);
+      expect(result.pending, 0);
+      expect(gateway.notes.single.fields.first, 'salom');
+    });
+
+    test('defers an uncached word as pending (no card)', () async {
+      final result = await service.exportType2Word('xayr');
+
+      expect(result.pending, 1);
+      expect(aiImages.enqueued, contains('xayr'));
+      expect(gateway.notes, isEmpty);
+    });
   });
 }
 

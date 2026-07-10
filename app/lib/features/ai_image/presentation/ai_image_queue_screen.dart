@@ -4,12 +4,15 @@
 // forces a drain; Cancel hard-deletes the pending item. Reached from a Settings
 // tile.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
 import 'package:rivendell/core/queue/queue_repository.dart';
+import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart';
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/l10n/app_strings.dart';
@@ -20,7 +23,6 @@ class AiImageQueueScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
-    final theme = Theme.of(context);
     final async = ref.watch(aiImageQueueSnapshotProvider);
     final stampFormat = DateFormat('EEE, MMM d, y – HH:mm');
 
@@ -45,15 +47,10 @@ class AiImageQueueScreen extends ConsumerWidget {
                 _EmptyLine(text: strings.aiQueueGeneratedEmpty)
               else
                 for (final entry in snap.generated)
-                  ListTile(
-                    leading: const Icon(Icons.image_outlined),
-                    title: Text(entry.uzbekWord),
-                    trailing: Text(
-                      stampFormat.format(entry.createdAt),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                  _GeneratedTile(
+                    entry: entry,
+                    docsDir: ref.watch(aiImageDocsDirProvider),
+                    stampFormat: stampFormat,
                   ),
               const SizedBox(height: 24),
             ],
@@ -98,6 +95,68 @@ class _EmptyLine extends StatelessWidget {
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
+      ),
+    );
+  }
+}
+
+/// A generated-image row: an `Image.file` thumbnail resolved against the app
+/// documents dir (where the cache writes), with the word + timestamp. Falls
+/// back to the placeholder icon while docsDir loads or if the file is missing
+/// so a stale cache row never blanks the row.
+class _GeneratedTile extends StatelessWidget {
+  const _GeneratedTile({
+    required this.entry,
+    required this.docsDir,
+    required this.stampFormat,
+  });
+
+  final AiImageCacheEntry entry;
+  final AsyncValue<String> docsDir;
+  final DateFormat stampFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: docsDir.when(
+        data: (dir) => ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Image.file(
+            File('$dir/${entry.relativePath}'),
+            width: 40,
+            height: 40,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const _ThumbFallback(),
+          ),
+        ),
+        loading: () => const _ThumbFallback(),
+        error: (_, _) => const _ThumbFallback(),
+      ),
+      title: Text(entry.uzbekWord),
+      trailing: Text(
+        stampFormat.format(entry.createdAt),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _ThumbFallback extends StatelessWidget {
+  const _ThumbFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: Icon(
+        Icons.image_outlined,
+        size: 24,
+        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }
