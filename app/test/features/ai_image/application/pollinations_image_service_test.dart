@@ -131,14 +131,68 @@ void main() {
       expect(getCalls, hasLength(1));
     });
 
-    test('throws on a non-200 response', () async {
-      final client = MockClient(
-        (request) async => http.Response('rate limited', 429),
-      );
+    test('throws on a permanent non-200 (404) with no retry', () async {
+      final getCalls = <http.Request>[];
+      final client = MockClient((request) async {
+        getCalls.add(request);
+        return http.Response('not found', 404);
+      });
       final service = buildService(client: client);
 
       await expectLater(service.generateNow('salom'), throwsException);
-      // Nothing cached on failure.
+      // Permanent → exactly one attempt, no retry.
+      expect(getCalls, hasLength(1));
+      expect(await service.cachedPath('salom'), isNull);
+    });
+
+    test('retries once on a transient 429, then succeeds (T18.5)', () async {
+      final getCalls = <http.Request>[];
+      var n = 0;
+      final client = MockClient((request) async {
+        getCalls.add(request);
+        n++;
+        // First attempt rate-limited, second succeeds.
+        if (n == 1) return http.Response('rate limited', 429);
+        return http.Response.bytes([5, 6, 7, 8], 200);
+      });
+      final service = buildService(client: client);
+
+      await service.generateNow('salom');
+
+      expect(getCalls, hasLength(2));
+      expect(await service.cachedPath('salom'), isNotNull);
+    });
+
+    test('retries once on a socket exception, then succeeds (T18.5)', () async {
+      final getCalls = <http.Request>[];
+      var n = 0;
+      final client = MockClient((request) async {
+        getCalls.add(request);
+        n++;
+        if (n == 1) {
+          throw const SocketException('Failed host lookup');
+        }
+        return http.Response.bytes([1], 200);
+      });
+      final service = buildService(client: client);
+
+      await service.generateNow('salom');
+
+      expect(getCalls, hasLength(2));
+      expect(await service.cachedPath('salom'), isNotNull);
+    });
+
+    test('gives up after retrying a persistent 429', () async {
+      final getCalls = <http.Request>[];
+      final client = MockClient((request) async {
+        getCalls.add(request);
+        return http.Response('rate limited', 429);
+      });
+      final service = buildService(client: client);
+
+      await expectLater(service.generateNow('salom'), throwsException);
+      // Two attempts (initial + one retry), then rethrows.
+      expect(getCalls, hasLength(2));
       expect(await service.cachedPath('salom'), isNull);
     });
   });
