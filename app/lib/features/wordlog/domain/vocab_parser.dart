@@ -6,13 +6,15 @@
 //   - For each line, trim and skip blanks.
 //   - Find the first delimiter. `:` wins over `-` when both appear; otherwise
 //     whichever comes first. Markdown list bullets ("- ") are stripped before
-//     delimiter search so "- cat: mushuk" parses as cat / mushuk, not "- cat".
+//     delimiter search so "- mushuk: cat" parses as mushuk / cat, not "- mushuk".
 //   - Split into exactly two halves on that delimiter. Trim both. A pair with
 //     an empty half is dropped (the line had no real word on one side).
 //
-// Direction is fixed: left = English, right = Uzbek (GPA convention). Latin vs
-// Cyrillic Uzbek is left untouched here — both pass through as-is (open
-// decision #5, deferred; the parser is script-agnostic).
+// Direction is fixed: left = Uzbek, right = English. (The earlier GPA
+// convention was `english: uzbek`; flipped because the user transcribes an
+// Uzbek recording first, then adds the English gloss — so the Uzbek word is
+// the natural left-hand side.) Latin vs Cyrillic Uzbek passes through as-is
+// (open decision #5, deferred; the parser is script-agnostic).
 
 import 'package:rivendell/features/wordlog/domain/vocab_pair.dart';
 
@@ -28,7 +30,7 @@ List<VocabPair> parseVocabPairs(String body) {
     final left = line.substring(0, cut).trim();
     final right = line.substring(cut + 1).trim();
     if (left.isEmpty || right.isEmpty) continue;
-    out.add(VocabPair(english: left, uzbek: right));
+    out.add(VocabPair(uzbek: left, english: right));
   }
   return out;
 }

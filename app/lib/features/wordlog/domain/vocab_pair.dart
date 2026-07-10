@@ -8,12 +8,12 @@ import 'package:flutter/foundation.dart';
 class VocabPair {
   const VocabPair({required this.english, required this.uzbek});
 
-  /// Left-hand side of the delimiter. Assumed to be the English definition
-  /// (the GPA convention is `english: uzbek`). Both halves are trimmed; an
+  /// The English gloss of the pair. The entry scheme is `uzbek: english`, so
+  /// this is the RIGHT-hand side of the delimiter. Both halves are trimmed; an
   /// empty half means the line was malformed and is dropped by the parser.
   final String english;
 
-  /// Right-hand side — the Uzbek word/phrase.
+  /// The Uzbek word/phrase — the LEFT-hand side of the delimiter.
   final String uzbek;
 
   @override
