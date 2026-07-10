@@ -3,7 +3,7 @@
 // the per-word cache means a second drain of the same word is a no-op. Drives
 // the real QueueWorker against a real in-memory queue, with a
 // FakeAiImageService standing in for the network and a FakeNetworkService
-// driving the online edge — the same seam the production Fal.ai handler
+// driving the online edge — the same seam the production Pollinations handler
 // rides.
 
 import 'package:drift/native.dart';

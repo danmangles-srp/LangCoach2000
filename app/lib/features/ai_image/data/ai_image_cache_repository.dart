@@ -3,7 +3,7 @@
 //
 // The cache is the "is this word generated yet?" oracle. A row exists iff the
 // image bytes are on disk; the queue handler inserts a row only after a
-// successful Fal.ai round-trip + file write, so a present row is always usable.
+// successful image generation + file write, so a present row is always usable.
 
 import 'package:drift/drift.dart';
 
@@ -41,7 +41,7 @@ class AiImageCacheRepository {
 
   /// Recently generated words, newest first. Backs the queue-review "completed"
   /// list — the authoritative success log (one row per word, written only after
-  /// a Fal.ai round-trip + file write succeeds).
+  /// an image generation + file write succeeds).
   Future<List<AiImageCacheEntry>> recent({int limit = 20}) async {
     final rows =
         await (_db.select(_db.aiImageCacheItems)

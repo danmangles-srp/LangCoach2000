@@ -1,7 +1,7 @@
 // In-memory [AiImageService] for tests and offline UI scaffolding (T4.3). No
 // network, no files: a successful `generateNow` just records a synthetic path
 // in the cache map, so queue-worker tests can drive the drain → cache-fill
-// contract without a Fal.ai round-trip.
+// contract without a Pollinations round-trip.
 
 import 'package:rivendell/features/ai_image/application/ai_image_service.dart';
 
@@ -29,8 +29,9 @@ class FakeAiImageService implements AiImageService {
 
   @override
   Future<void> generateNow(String uzbekWord) async {
-    // Honor the same per-word idempotency contract as FalAiImageService: once
-    // generated, a second drain of the same word is a no-op.
+    // Honor the same per-word idempotency contract as
+    // PollinationsImageService: once generated, a second drain of the same
+    // word is a no-op.
     if (_cache.containsKey(uzbekWord)) return;
     if (generateDelay > Duration.zero) {
       await Future<void>.delayed(generateDelay);
