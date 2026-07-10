@@ -3,7 +3,7 @@
 // Uzbek word with no script, letters, or captions, so the same card works for a
 // learner who can't yet read the word and doesn't prime them with text. Pure.
 
-/// Build the Fal.ai prompt for a single Uzbek word.
+/// Build the image prompt for a single Uzbek word.
 ///
 /// The word is passed verbatim (it may be Cyrillic or Latin with diacritics).
 /// The surrounding instructions forbid any rendered text so the model returns a

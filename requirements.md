@@ -51,7 +51,7 @@
 * **FR-1.3.3:** The app must push flashcards to **AnkiDroid via its Android intent API** (creating the
   deck, note type, and notes), tagging each note with the source recording's filename.
 * **FR-1.3.4:** An imaging pipeline must assign a concept graphic to newly generated vocab items by
-  calling **Fal.ai** when the device is online. Generation is queued + drained on reconnect, cached per
+  calling **Pollinations** (`image.pollinations.ai`, keyless free tier) when the device is online. Generation is queued + drained on reconnect, cached per
   word (never regenerated for the same Uzbek word), and skipped entirely when offline.
 
 ### 1.4 Task Tracking & Coaching Utilities
@@ -105,5 +105,7 @@
   words — is data, not UI strings.)
 
 ### 2.6 Security & Keys
-* **NFR-2.6.1:** No secrets in the client repo. The Fal.ai API key and SMTP credentials are injected via
-  `--dart-define` at build time. The only network egress is the two gated services in §1.3.4 / §1.5.3.
+* **NFR-2.6.1:** No secrets in the client repo. SMTP credentials are a **runtime setting** stored in the
+  SQLCipher-encrypted local KV store (entered via Settings); never via `--dart-define`, never in the repo.
+  AI image generation runs on the keyless Pollinations free tier and needs no credential. The only network
+  egress is the two gated services in §1.3.4 / §1.5.3.

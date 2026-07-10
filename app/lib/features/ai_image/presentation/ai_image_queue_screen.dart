@@ -1,4 +1,4 @@
-// AI image queue-review screen (FR-1.3.4). Lists pending Fal.ai generations
+// AI image queue-review screen (FR-1.3.4). Lists pending image generations
 // with their failure history ("upload logs": attempts + last error + enqueue
 // time) and the recently generated words. Retry zeroes the attempt counter +
 // forces a drain; Cancel hard-deletes the pending item. Reached from a Settings

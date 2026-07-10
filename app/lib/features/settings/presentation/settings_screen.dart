@@ -8,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
-import 'package:rivendell/features/ai_image/presentation/fal_api_key_settings_section.dart';
 import 'package:rivendell/features/report/presentation/weekly_report_settings_section.dart';
 import 'package:rivendell/features/settings/application/settings_providers.dart';
 import 'package:rivendell/features/settings/domain/app_settings.dart';
@@ -61,8 +60,6 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const Divider(height: 1, indent: 16, endIndent: 16),
           const WeeklyReportSettingsSection(),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          const FalApiKeySettingsSection(),
           const Divider(height: 1, indent: 16, endIndent: 16),
           const _AiImageQueueTile(),
           const SizedBox(height: 24),

@@ -209,14 +209,6 @@ class AppStrings {
     settingsReportNeverSent: 'Never',
     settingsReportNotConfigured:
         'Add your Gmail address + app password to enable weekly reports.',
-    settingsAiImageTitle: 'AI image generation',
-    settingsAiImageKeyLabel: 'Fal.ai API key',
-    settingsAiImageKeyHelp:
-        'Used to generate concept images. Stored encrypted on this device.',
-    settingsAiImageKeySave: 'Save key',
-    settingsAiImageKeySaved: 'Key saved',
-    settingsAiImageKeyClear: 'Clear',
-    settingsAiImageKeyNotSet: 'Not set — images queue until a key is added.',
     settingsAiImageQueueTitle: 'AI image queue',
     settingsAiImageQueueSubtitle: 'Review pending image generations',
     aiQueuePendingHeader: 'Pending',
@@ -419,16 +411,6 @@ class AppStrings {
     settingsReportNotConfigured:
         'Haftalik hisobotni yoqish uchun Gmail manzil + ilova '
         'parolini kiriting.',
-    settingsAiImageTitle: 'Tasvir generatsiyasi',
-    settingsAiImageKeyLabel: 'Fal.ai API kaliti',
-    settingsAiImageKeyHelp:
-        'Tushuncha tasvirlarini generatsiyasi uchun. Shu qurilmada '
-        'shifrlangan saqlanadi.',
-    settingsAiImageKeySave: 'Kalitni saqlash',
-    settingsAiImageKeySaved: 'Kalit saqlandi',
-    settingsAiImageKeyClear: 'Tozalash',
-    settingsAiImageKeyNotSet:
-        'Kalit yo‘q — qo‘shilguncha tasvirlar navbatda turadi.',
     settingsAiImageQueueTitle: 'Tasvir navbati',
     settingsAiImageQueueSubtitle: 'Kutilayotgan tasvir generatsiyasini ko‘rish',
     aiQueuePendingHeader: 'Kutilmoqda',
@@ -617,13 +599,6 @@ class AppStrings {
   String get settingsReportNextSendLabel => _bundle.settingsReportNextSendLabel;
   String get settingsReportNeverSent => _bundle.settingsReportNeverSent;
   String get settingsReportNotConfigured => _bundle.settingsReportNotConfigured;
-  String get settingsAiImageTitle => _bundle.settingsAiImageTitle;
-  String get settingsAiImageKeyLabel => _bundle.settingsAiImageKeyLabel;
-  String get settingsAiImageKeyHelp => _bundle.settingsAiImageKeyHelp;
-  String get settingsAiImageKeySave => _bundle.settingsAiImageKeySave;
-  String get settingsAiImageKeySaved => _bundle.settingsAiImageKeySaved;
-  String get settingsAiImageKeyClear => _bundle.settingsAiImageKeyClear;
-  String get settingsAiImageKeyNotSet => _bundle.settingsAiImageKeyNotSet;
   String get settingsAiImageQueueTitle => _bundle.settingsAiImageQueueTitle;
   String get settingsAiImageQueueSubtitle =>
       _bundle.settingsAiImageQueueSubtitle;
@@ -805,13 +780,6 @@ class _Bundle {
     required this.settingsReportNextSendLabel,
     required this.settingsReportNeverSent,
     required this.settingsReportNotConfigured,
-    required this.settingsAiImageTitle,
-    required this.settingsAiImageKeyLabel,
-    required this.settingsAiImageKeyHelp,
-    required this.settingsAiImageKeySave,
-    required this.settingsAiImageKeySaved,
-    required this.settingsAiImageKeyClear,
-    required this.settingsAiImageKeyNotSet,
     required this.settingsAiImageQueueTitle,
     required this.settingsAiImageQueueSubtitle,
     required this.aiQueuePendingHeader,
@@ -980,13 +948,6 @@ class _Bundle {
   final String settingsReportNextSendLabel;
   final String settingsReportNeverSent;
   final String settingsReportNotConfigured;
-  final String settingsAiImageTitle;
-  final String settingsAiImageKeyLabel;
-  final String settingsAiImageKeyHelp;
-  final String settingsAiImageKeySave;
-  final String settingsAiImageKeySaved;
-  final String settingsAiImageKeyClear;
-  final String settingsAiImageKeyNotSet;
   final String settingsAiImageQueueTitle;
   final String settingsAiImageQueueSubtitle;
   final String aiQueuePendingHeader;

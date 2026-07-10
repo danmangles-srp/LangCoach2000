@@ -1,7 +1,7 @@
 // AI concept-image service seam (T4.3, FR-1.3.4, NFR-2.1.3). Abstract so the
 // pipeline — enqueue when offline, drain on reconnect, render a placeholder
-// while pending — is unit-testable against a fake, and the Fal.ai HTTP impl is
-// the only part that touches the network.
+// while pending — is unit-testable against a fake, and the Pollinations HTTP
+// impl is the only part that touches the network.
 //
 // Per-word caching (FR-1.3.4 "generated at most once"): every method is a
 // no-op once a word's image exists, so re-saving a word log, re-enqueuing, or a
