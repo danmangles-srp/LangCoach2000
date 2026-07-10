@@ -1,10 +1,10 @@
 // Word-log panel on the recording detail screen (M3, FR-1.3.1, T3.4). A
 // segmented Text / Images toggle over the recording's word log. Text tab shows
-// the parsed English↔Uzbek pairs (or an attach affordance); Images tab shows
-// notebook-photo thumbnails (or an attach affordance). Text is pasted into a
-// dialog; images come from the Android photo picker and are copied into app
-// storage via the T3.3 pipeline. Both refresh the panel by invalidating the
-// per-recording provider.
+// the parsed Uzbek↔English pairs (or an add-text affordance); Images tab is a
+// read-only thumbnail grid of previously attached notebook photos (T18.6 hid
+// the attach affordance — the picker is no longer surfaced here). Text is
+// pasted into a dialog; both tabs refresh by invalidating the per-recording
+// provider.
 
 import 'dart:io';
 
@@ -18,7 +18,6 @@ import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/anki/presentation/anki_export_button.dart';
 import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
-import 'package:rivendell/features/wordlog/domain/supported_image_format.dart';
 import 'package:rivendell/features/wordlog/domain/vocab_parser.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
@@ -67,7 +66,6 @@ class _WordLogSectionState extends ConsumerState<WordLogSection> {
             const SizedBox(height: 12),
             if (_showImages)
               _ImagesBody(
-                recordingId: widget.recordingId,
                 images: images,
                 docsDir: ref.watch(appDocsDirProvider),
               )
@@ -109,8 +107,14 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppStrings.of(context);
     final theme = Theme.of(context);
+    // T18.6: image attach is hidden, so the Images segment is only meaningful
+    // when images already exist to view. With nothing attached, a lone title
+    // keeps the header clean instead of a dead toggle.
+    if (!imagesAvailable) {
+      return Text(title, style: theme.textTheme.titleMedium);
+    }
+    final strings = AppStrings.of(context);
     return Row(
       children: [
         Text(title, style: theme.textTheme.titleMedium),
@@ -123,8 +127,6 @@ class _SectionHeader extends StatelessWidget {
             ],
             selected: {showImages},
             onSelectionChanged: (s) => onChanged(s.first),
-            // Disable the Images segment when nothing is attached yet so the
-            // empty state lives under the active tab instead of a dead toggle.
             emptySelectionAllowed: true,
           ),
         ),
@@ -238,54 +240,44 @@ class _AiImageQueueLink extends ConsumerWidget {
   }
 }
 
-class _ImagesBody extends ConsumerWidget {
-  const _ImagesBody({
-    required this.recordingId,
-    required this.images,
-    required this.docsDir,
-  });
+class _ImagesBody extends StatelessWidget {
+  const _ImagesBody({required this.images, required this.docsDir});
 
-  final int recordingId;
   final List<WordLog> images;
   final AsyncValue<String> docsDir;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
     if (images.isEmpty) {
-      return _EmptyAction(
-        message: strings.wordLogImagesEmpty,
-        action: Text(strings.wordLogAddImage),
-        onTap: () => _attachImage(context, ref, recordingId),
+      // T18.6: attach is hidden; with no images there is nothing to show but a
+      // plain empty message (this branch is unreachable from the toggle now,
+      // kept as a defensive fallback).
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          strings.wordLogImagesEmpty,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
       );
     }
     final dir = docsDir.value;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
       children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            for (final img in images)
-              if (dir != null)
-                _Thumb(file: File('$dir/${img.body}'))
-              else
-                const SizedBox(
-                  width: 96,
-                  height: 96,
-                  child: CircularProgressIndicator(),
-                ),
-          ],
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => _attachImage(context, ref, recordingId),
-            icon: const Icon(Icons.add_a_photo_outlined),
-            label: Text(strings.wordLogAddImage),
-          ),
-        ),
+        for (final img in images)
+          if (dir != null)
+            _Thumb(file: File('$dir/${img.body}'))
+          else
+            const SizedBox(
+              width: 96,
+              height: 96,
+              child: CircularProgressIndicator(),
+            ),
       ],
     );
   }
@@ -490,35 +482,4 @@ Future<void> _editText(
   final repo = await ref.read(wordLogRepositoryProvider.future);
   await repo.setTextLog(recordingId, body: controller.text);
   ref.invalidate(wordLogsForRecordingProvider(recordingId));
-}
-
-Future<void> _attachImage(
-  BuildContext context,
-  WidgetRef ref,
-  int recordingId,
-) async {
-  final strings = AppStrings.of(context);
-  final messenger = ScaffoldMessenger.of(context);
-  final picker = ref.read(imageLogPickerServiceProvider);
-  final service = await ref.read(imageLogServiceProvider.future);
-  final picked = await picker.pickImage();
-  if (picked == null) return; // user cancelled
-  if (!isSupportedImageExt(picked.extension)) {
-    messenger.showSnackBar(
-      SnackBar(content: Text(strings.wordLogAttachFailed)),
-    );
-    return;
-  }
-  try {
-    await service.attach(
-      recordingId: recordingId,
-      sourceUri: picked.uri,
-      extension: picked.extension,
-    );
-    ref.invalidate(wordLogsForRecordingProvider(recordingId));
-  } on Object catch (_) {
-    messenger.showSnackBar(
-      SnackBar(content: Text(strings.wordLogAttachFailed)),
-    );
-  }
 }
