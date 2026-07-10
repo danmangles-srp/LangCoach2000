@@ -9,6 +9,7 @@
 // The HTTP client + endpoint are constructor-injected so the request/response
 // contract is unit-testable with a fake client — no network in tests.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -68,7 +69,7 @@ class PollinationsImageService implements AiImageService {
     final word = uzbekWord.trim();
     if (await cachedPath(word) != null) return;
 
-    final bytes = await _download(_buildUrl(word));
+    final bytes = await _downloadWithRetry(_buildUrl(word));
     final relativePath = buildAiImagePath(word);
     await _writeBytes(relativePath, bytes);
     await cache.remember(uzbekWord: word, relativePath: relativePath);
@@ -88,11 +89,50 @@ class PollinationsImageService implements AiImageService {
   int _stableSeed(String word) =>
       word.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
 
+  /// Download with a single immediate retry on a transient failure (T18.5).
+  /// The keyless Pollinations tier regularly returns 429/5xx at network
+  /// handovers and throws socket/timeout on a half-open radio; retrying once
+  /// in-handler clears the common blip without surfacing a failure (and the
+  /// queue-level backoff still covers repeated failures).
+  Future<List<int>> _downloadWithRetry(String url) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await _download(url);
+      } on Object catch (e) {
+        if (attempt == 1 || !_isTransient(e)) rethrow;
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+    }
+    // Unreachable: the loop either returns or rethrows on attempt 1.
+    throw StateError('download retry loop exhausted without a result');
+  }
+
+  /// A transient failure is one where the request never produced a durable
+  /// image: a flaky radio (socket/timeout/DNS), or a server-side hiccup the
+  /// free tier recovers from (429, 5xx). A 404/401/400 is permanent — retrying
+  /// would just waste the round trip.
+  bool _isTransient(Object e) {
+    if (e is SocketException || e is TimeoutException) return true;
+    if (e is HttpException) {
+      final m = e.message;
+      // _download formats non-200s as "... returned <status>: ...".
+      final match = RegExp(r'returned (\d{3})').firstMatch(m);
+      final status = match == null ? null : int.tryParse(match.group(1)!);
+      if (status == null) return false;
+      return status == 408 || status == 429 || (status >= 500 && status < 600);
+    }
+    return false;
+  }
+
   Future<List<int>> _download(String url) async {
     final response = await client.get(Uri.parse(url));
     if (response.statusCode != 200) {
+      // Trim the body: a 5xx from a CDN carries a full HTML page that bloats
+      // lastError + logs. The status is the actionable part.
+      final body = response.body;
+      final snippet = body.length > 120 ? '${body.substring(0, 120)}…' : body;
       throw HttpException(
-        'pollinations $model returned ${response.statusCode}: ${response.body}',
+        'pollinations $model returned ${response.statusCode}: $snippet',
       );
     }
     return response.bodyBytes;
