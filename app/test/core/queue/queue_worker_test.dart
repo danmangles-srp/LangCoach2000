@@ -37,6 +37,24 @@ void main() {
     await db.close();
   });
 
+  test(
+    'onDrained emits after a drain completes (T18.3 live snapshot)',
+    () async {
+      worker.registerHandler('echo', (payload) async {});
+      await queue.enqueue(type: 'echo', payload: 'a');
+
+      // Collect drain signals. Each completed drain fires exactly one.
+      final signals = <int>[];
+      final sub = worker.onDrained.listen((_) => signals.add(1));
+
+      await worker.drain();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(signals, [1]);
+      await sub.cancel();
+    },
+  );
+
   test('drains pending items on reconnect', () async {
     final handled = <String>[];
     worker.registerHandler('echo', (payload) async {

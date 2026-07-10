@@ -47,6 +47,15 @@ class QueueWorker {
   bool _started = false;
   int _noProgressRounds = 0;
 
+  /// Fires after every drain completes (success or failure). Observers
+  /// (aiImageQueueSnapshotProvider, pending-count badges) re-fetch on this so
+  /// the UI reflects items clearing without a manual refresh. Broadcast so any
+  /// number of providers can watch; closed in [stop].
+  final StreamController<void> _drainedController =
+      StreamController<void>.broadcast();
+
+  Stream<void> get onDrained => _drainedController.stream;
+
   /// Map a queue `type` to the handler that processes it.
   void registerHandler(String type, QueueHandler handler) {
     _handlers[type] = handler;
@@ -67,6 +76,7 @@ class QueueWorker {
     _noProgressRounds = 0;
     await _sub?.cancel();
     _sub = null;
+    await _drainedController.close();
   }
 
   void _onEdge(bool online) {
@@ -102,6 +112,10 @@ class QueueWorker {
     }
     try {
       await _scheduleNextDrain(madeProgress: successes > 0);
+      // Notify observers: the queue shape may have changed (an item cleared,
+      // an attempt was recorded). Re-fetching on this signal is what keeps the
+      // queue-review UI + pending badges live without a manual refresh.
+      _drainedController.add(null);
     } on Object catch (e) {
       _logger.e(LogTag.task, 'queue schedule-next failed: $e');
     }

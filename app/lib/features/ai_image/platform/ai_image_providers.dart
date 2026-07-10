@@ -64,16 +64,29 @@ class AiImageQueueSnapshot {
   final List<AiImageCacheEntry> generated;
 }
 
-/// The current queue-review snapshot. Invalidate after a retry/cancel to
-/// refresh.
-final aiImageQueueSnapshotProvider = FutureProvider<AiImageQueueSnapshot>((
+/// The current queue-review snapshot, kept LIVE (T18.3). Re-fetches whenever
+/// the QueueWorker finishes a drain (`onDrained`), so a generated image moves
+/// from Pending to Generated on screen without a manual refresh — and while
+/// the app is foreground + online, the autonomous backoff keeps draining.
+/// Falls back to a single fetch when the worker stream hasn't resolved yet.
+final aiImageQueueSnapshotProvider = StreamProvider<AiImageQueueSnapshot>((
   ref,
-) async {
+) async* {
   final queue = await ref.watch(queueRepositoryProvider.future);
   final cache = await ref.watch(aiImageCacheRepositoryProvider.future);
-  final pending = await queue.pendingByType(aiImageQueueType);
-  final generated = await cache.recent();
-  return AiImageQueueSnapshot(pending: pending, generated: generated);
+
+  Future<AiImageQueueSnapshot> fetch() async {
+    final pending = await queue.pendingByType(aiImageQueueType);
+    final generated = await cache.recent();
+    return AiImageQueueSnapshot(pending: pending, generated: generated);
+  }
+
+  // First read renders immediately; subsequent reads are driven by drains.
+  yield await fetch();
+  final worker = await ref.watch(queueProcessorProvider.future);
+  await for (final _ in worker.onDrained) {
+    yield await fetch();
+  }
 });
 
 /// Register the `ai_image` queue handler on the shared worker. Call once from
