@@ -10,10 +10,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
+import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/anki/presentation/anki_export_button.dart';
 import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
 import 'package:rivendell/features/wordlog/domain/supported_image_format.dart';
@@ -184,7 +186,54 @@ class _TextBody extends ConsumerWidget {
         ),
         const SizedBox(height: 4),
         AnkiExportButton(recordingName: recordingName, pairs: pairs),
+        const SizedBox(height: 8),
+        const _AiImageQueueLink(),
       ],
+    );
+  }
+}
+
+/// "N images queued →" affordance under the export button (T18.4). Watches the
+/// LIVE queue snapshot (T18.3), so it appears the moment an image is enqueued
+/// and disappears when the queue drains. Tapping opens the queue-review screen.
+/// Hidden when nothing is pending so the word-log surface stays clean.
+class _AiImageQueueLink extends ConsumerWidget {
+  const _AiImageQueueLink();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    final pending =
+        ref.watch(aiImageQueueSnapshotProvider).value?.pending.length ?? 0;
+    if (pending == 0) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => context.push('/settings/ai-image-queue'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_motion_outlined,
+                size: 16,
+                color: theme.colorScheme.tertiary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                strings.aiQueuePendingLink(pending),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.tertiary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
