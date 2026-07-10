@@ -1,6 +1,7 @@
 // QueueWorker — enqueue → reconnect → drain (T0.3 gate, NFR-2.1.3).
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,8 @@ void main() {
       repository: queue,
       network: network,
       logger: AppLogger(sink: RecordingSink()),
+      baseBackoff: const Duration(milliseconds: 5),
+      maxBackoff: const Duration(milliseconds: 20),
     );
   });
 
@@ -116,4 +119,60 @@ void main() {
 
     expect(calls, 1);
   });
+
+  // Regression for the on-device Pollinations failures: a handler that throws a
+  // transient socket/DNS error on the first attempt must be retried in-app
+  // while online — without needing a new connectivity edge (which may never
+  // fire during a foreground session). This is the case the old "fail once,
+  // wait for the next edge" model did not cover.
+  test(
+    'retries a transiently-failing handler while online until it succeeds',
+    () async {
+      var calls = 0;
+      worker.registerHandler('flaky', (payload) async {
+        calls++;
+        if (calls < 3) {
+          // Same shape the device logs showed: a DNS lookup miss.
+          throw const SocketException(
+            'Failed host lookup: image.pollinations.ai',
+          );
+        }
+      });
+      await queue.enqueue(type: 'flaky', payload: 'x');
+      network.emit(online: true);
+      worker.start();
+
+      // Seed drain fails (attempts 1), then two backoff retries at ~5-20ms.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(calls, 3);
+      expect(await queue.pending(), isEmpty);
+      final drained = await queue.pendingByType('flaky');
+      expect(drained, isEmpty); // markDone after the 3rd call cleared it.
+    },
+  );
+
+  test(
+    'does not retry while offline — defers to the next online edge',
+    () async {
+      var calls = 0;
+      worker.registerHandler('echo', (payload) async {
+        calls++;
+      });
+      await queue.enqueue(type: 'echo', payload: 'a');
+      network.emit(online: false);
+      worker.start();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(calls, 0); // never drained offline
+      expect(await queue.pendingCount(), 1);
+
+      // Real connectivity returns: drains immediately, backoff reset.
+      network.emit(online: true);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(calls, 1);
+      expect(await queue.pending(), isEmpty);
+    },
+  );
 }
