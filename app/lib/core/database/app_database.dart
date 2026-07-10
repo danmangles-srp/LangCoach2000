@@ -49,11 +49,16 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) => m.createAll(),
+    onCreate: (m) async {
+      await m.createAll();
+      // T18.1: dedup-by-(type,payload) among pending rows. Created here for
+      // fresh installs AND in the v10 onUpgrade for existing DBs.
+      await _createPendingUniqueIndex();
+    },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.createTable(offlineQueueItems);
@@ -87,10 +92,28 @@ class AppDatabase extends _$AppDatabase {
         // stay in their source tables and are not duplicated here.
         await m.createTable(metricsEvents);
       }
+      if (from < 10) {
+        // T18.1: collapse duplicate pending rows first (keep the lowest id per
+        // (type, payload)), then add the partial unique index that stops spam-
+        // enqueueing the same item while one is already pending.
+        await customStatement(
+          'DELETE FROM offline_queue_items WHERE done = 0 AND id NOT IN '
+          '(SELECT MIN(id) FROM offline_queue_items '
+          'WHERE done = 0 GROUP BY type, payload)',
+        );
+        await _createPendingUniqueIndex();
+      }
     },
     beforeOpen: (details) async {
       // Enforce FK constraints on every open (off by default in SQLite).
       await customStatement('PRAGMA foreign_keys = ON;');
     },
+  );
+
+  /// Partial unique index that dedups pending queue rows by (type, payload).
+  /// A `done` row leaves the pending set, so a later replay can re-enqueue.
+  Future<void> _createPendingUniqueIndex() => customStatement(
+    'CREATE UNIQUE INDEX IF NOT EXISTS offline_queue_pending_uniq '
+    'ON offline_queue_items (type, payload) WHERE done = 0',
   );
 }

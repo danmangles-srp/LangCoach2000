@@ -1059,3 +1059,93 @@ caveat** (mirrors T14.4/T14.5): on AnkiDroid 2.24 with the global API toggle ON,
 Anki" should complete with no `CardContentProvider.query` SecurityException; with the toggle OFF, the
 request returns DENIED and the enable-API snackbar shows current copy.
 ---
+
+## Milestone 18: AI image-gen queue hardening + wordlog image-attach retirement
+
+**Goal.** Make the AI-image → Anki Type-2 pipeline succeed autonomously, **exactly
+once per word**, with visible status — product-ready. No user input, no manual
+retry. Separately, retire the word-log "attach image" affordance (keep the
+read-only viewer for anything already attached).
+
+**Why now.** Real-use (post-M16) showed the pipeline flaky and opaque: spamming
+"Send to Anki" created duplicate pending rows, transient Pollinations failures
+stuck until the user tapped Retry, and the queue screen went stale while the app
+drained in the foreground. The path-mismatch root cause was fixed in PR #71; the
+remaining failures are reliability + observability, not correctness.
+
+### Root-cause analysis (the flakiness)
+
+- **F1 — duplicate enqueues.** `OfflineQueueItems` has *no* uniqueness (by design:
+  the table comment says "replay appends; handler decides idempotency").
+  `QueueRepository.enqueue` always inserts, and `enqueueGeneration` checks only
+  `cache.cachedPath`, **not** the pending queue. So each "Send to Anki" tap on a
+  not-yet-generated word appends a fresh row → N generations for one word, N
+  `addNote` attempts, N failure cycles.
+- **F2 — no real background drain.** `workmanager_init.callbackDispatcher` is a
+  stub: it logs + returns `true` without ever opening the DB or draining. The
+  15-min periodic task is registered but does nothing. A transient failure with
+  the app backgrounded/closed never auto-retries.
+- **F3 — in-process Timer dozed.** The autonomous backoff (`QueueWorker`) arms a
+  Dart `Timer`; Android dozes the backgrounded process and that Timer doesn't
+  fire. Effective retry is foreground-only.
+- **F4 — transient upstream failures.** Pollinations keyless tier returns
+  429/timeout/SSL/DNS at network handovers. `generateNow` throws on non-200 →
+  item marked failed → retried only on the next *foreground* drain or resume.
+- **F5 — queue UI goes stale.** `aiImageQueueSnapshotProvider` is a
+  `FutureProvider` invalidated only on retry/cancel/foreground-resume. While the
+  app is open and items drain, the queue screen + badges don't update → "difficult
+  to know what's going on."
+- **F6 — no global pending indicator.** Pending state is visible only on the
+  queue screen (Settings tile) + the export button's one-shot result chip. No
+  at-a-glance badge.
+
+### Tickets
+
+- **T18.1 — Idempotent enqueue (dedup).** Add a partial unique index on
+  `offline_queue_items(type, payload) WHERE done = 0`. Migration v9→v10 first
+  collapses any existing duplicate pending rows (keep min id), then creates the
+  index. `enqueue` switches to `insertOrIgnore` (returns 0 rows on conflict =
+  no-op). `enqueueGeneration` keeps the cache short-circuit. *ACs:* spamming
+  "Send to Anki" never creates more than one pending `ai_image` row per word;
+  re-enqueueing a word whose image is already cached is still a no-op. *Deps:*
+  T4.3. Unit + repo test the dedup contract.
+- **T18.3 — Live queue snapshot.** Expose a `Stream<int>` (pending count) from
+  `QueueWorker` emitted after every drain; `aiImageQueueSnapshotProvider`
+  (and any badge) `ref.watch`es it so the queue screen updates live as items
+  clear — no manual refresh. *ACs:* while the app is foreground and online, a
+  generated image disappears from Pending and appears under Generated within one
+  drain cycle, automatically. *Deps:* T18.1 (so "pending" is meaningful).
+- **T18.5 — Tolerant generation + clear per-item status.** In `generateNow`,
+  retry once immediately on a transient HTTP class (429/5xx/socket/timeout)
+  before throwing; keep the queue-level backoff for repeated failures. Ensure
+  `lastError` is human-readable (strip the stack, keep the status/url). *ACs:* a
+  single 429 self-heals without surfacing a failure; a real outage records a
+  readable `lastError` and the item keeps retrying on backoff. *Deps:* T4.3.
+- **T18.4 — Global pending indicator.** A compact "N images queued →" affordance
+  on the recording detail (near the export button) that links to the queue
+  screen; hides when 0. *ACs:* pending count is visible at a glance from the
+  recording that produced it; tapping opens the queue screen. *Deps:* T18.3.
+- **T18.6 — Hide word-log "attach image."** Remove the attach entry points (the
+  empty-state "Add photo" button and the inline "Add photo" button in
+  `_ImagesBody`). Keep the read-only viewer for any already-attached images
+  (thumbnails + full-screen). The Text/Images segment toggle stays only when
+  images already exist. *ACs:* the user cannot attach new images; existing
+  thumbnails remain viewable. *Deps:* none. *(Independent slice — can ship
+  first.)*
+- **T18.2 — Real background drain via workmanager.** ⚠️ **Architectural /
+  risk-flagged — confirm before executing.** Implement `callbackDispatcher` to
+  open the DB (read the SQLCipher key via `SecureDatabaseKeyStore`, which is
+  Android-Keystore-backed and reachable from the workmanager isolate), register
+  the `ai_image` + `email` handlers, and run `QueueWorker.drain`. Keep the 15-min
+  `networkType: connected` periodic task. *ACs:* a pending item with the app
+  closed drains within ~15 min of regained network. *Deps:* T4.3, T0.2. *Risk:*
+  background-isolate plugin initialization (flutter_secure_storage + http +
+  drift) — needs the workmanager background channel wired; verify on-device.
+  *Decision:* ship T18.1/3/4/5/6 first (they deliver ~90% of "works every time"
+  via dedup + tolerant retry + foreground Timer + resume + start drains, since
+  the queue survives process death); tackle T18.2 last and only if closed-app
+  processing is required.
+
+**Order.** T18.6 (independent, quick) → T18.1 (highest impact / lowest risk) →
+T18.3 → T18.5 → T18.4 → T18.2 (heavy, gated on confirm). Each its own PR-sized
+slice off `dev`, standard gate before push.
