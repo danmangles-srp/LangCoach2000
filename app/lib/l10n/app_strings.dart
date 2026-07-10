@@ -110,7 +110,7 @@ class AppStrings {
     wordLogAddImage: 'Add photo',
     wordLogTextEmpty: 'No text log yet. Paste an English↔Uzbek word list.',
     wordLogImagesEmpty: 'No photos attached yet.',
-    wordLogTextDialogHint: 'One pair per line: english: uzbek',
+    wordLogTextDialogHint: 'One pair per line: uzbek: english',
     wordLogSave: 'Save',
     wordLogCancel: 'Cancel',
     wordLogAttachFailed: 'Could not attach. Try again.',
@@ -309,7 +309,7 @@ class AppStrings {
     wordLogTextEmpty:
         'Hozircha matn yo‘q. Inglizcha↔o‘zbekcha so‘zlar ro‘yxatini qo‘ying.',
     wordLogImagesEmpty: 'Hozircha birorta rasm biriktirilmagan.',
-    wordLogTextDialogHint: 'Har qatorda bittadan: english: uzbek',
+    wordLogTextDialogHint: 'Har qatorda bittadan: uzbek: english',
     wordLogSave: 'Saqlash',
     wordLogCancel: 'Bekor qilish',
     wordLogAttachFailed: 'Biriktirib bo‘lmadi. Qayta urinib ko‘ring.',

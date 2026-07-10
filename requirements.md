@@ -46,8 +46,9 @@
 * **FR-1.3.1:** Users must be able to link a text vocab log and/or one or more image logs (JPG/PNG of
   notebook pages) directly to an audio recording record. Schema: one text log and/or multiple images per
   recording.
-* **FR-1.3.2:** A text-parsing engine must automatically extract English-definition ↔ Uzbek-word pairs
-  from text logs via delimiter maps (e.g. lines containing `:` or `-`) to feed card generation.
+* **FR-1.3.2:** A text-parsing engine must automatically extract Uzbek-word ↔ English-definition pairs
+  from text logs via delimiter maps (e.g. lines containing `:` or `-`, entry scheme `uzbek: english`)
+  to feed card generation.
 * **FR-1.3.3:** The app must push flashcards to **AnkiDroid via its Android intent API** (creating the
   deck, note type, and notes), tagging each note with the source recording's filename.
 * **FR-1.3.4:** An imaging pipeline must assign a concept graphic to newly generated vocab items by

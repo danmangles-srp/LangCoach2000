@@ -1,6 +1,6 @@
 // VocabParser — T3.2 (FR-1.3.2). Pure-function cases: the two delimiters,
 // mixed input, bullet stripping, malformed-line skipping, order preservation,
-// and the empty-body edge.
+// and the empty-body edge. Entry scheme is `uzbek: english` (uzbek left).
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -9,18 +9,18 @@ import 'package:rivendell/features/wordlog/domain/vocab_parser.dart';
 
 void main() {
   group('parseVocabPairs', () {
-    test('colon delimiter splits english / uzbek', () {
-      final pairs = parseVocabPairs('cat: mushuk');
+    test('colon delimiter splits uzbek / english', () {
+      final pairs = parseVocabPairs('mushuk: cat');
       expect(pairs, [const VocabPair(english: 'cat', uzbek: 'mushuk')]);
     });
 
-    test('dash delimiter splits english / uzbek', () {
-      final pairs = parseVocabPairs('dog - it');
+    test('dash delimiter splits uzbek / english', () {
+      final pairs = parseVocabPairs('it - dog');
       expect(pairs, [const VocabPair(english: 'dog', uzbek: 'it')]);
     });
 
     test('parses a multiline list preserving order', () {
-      const body = 'cat: mushuk\ndog: it\nbook: kitob';
+      const body = 'mushuk: cat\nit: dog\nkitob: book';
       expect(parseVocabPairs(body), [
         const VocabPair(english: 'cat', uzbek: 'mushuk'),
         const VocabPair(english: 'dog', uzbek: 'it'),
@@ -29,7 +29,7 @@ void main() {
     });
 
     test('mixes colon and dash delimiters in one body', () {
-      const body = 'cat: mushuk\ndog - it';
+      const body = 'mushuk: cat\nit - dog';
       expect(parseVocabPairs(body), [
         const VocabPair(english: 'cat', uzbek: 'mushuk'),
         const VocabPair(english: 'dog', uzbek: 'it'),
@@ -37,7 +37,7 @@ void main() {
     });
 
     test('strips leading markdown bullets (-, *, •)', () {
-      const body = '- cat: mushuk\n* dog: it\n• book: kitob';
+      const body = '- mushuk: cat\n* it: dog\n• kitob: book';
       expect(parseVocabPairs(body), [
         const VocabPair(english: 'cat', uzbek: 'mushuk'),
         const VocabPair(english: 'dog', uzbek: 'it'),
@@ -46,42 +46,43 @@ void main() {
     });
 
     test('hyphenated english term parses on the colon, not the hyphen', () {
-      // "mother-in-law" stays whole; the colon is the splitter.
-      final pairs = parseVocabPairs('mother-in-law: qaynona');
+      // English is the right half now; "mother-in-law" stays whole because the
+      // colon is the splitter, not the hyphen.
+      final pairs = parseVocabPairs('qaynona: mother-in-law');
       expect(pairs, [
         const VocabPair(english: 'mother-in-law', uzbek: 'qaynona'),
       ]);
     });
 
     test('skips blank lines and lines without a delimiter', () {
-      const body = 'cat: mushuk\n\na line with no delim\ndog: it';
+      const body = 'mushuk: cat\n\na line with no delim\nit: dog';
       expect(parseVocabPairs(body), [
         const VocabPair(english: 'cat', uzbek: 'mushuk'),
         const VocabPair(english: 'dog', uzbek: 'it'),
       ]);
     });
 
-    test('drops a line whose uzbek half is empty', () {
-      const body = 'cat:\ndog: it';
+    test('drops a line whose uzbek (left) half is empty', () {
+      const body = ': cat\nit: dog';
       expect(parseVocabPairs(body), [
         const VocabPair(english: 'dog', uzbek: 'it'),
       ]);
     });
 
-    test('drops a line whose english half is empty', () {
-      const body = ': mushuk\ndog: it';
+    test('drops a line whose english (right) half is empty', () {
+      const body = 'mushuk:\nit: dog';
       expect(parseVocabPairs(body), [
         const VocabPair(english: 'dog', uzbek: 'it'),
       ]);
     });
 
     test('trims whitespace around both halves', () {
-      final pairs = parseVocabPairs('   cat    :    mushuk   ');
+      final pairs = parseVocabPairs('   mushuk    :    cat   ');
       expect(pairs, [const VocabPair(english: 'cat', uzbek: 'mushuk')]);
     });
 
     test('passes Cyrillic uzbek through untouched', () {
-      final pairs = parseVocabPairs('cat: мушук');
+      final pairs = parseVocabPairs('мушук: cat');
       expect(pairs, [const VocabPair(english: 'cat', uzbek: 'мушук')]);
     });
 

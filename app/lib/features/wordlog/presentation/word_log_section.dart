@@ -162,7 +162,7 @@ class _TextBody extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(p.english)),
+                Expanded(child: Text(p.uzbek)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
@@ -170,7 +170,7 @@ class _TextBody extends ConsumerWidget {
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                 ),
-                Expanded(child: Text(p.uzbek)),
+                Expanded(child: Text(p.english)),
               ],
             ),
           ),
