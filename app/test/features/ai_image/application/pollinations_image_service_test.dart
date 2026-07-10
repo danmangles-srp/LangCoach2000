@@ -161,18 +161,42 @@ void main() {
         uzbekWord: 'salom',
         relativePath: 'ai_images/seed.png',
       );
+      // A cache row is honoured only when its backing file is on disk.
+      final file = File('${docsDir.path}/ai_images/seed.png');
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes([1, 2, 3, 4]);
       final service = buildService(client: succeedingClient(getCalls: []));
 
       await service.enqueueGeneration('salom');
 
       expect(await queue.pending(), isEmpty);
     });
+
+    test('re-enqueues when a cache row has no backing file', () async {
+      // Orphan row (e.g. left by the app_flutter → filesDir path fix): the
+      // file is gone, so the word must regenerate rather than pin a miss.
+      await cache.remember(
+        uzbekWord: 'salom',
+        relativePath: 'ai_images/seed.png',
+      );
+      final service = buildService(client: succeedingClient(getCalls: []));
+
+      await service.enqueueGeneration('salom');
+
+      expect(await queue.pending(), hasLength(1));
+    });
   });
 
-  test('cachedPath delegates to the cache', () async {
+  test('cachedPath honours a row only when the backing file exists', () async {
     final service = buildService(client: succeedingClient(getCalls: []));
     expect(await service.cachedPath('none'), isNull);
+    // Row without a file → treated as uncached.
     await cache.remember(uzbekWord: 'foo', relativePath: 'ai_images/foo.png');
+    expect(await service.cachedPath('foo'), isNull);
+    // Once the file lands, the row is honoured.
+    final file = File('${docsDir.path}/ai_images/foo.png');
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes([1, 2, 3, 4]);
     expect(await service.cachedPath('foo'), 'ai_images/foo.png');
   });
 }

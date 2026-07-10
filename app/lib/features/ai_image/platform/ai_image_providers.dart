@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
 import 'package:rivendell/core/queue/queue_repository.dart';
@@ -19,11 +20,16 @@ import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart'
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/platform/pollinations_config.dart';
 
-/// App-documents path for cached AI images. Defined here (not reused from
-/// wordlog) so the ai_image feature has no feature→feature wiring dependency;
-/// getApplicationDocumentsDirectory is idempotent so a second call is free.
+/// Base dir for cached AI images. MUST resolve to the same directory the
+/// Kotlin side reads in `addMediaToAnki` (`File(filesDir, relativePath)`) and
+/// that the FileProvider exposes (`file_paths.xml`'s `<files-path>`). On
+/// Android, `getApplicationSupportDirectory()` == `Context.getFilesDir()`;
+/// `getApplicationDocumentsDirectory()` is `getDir("flutter")` = `app_flutter`,
+/// a *different* dir — writing there made every `addMedia` return null (file
+/// not found) and orphaned the cache. Defined here (not reused from wordlog)
+/// so the ai_image feature has no feature→feature wiring dependency.
 final aiImageDocsDirProvider = FutureProvider<String>(
-  (ref) async => (await getApplicationDocumentsDirectory()).path,
+  (ref) async => (await getApplicationSupportDirectory()).path,
 );
 
 final aiImageCacheRepositoryProvider = FutureProvider<AiImageCacheRepository>((
@@ -74,10 +80,33 @@ final aiImageQueueSnapshotProvider = FutureProvider<AiImageQueueSnapshot>((
 /// app boot, BEFORE [bootOfflineQueue] starts the worker, so the initial drain
 /// (if already online) sees the handler. Reads [aiImageServiceProvider], which
 /// resolves the DB; awaiting here lets the native splash cover the open.
-Future<void> registerAiImageHandler(ProviderContainer container) async {
+///
+/// [onGenerated] is an optional best-effort hook fired after each image
+/// finishes generating. The orchestrator (main.dart) uses it to attach the
+/// Type 2 Anki card whose image was missing at export time — closing the gap
+/// where the first Export deferred every Type 2 card as pending and nothing
+/// re-exported once images landed. The hook MUST NOT throw: it runs inside the
+/// queue handler, and a throw would mark the image-generation item failed
+/// despite a successful generation. Failures are swallowed + logged here.
+Future<void> registerAiImageHandler(
+  ProviderContainer container, {
+  Future<void> Function(String word)? onGenerated,
+}) async {
   final service = await container.read(aiImageServiceProvider.future);
   final worker = await container.read(queueProcessorProvider.future);
   worker.registerHandler(aiImageQueueType, (payload) async {
-    await service.generateNow(wordFromAiImagePayload(payload));
+    final word = wordFromAiImagePayload(payload);
+    await service.generateNow(word);
+    final hook = onGenerated;
+    if (hook == null) return;
+    try {
+      await hook(word);
+    } on Object catch (e) {
+      // Image generation (the queue's actual job) succeeded — a downstream
+      // card-attach miss must not roll that back or mark the item failed.
+      container
+          .read(appLoggerProvider)
+          .w(LogTag.ai, 'post-generation hook for "$word" skipped: $e');
+    }
   });
 }

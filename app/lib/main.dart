@@ -14,8 +14,11 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:rivendell/app/app.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/core/logging/app_logger.dart';
+import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/core/queue/platform/queue_providers.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
+import 'package:rivendell/features/anki/application/anki_export_providers.dart';
 import 'package:rivendell/features/audio/application/recording_indexer.dart';
 import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/report/platform/email_providers.dart';
@@ -67,13 +70,36 @@ Future<void> main() async {
     ),
   );
 
+  // Drain the offline queue when the app returns to the foreground. The
+  // QueueWorker's autonomous backoff arms a Dart Timer, but Android dozes the
+  // process in the background and that Timer won't fire reliably — so a pending
+  // image generation that failed transiently (DNS at a network handover) sits
+  // until the user taps Retry. Kicking a drain on resume catches it; we also
+  // refresh the AI-image queue-review snapshot so cleared/generated items show
+  // without a manual pull.
+  _ResumeQueueDrainer(container, container.read(appLoggerProvider)).attach();
+
   // Boot after runApp so a slow DB open / workmanager init can't delay the
   // first frame (NFR-2.2). Fire-and-forget: a boot failure is non-fatal —
   // items just wait for the next app start — but surface it so it isn't
   // silently swallowed. The ai_image + email handlers are registered BEFORE
   // the worker starts so the initial online drain already sees them.
   unawaited(
-    registerAiImageHandler(container)
+    registerAiImageHandler(
+          container,
+          // When an image finishes generating, attach its Type 2 Anki card —
+          // the first Export deferred it as pending (no image yet), and without
+          // this hook nothing re-exported once the image landed. Best-effort +
+          // swallowed inside the handler, so an AnkiDroid miss (not installed /
+          // no grant) never fails the image-generation queue item.
+          onGenerated: (word) async {
+            final anki = await container.read(ankiExportServiceProvider.future);
+            final res = await anki.exportType2Word(word);
+            container
+                .read(appLoggerProvider)
+                .i(LogTag.anki, 'auto type2 re-export for "$word": $res');
+          },
+        )
         .then((_) => registerEmailHandler(container))
         .then((_) => bootOfflineQueue(container))
         .then((_) => dispatchWeeklyReportIfDue(container))
@@ -126,4 +152,29 @@ Future<void> initialScan(ProviderContainer container) async {
 /// launch. Non-fatal on failure.
 Future<void> _initNotifications(ProviderContainer container) async {
   await container.read(taskNotificationGatewayProvider).init();
+}
+
+/// Drains the offline queue + refreshes the AI-image snapshot each time the app
+/// returns to the foreground. See the call site for why a foreground kick is
+/// needed alongside the QueueWorker's autonomous backoff.
+class _ResumeQueueDrainer with WidgetsBindingObserver {
+  _ResumeQueueDrainer(this._container, this._logger);
+
+  final ProviderContainer _container;
+  final AppLogger _logger;
+
+  void attach() => WidgetsBinding.instance.addObserver(this);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    _container
+        .read(queueProcessorProvider.future)
+        .then((worker) => worker.drain())
+        .then((_) => _container.invalidate(aiImageQueueSnapshotProvider))
+        .onError(
+          (Object e, _) =>
+              _logger.w(LogTag.task, 'resume queue drain failed: $e'),
+        );
+  }
 }

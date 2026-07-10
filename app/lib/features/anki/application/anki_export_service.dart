@@ -119,6 +119,10 @@ class AnkiExportService {
       final cached = await aiImageService.cachedPath(pair.uzbek);
       if (cached == null) {
         await aiImageService.enqueueGeneration(pair.uzbek);
+        logger.i(
+          LogTag.anki,
+          'type2 "${pair.uzbek}": image not cached → enqueued, deferred',
+        );
         pending++;
         continue;
       }
@@ -134,6 +138,11 @@ class AnkiExportService {
         preferredName: 'rivendell_${_stem(cached)}',
       );
       if (imageField == null) {
+        logger.w(
+          LogTag.anki,
+          'type2 "${pair.uzbek}": addMedia returned null '
+          '(relativePath=$cached) — AnkiDroid refused the import',
+        );
         failed++;
         continue;
       }
@@ -144,6 +153,10 @@ class AnkiExportService {
         tags: const {ankiType2Tag},
       );
       if (id == null) {
+        logger.w(
+          LogTag.anki,
+          'type2 "${pair.uzbek}": addNote returned null — insert failed',
+        );
         failed++;
       } else {
         added++;
@@ -162,6 +175,16 @@ class AnkiExportService {
       pending: pending,
     );
   }
+
+  /// Best-effort single-word Type 2 export. Closes the gap where a word had no
+  /// cached image when the user tapped Export (deferred as pending) but its
+  /// image has since finished generating: the queue handler calls this once
+  /// the image lands so the card attaches without a manual re-export.
+  /// Idempotent via the first-field guard. Type 2 only consumes the Uzbek
+  /// word + image, so the English half is unused.
+  Future<AnkiExportResult> exportType2Word(String uzbekWord) => exportType2(
+    pairs: [VocabPair(english: '', uzbek: uzbekWord)],
+  );
 
   /// Filename stem of an app-relative image path (`a/b.png` → `b`).
   static String _stem(String relativePath) {
