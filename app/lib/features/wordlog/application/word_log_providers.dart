@@ -34,10 +34,15 @@ final imageLogPickerServiceProvider = Provider<ImageLogPickerService>(
   (_) => SafImageLogPickerService(),
 );
 
-/// App documents directory (where images are copied). Resolved once and
-/// cached; the panel joins it with each image's app-relative path.
+/// Base dir for word-log images. MUST match where the Kotlin `copyImage`
+/// channel writes (`File(filesDir, destRelativePath)`) and where the recording
+/// delete-cleanup looks (`$dir/wordlog/<id>`). On Android that is
+/// `getApplicationSupportDirectory()` == `Context.getFilesDir()`. The previous
+/// `getApplicationDocumentsDirectory()` resolved to `app_flutter` (a different
+/// dir), so attached notebook photos wrote to filesDir but were read from
+/// app_flutter — every thumbnail rendered "couldn't load".
 final appDocsDirProvider = FutureProvider<String>(
-  (ref) async => (await getApplicationDocumentsDirectory()).path,
+  (ref) async => (await getApplicationSupportDirectory()).path,
 );
 
 /// Singleton [ImageLogService] wiring the writer, repo, and logger together.

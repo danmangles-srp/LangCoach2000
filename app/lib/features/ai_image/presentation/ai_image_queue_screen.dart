@@ -204,11 +204,11 @@ class _PendingItemCard extends ConsumerWidget {
               alignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => _cancel(ref, item),
+                  onPressed: () => _cancel(context, ref, item),
                   child: Text(strings.wordLogCancel),
                 ),
                 FilledButton.tonal(
-                  onPressed: () => _retry(ref, item),
+                  onPressed: () => _retry(context, ref, item),
                   child: Text(strings.ankiRetry),
                 ),
               ],
@@ -219,17 +219,32 @@ class _PendingItemCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _retry(WidgetRef ref, QueueItem item) async {
-    final queue = await ref.read(queueRepositoryProvider.future);
+  Future<void> _retry(
+    BuildContext context,
+    WidgetRef ref,
+    QueueItem item,
+  ) async {
+    // Capture the async deps up front (ref is only safe to touch while the
+    // element is mounted); a user who navigates back mid-drain would otherwise
+    // trip "Using ref when a widget has been unmounted".
+    final queueFuture = ref.read(queueRepositoryProvider.future);
+    final workerFuture = ref.read(queueProcessorProvider.future);
+    final queue = await queueFuture;
     await queue.resetAttempts(item.id);
-    final worker = await ref.read(queueProcessorProvider.future);
+    final worker = await workerFuture;
     await worker.drain();
+    if (!context.mounted) return;
     ref.invalidate(aiImageQueueSnapshotProvider);
   }
 
-  Future<void> _cancel(WidgetRef ref, QueueItem item) async {
+  Future<void> _cancel(
+    BuildContext context,
+    WidgetRef ref,
+    QueueItem item,
+  ) async {
     final queue = await ref.read(queueRepositoryProvider.future);
     await queue.delete(item.id);
+    if (!context.mounted) return;
     ref.invalidate(aiImageQueueSnapshotProvider);
   }
 }

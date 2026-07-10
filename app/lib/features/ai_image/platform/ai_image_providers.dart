@@ -20,11 +20,16 @@ import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart'
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/platform/pollinations_config.dart';
 
-/// App-documents path for cached AI images. Defined here (not reused from
-/// wordlog) so the ai_image feature has no feature→feature wiring dependency;
-/// getApplicationDocumentsDirectory is idempotent so a second call is free.
+/// Base dir for cached AI images. MUST resolve to the same directory the
+/// Kotlin side reads in `addMediaToAnki` (`File(filesDir, relativePath)`) and
+/// that the FileProvider exposes (`file_paths.xml`'s `<files-path>`). On
+/// Android, `getApplicationSupportDirectory()` == `Context.getFilesDir()`;
+/// `getApplicationDocumentsDirectory()` is `getDir("flutter")` = `app_flutter`,
+/// a *different* dir — writing there made every `addMedia` return null (file
+/// not found) and orphaned the cache. Defined here (not reused from wordlog)
+/// so the ai_image feature has no feature→feature wiring dependency.
 final aiImageDocsDirProvider = FutureProvider<String>(
-  (ref) async => (await getApplicationDocumentsDirectory()).path,
+  (ref) async => (await getApplicationSupportDirectory()).path,
 );
 
 final aiImageCacheRepositoryProvider = FutureProvider<AiImageCacheRepository>((

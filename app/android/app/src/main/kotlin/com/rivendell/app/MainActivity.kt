@@ -513,15 +513,30 @@ class MainActivity : AudioServiceFragmentActivity() {
      */
     private fun addMediaToAnki(relativePath: String, preferredName: String): String? {
         val file = File(filesDir, relativePath)
-        if (!file.exists()) return null
+        if (!file.exists()) {
+            android.util.Log.w(
+                "Rivendell",
+                "addMedia: file missing at ${file.absolutePath} " +
+                    "(filesDir=${filesDir.absolutePath}, relativePath=$relativePath)",
+            )
+            return null
+        }
         val authority = "$packageName$FILE_PROVIDER_AUTHORITY_SUFFIX"
-        val uri = FileProvider.getUriForFile(this, authority, file) ?: return null
+        val uri = FileProvider.getUriForFile(this, authority, file)
+        if (uri == null) {
+            android.util.Log.w(
+                "Rivendell",
+                "addMedia: FileProvider returned no uri for ${file.absolutePath} " +
+                    "(authority=$authority) — file_paths.xml likely doesn't cover it",
+            )
+            return null
+        }
         grantUriPermission(
             ANKI_PACKAGE,
             uri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION,
         )
-        return try {
+        val result = try {
             ankiGateway.addMedia(uri, preferredName)
         } finally {
             // Drop the read grant once AnkiDroid has copied the bytes.
@@ -531,6 +546,14 @@ class MainActivity : AudioServiceFragmentActivity() {
                 // best-effort cleanup; nothing to act on.
             }
         }
+        if (result == null) {
+            android.util.Log.w(
+                "Rivendell",
+                "addMedia: AnkiDroid addMediaFromUri returned null for " +
+                    "${file.absolutePath} preferredName=$preferredName",
+            )
+        }
+        return result
     }
 
     private fun isSupportedAudio(name: String): Boolean {

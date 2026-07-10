@@ -41,12 +41,21 @@ class PollinationsImageService implements AiImageService {
   final String model;
 
   @override
-  Future<String?> cachedPath(String uzbekWord) => cache.pathFor(uzbekWord);
+  Future<String?> cachedPath(String uzbekWord) async {
+    // A cache row is necessary but not sufficient — verify the bytes are on
+    // disk. A row whose file is missing (e.g. after the app_flutter → filesDir
+    // path fix, or any future cache/file drift) is treated as uncached so the
+    // word regenerates instead of pinning a missing file.
+    final relative = await cache.pathFor(uzbekWord);
+    if (relative == null) return null;
+    if (!File('${docsDir.path}/$relative').existsSync()) return null;
+    return relative;
+  }
 
   @override
   Future<void> enqueueGeneration(String uzbekWord) async {
-    // Already generated — nothing to do, ever, for this word.
-    if (await cache.has(uzbekWord)) return;
+    // Already generated — nothing to do for this word.
+    if (await cachedPath(uzbekWord) != null) return;
     await queue.enqueue(
       type: aiImageQueueType,
       payload: aiImagePayload(uzbekWord),
@@ -57,7 +66,7 @@ class PollinationsImageService implements AiImageService {
   @override
   Future<void> generateNow(String uzbekWord) async {
     final word = uzbekWord.trim();
-    if (await cache.has(word)) return;
+    if (await cachedPath(word) != null) return;
 
     final bytes = await _download(_buildUrl(word));
     final relativePath = buildAiImagePath(word);
