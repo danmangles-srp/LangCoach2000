@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
+import 'package:rivendell/core/queue/queue_repository.dart';
+import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
 import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
@@ -70,6 +72,14 @@ void main() {
           (ref) async => WordLogRepository(db),
         ),
         appDocsDirProvider.overrideWith((ref) async => '/tmp'),
+        // T18.4: the text body now mounts an _AiImageQueueLink that watches
+        // the live queue snapshot; stub it empty so the platform DB never
+        // resolves in this presentation test.
+        aiImageQueueSnapshotProvider.overrideWith(
+          (ref) => Stream.value(
+            const AiImageQueueSnapshot(pending: [], generated: []),
+          ),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -95,6 +105,14 @@ void main() {
           (ref) async => WordLogRepository(db),
         ),
         appDocsDirProvider.overrideWith((ref) async => '/tmp'),
+        // T18.4: the text body now mounts an _AiImageQueueLink that watches
+        // the live queue snapshot; stub it empty so the platform DB never
+        // resolves in this presentation test.
+        aiImageQueueSnapshotProvider.overrideWith(
+          (ref) => Stream.value(
+            const AiImageQueueSnapshot(pending: [], generated: []),
+          ),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -106,5 +124,48 @@ void main() {
     expect(find.text('mushuk'), findsOneWidget);
     expect(find.text('dog'), findsOneWidget);
     expect(find.text('it'), findsOneWidget);
+    // No pending images -> the queue link is hidden (clean word-log surface).
+    expect(find.byIcon(Icons.auto_awesome_motion_outlined), findsNothing);
+  });
+
+  testWidgets('with pending AI images: shows the queue link (T18.4)', (
+    tester,
+  ) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final id = await _seedRecording(db);
+    await WordLogRepository(db).setTextLog(id, body: 'cat: mushuk');
+    final container = ProviderContainer(
+      overrides: [
+        wordLogRepositoryProvider.overrideWith(
+          (ref) async => WordLogRepository(db),
+        ),
+        appDocsDirProvider.overrideWith((ref) async => '/tmp'),
+        aiImageQueueSnapshotProvider.overrideWith(
+          (ref) => Stream.value(
+            AiImageQueueSnapshot(
+              pending: [
+                QueueItem(
+                  id: 1,
+                  type: 'ai_image',
+                  payload: 'cat',
+                  attempts: 0,
+                  createdAt: DateTime.utc(2026),
+                ),
+              ],
+              generated: const [],
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(_host(container, recordingId: id));
+    await tester.pumpAndSettle();
+
+    // The pending-count link renders + opens the queue-review screen on tap.
+    expect(find.text('1 images queued →'), findsOneWidget);
+    expect(find.byIcon(Icons.auto_awesome_motion_outlined), findsOneWidget);
   });
 }

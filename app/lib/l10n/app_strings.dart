@@ -213,6 +213,7 @@ class AppStrings {
     settingsAiImageQueueSubtitle: 'Review pending image generations',
     aiQueuePendingHeader: 'Pending',
     aiQueuePendingEmpty: 'No pending images.',
+    aiQueuePendingLinkN: '{n} images queued →',
     aiQueueGeneratedHeader: 'Generated',
     aiQueueGeneratedEmpty: 'No images generated yet.',
     aiQueueAttemptsN: 'Attempts: {n}',
@@ -415,6 +416,7 @@ class AppStrings {
     settingsAiImageQueueSubtitle: 'Kutilayotgan tasvir generatsiyasini ko‘rish',
     aiQueuePendingHeader: 'Kutilmoqda',
     aiQueuePendingEmpty: 'Kutilayotgan tasvir yo‘q.',
+    aiQueuePendingLinkN: '{n} ta tasvir navbatda →',
     aiQueueGeneratedHeader: 'Yaratilgan',
     aiQueueGeneratedEmpty: 'Hali tasvir yaratilmagan.',
     aiQueueAttemptsN: 'Urinishlar: {n}',
@@ -604,6 +606,8 @@ class AppStrings {
       _bundle.settingsAiImageQueueSubtitle;
   String get aiQueuePendingHeader => _bundle.aiQueuePendingHeader;
   String get aiQueuePendingEmpty => _bundle.aiQueuePendingEmpty;
+  String aiQueuePendingLink(int n) =>
+      _bundle.aiQueuePendingLinkN.replaceAll('{n}', '$n');
   String get aiQueueGeneratedHeader => _bundle.aiQueueGeneratedHeader;
   String get aiQueueGeneratedEmpty => _bundle.aiQueueGeneratedEmpty;
   String aiQueueAttempts(int n) =>
@@ -783,6 +787,7 @@ class _Bundle {
     required this.settingsAiImageQueueTitle,
     required this.settingsAiImageQueueSubtitle,
     required this.aiQueuePendingHeader,
+    required this.aiQueuePendingLinkN,
     required this.aiQueuePendingEmpty,
     required this.aiQueueGeneratedHeader,
     required this.aiQueueGeneratedEmpty,
@@ -951,6 +956,7 @@ class _Bundle {
   final String settingsAiImageQueueTitle;
   final String settingsAiImageQueueSubtitle;
   final String aiQueuePendingHeader;
+  final String aiQueuePendingLinkN;
   final String aiQueuePendingEmpty;
   final String aiQueueGeneratedHeader;
   final String aiQueueGeneratedEmpty;
