@@ -24,7 +24,12 @@ class OfflineQueueItems extends Table {
 
   @override
   List<Set<Column<Object>>> get uniqueKeys => [
-    // No dup constraint by design: replaying the same action (e.g. regenerating
-    // an image) appends a new item — the handler decides idempotency.
+    // (type, payload) dedup is enforced as a PARTIAL unique index, created in
+    // the v10 migration (see AppDatabase.migration), not here — Drift's table-
+    // level uniqueKeys can't express "only among pending rows". The partial
+    // index `offline_queue_pending_uniq ON (type, payload) WHERE done = 0`
+    // means a replay of the same item while one is pending is a no-op; once
+    // that row is markDone (done = 1) it leaves the pending set, so a later
+    // replay can enqueue a fresh pending row.
   ];
 }

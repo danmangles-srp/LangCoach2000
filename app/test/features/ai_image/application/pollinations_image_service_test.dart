@@ -155,6 +155,18 @@ void main() {
       expect(wordFromAiImagePayload(pending.single.payload), 'salom');
     });
 
+    test('spamming enqueueGeneration for the same word creates only one item '
+        '(T18.1 queue-level dedup)', () async {
+      final service = buildService(client: succeedingClient(getCalls: []));
+
+      // Repeated taps on "Send to Anki" before the image lands.
+      await service.enqueueGeneration('salom');
+      await service.enqueueGeneration('salom');
+      await service.enqueueGeneration('salom');
+
+      expect(await queue.pending(), hasLength(1));
+    });
+
     test('is a no-op when the word is already cached', () async {
       // Seed the cache directly: a prior generation succeeded.
       await cache.remember(

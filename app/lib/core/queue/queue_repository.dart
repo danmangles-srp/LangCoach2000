@@ -27,12 +27,18 @@ class QueueRepository {
   QueueRepository(this._db);
   final AppDatabase _db;
 
-  /// Append a work item. Returns its id.
+  /// Append a work item. Idempotent among pending rows: a `(type, payload)`
+  /// already pending (done = 0) is a no-op (T18.1 — enforced by the partial
+  /// unique index `offline_queue_pending_uniq`). Returns the inserted rowid;
+  /// on a duplicate the insert is skipped, so do NOT read the return value as
+  /// a dedup signal (it reflects `last_insert_rowid()`, not whether this call
+  /// inserted). Use [pending] to observe state.
   Future<int> enqueue({required String type, required String payload}) {
     return _db
         .into(_db.offlineQueueItems)
         .insert(
           OfflineQueueItemsCompanion.insert(type: type, payload: payload),
+          mode: InsertMode.insertOrIgnore,
         );
   }
 

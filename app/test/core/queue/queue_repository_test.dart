@@ -123,4 +123,57 @@ void main() {
     final remaining = await db.select(db.offlineQueueItems).get();
     expect(remaining, isEmpty);
   });
+
+  group('T18.1 idempotent enqueue', () {
+    test(
+      'spamming the same (type, payload) keeps only one pending row',
+      () async {
+        final first = await queue.enqueue(
+          type: 'ai_image',
+          payload: '{"word":"x"}',
+        );
+        await queue.enqueue(type: 'ai_image', payload: '{"word":"x"}');
+        await queue.enqueue(type: 'ai_image', payload: '{"word":"x"}');
+
+        // The replayed enqueues are ignored (no-op), not appended — only the
+        // original row remains.
+        expect(await queue.pending(), hasLength(1));
+        expect((await queue.pending()).single.id, first);
+      },
+    );
+
+    test('distinct payloads each get their own pending row', () async {
+      await queue.enqueue(type: 'ai_image', payload: '{"word":"a"}');
+      await queue.enqueue(type: 'ai_image', payload: '{"word":"b"}');
+      await queue.enqueue(type: 'email', payload: '{"word":"a"}'); // diff type
+      expect(await queue.pending(), hasLength(3));
+    });
+
+    test(
+      'a done row frees the slot so the same payload can re-enqueue',
+      () async {
+        final id = await queue.enqueue(type: 't', payload: 'x');
+        await queue.markDone(id);
+        // Slot freed (done row excluded from the partial index) → fresh insert.
+        final reId = await queue.enqueue(type: 't', payload: 'x');
+        expect(reId, greaterThan(0));
+        final pending = await queue.pending();
+        expect(pending, hasLength(1));
+        expect(pending.single.id, isNot(id));
+      },
+    );
+
+    test(
+      'the partial unique index exists at the current schema version',
+      () async {
+        final rows = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='index' "
+              "AND name='offline_queue_pending_uniq'",
+            )
+            .get();
+        expect(rows, hasLength(1));
+      },
+    );
+  });
 }
