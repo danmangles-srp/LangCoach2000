@@ -1149,3 +1149,115 @@ remaining failures are reliability + observability, not correctness.
 **Order.** T18.6 (independent, quick) → T18.1 (highest impact / lowest risk) →
 T18.3 → T18.5 → T18.4 → T18.2 (heavy, gated on confirm). Each its own PR-sized
 slice off `dev`, standard gate before push.
+
+---
+
+## Milestone 19: Reactive queue + English-prompt images + auto-advance fix
+
+**Goal.** Close the three real-use defects that survived M18, and add the
+integration test that would have caught them. After M19: tapping Send-to-Anki
+generates the image **in the same foreground session** (no restart needed),
+the queue-review screen updates live as it happens, the generated image
+depicts the **English** concept (the card back stays Uzbek), and auto-advance
+to the next recording actually plays it.
+
+**Why now.** M18 shipped dedup (T18.1), a live snapshot stream (T18.3),
+transient retry (T18.5), and a pending-count link (T18.4) — but real use
+exposed that the foreground drain still never fires after enqueue, the screen
+still goes stale, and the prompt feeds Pollinations an Uzbek word it can't
+render. Root cause: the drain trigger and the screen-refresh signal both depend
+on a network edge or a manual action, never on the **queue table changing**.
+The unit suite passed because it tests `enqueue` and `generateNow` in isolation,
+never the enqueue→drain→screen contract.
+
+### Root-cause map
+
+- **F1 (no foreground generation).** `QueueWorker.start()` subscribes to
+  `NetworkService.online` only; `ConnectivityNetworkService` seeds current
+  state, so the worker drains once at boot, then goes idle (pending=0 → no
+  timer). `QueueRepository.enqueue()` writes the row but **nothing notifies the
+  worker**. Already-online + no connectivity flap → the just-enqueued row sits
+  until the next edge or app restart. Restart fires a radio edge → drains.
+  This is the exact "didn't show until restart" symptom.
+- **F2 (stale queue screen).** `aiImageQueueSnapshotProvider` re-fetches only
+  on `QueueWorker.onDrained`. With F1, no drain fires → the screen is frozen at
+  its initial fetch. Independent of F1, a row enqueued *while the screen is
+  mounted* also never refreshes, because the insert doesn't surface as a drain
+  event.
+- **F3 (bad image).** `buildPictographPrompt(uzbekWord)` sends "concept of
+  'kurbaka'" to Pollinations. Image models handle Uzbek poorly → noise. The
+  pair's English gloss is known at export time (`anki_export_service.dart:121`
+  has the full `pair`) but discarded. Card identity = Uzbek (cache key + Anki
+  back), prompt source = English.
+- **F4 (auto-advance dead).** On natural completion, `_onCompletion` does
+  `context.replace('/recordings/$nextId')`; the new detail screen's
+  `loadAndPlay` for the next recording shows zero length and doesn't start
+  playback. Under investigation in T19.6 — likely the duration binding racing
+  the async `MediaItem.duration` resolve, or `loadAndPlay` not auto-starting on
+  a fresh navigate.
+
+### The robust fix (one mechanism for F1 + F2)
+
+Both the worker and the snapshot provider subscribe to a **Drift reactive
+stream** over the `offline_queue_items` table (`select(...).watch()`). Any
+insert / markDone / markFailed emits → the worker drains (re-entry-guarded +
+debounced), and the snapshot provider re-fetches. Drain trigger and screen
+refresh become a function of *queue state*, not of network edges or manual
+pokes. The dependency direction stays clean (repo gains one stream method;
+worker + provider observe it).
+
+### Tickets
+
+- **T19.1 — Integration test (RED).** Boot a `ProviderContainer` with the REAL
+  `AppDatabase.forTesting(NativeDatabase.memory)`, REAL `QueueWorker`,
+  `QueueRepository`, `AiImageCacheRepository`, and `PollinationsImageService`
+  (fake `http.Client` returning fixed PNG bytes + a temp docs dir), plus a
+  `FakeNetworkService` seeded online. Override the production providers so the
+  REAL graph resolves against the in-memory DB. Mount
+  `AiImageQueueScreen`. Act: `service.enqueueGeneration(pair)`. Assert: screen
+  shows the word under **Pending**. Pump the drain. Assert: screen shows the
+  word under **Generated**, pending empty, the PNG written to the temp dir,
+  cache row present. This test fails today (F1: never drains; F2: stale) and
+  gates the rest of the milestone. *ACs:* the test is red on `dev` before
+  T19.2/T19.3 land, green after. *Deps:* none.
+- **T19.2 — Reactive drain + live snapshot.** Add
+  `QueueRepository.pendingChanges(): Stream<void>` (a Drift `.watch()` over
+  pending rows, mapped to void). `QueueWorker.start()` subscribes and calls
+  `_drain()` on change (debounced ~50 ms; the `_draining` guard prevents
+  overlap). `aiImageQueueSnapshotProvider` switches from `await for
+  (worker.onDrained)` to `await for (queue.pendingChanges())` (and a cache
+  change stream, or re-fetch on the queue stream since a drain that generates
+  also inserts a cache row) — re-fetching on table change. Keep `onDrained` for
+  external observers (badge). *ACs:* enqueue during a foreground session
+  drains within ~100 ms with no network flap; the queue screen updates from
+  pending→generated live. *Deps:* T19.1 (proves it).
+- **T19.3 — English-prompt generation.** Payload becomes
+  `{"uzbek": ..., "english": ...}`. `AiImageService.enqueueGeneration` +
+  `generateNow` take the pair (or both strings). `buildPictographPrompt` runs
+  on the **English** word. Cache stays keyed by **Uzbek** (card identity).
+  `wordFromAiImagePayload` becomes a tolerant reader: a legacy `{"word": ...}`
+  row is read as uzbek=english=word (degraded prompt, no crash) so a pending
+  row from before the upgrade still drains. Anki Type-2 card unchanged
+  (image:uzbek). *ACs:* `kurbaka:frog` produces an image of a frog; the card
+  back is `kurbaka`. *Deps:* T19.1 (extend the test to assert the GET prompt
+  contains the English word).
+- **T19.4 — Auto-advance plays the next recording.** Investigate `loadAndPlay`
+  on a fresh `context.replace` navigate: why duration reads zero and playback
+  doesn't start. Likely the duration binding / auto-play gate mishandles the
+  async `MediaItem.duration` resolve on a cold load. Fix + add a widget test
+  that simulates completion → advance → asserts the next recording's
+  `loadAndPlay` is called + duration resolves. *ACs:* auto-advancing to the
+  next recording starts playback and shows a non-zero duration. *Deps:* none
+  (independent slice).
+- **T19.5 — Verify the "N images queued" link.** Confirm the T18.4
+  `_AiImageQueueLink` appears in the word-log the moment a word is enqueued
+  (now that F1/F2 are fixed) and that tapping it opens
+  `/settings/ai-image-queue`. Covered by extending the T19.1 harness to mount
+  `WordLogSection`; add an assertion if cheap. *ACs:* the link is tappable and
+  routes correctly. *Deps:* T19.2.
+
+**Order.** T19.1 (red test, proves the bugs) → T19.2 (reactive fix, green) →
+T19.3 (English prompt) → T19.4 (auto-advance, independent) → T19.5 (link
+verify). Each its own PR-sized slice off `dev`, standard gate before push.
+T18.2 (workmanager background drain) remains deferred — the foreground path
+is the product path; background is a fast-follow.

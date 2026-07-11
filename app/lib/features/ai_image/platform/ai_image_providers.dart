@@ -64,11 +64,11 @@ class AiImageQueueSnapshot {
   final List<AiImageCacheEntry> generated;
 }
 
-/// The current queue-review snapshot, kept LIVE (T18.3). Re-fetches whenever
-/// the QueueWorker finishes a drain (`onDrained`), so a generated image moves
-/// from Pending to Generated on screen without a manual refresh — and while
-/// the app is foreground + online, the autonomous backoff keeps draining.
-/// Falls back to a single fetch when the worker stream hasn't resolved yet.
+/// The current queue-review snapshot, kept LIVE (T19.2). Re-fetches whenever
+/// the pending set changes — the reactive source of truth from
+/// [QueueRepository.pendingChanges]. A row enqueued, drained (markDone), or
+/// failed (attempts bumped) emits here, so the UI moves Pending → Generated
+/// without a manual refresh and without depending on a drain having fired.
 final aiImageQueueSnapshotProvider = StreamProvider<AiImageQueueSnapshot>((
   ref,
 ) async* {
@@ -81,10 +81,10 @@ final aiImageQueueSnapshotProvider = StreamProvider<AiImageQueueSnapshot>((
     return AiImageQueueSnapshot(pending: pending, generated: generated);
   }
 
-  // First read renders immediately; subsequent reads are driven by drains.
+  // First read renders immediately; subsequent reads are driven by table
+  // change — independent of whether a worker drain has run yet.
   yield await fetch();
-  final worker = await ref.watch(queueProcessorProvider.future);
-  await for (final _ in worker.onDrained) {
+  await for (final _ in queue.pendingChanges()) {
     yield await fetch();
   }
 });
