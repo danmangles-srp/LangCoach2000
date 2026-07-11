@@ -87,9 +87,11 @@ void main() {
         model: pollinationsModel,
       );
 
-      await service.generateNow('cat').timeout(const Duration(seconds: 60));
+      await service
+          .generateNow(uzbek: 'mushuk', english: 'cat')
+          .timeout(const Duration(seconds: 60));
 
-      final file = File('${docsDir.path}/${buildAiImagePath('cat')}');
+      final file = File('${docsDir.path}/${buildAiImagePath('mushuk')}');
       expect(file.existsSync(), isTrue);
       final bytes = await file.readAsBytes();
       expect(bytes.length, greaterThan(1024));

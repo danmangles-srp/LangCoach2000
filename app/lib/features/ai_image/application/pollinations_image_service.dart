@@ -54,33 +54,46 @@ class PollinationsImageService implements AiImageService {
   }
 
   @override
-  Future<void> enqueueGeneration(String uzbekWord) async {
+  Future<void> enqueueGeneration({
+    required String uzbek,
+    required String english,
+  }) async {
     // Already generated — nothing to do for this word.
-    if (await cachedPath(uzbekWord) != null) return;
+    if (await cachedPath(uzbek) != null) return;
     await queue.enqueue(
       type: aiImageQueueType,
-      payload: aiImagePayload(uzbekWord),
+      payload: aiImagePayload(uzbek: uzbek, english: english),
     );
-    logger.i(LogTag.ai, 'enqueued image for "$uzbekWord"');
+    logger.i(LogTag.ai, 'enqueued image for "$uzbek" (prompt "$english")');
   }
 
   @override
-  Future<void> generateNow(String uzbekWord) async {
-    final word = uzbekWord.trim();
-    if (await cachedPath(word) != null) return;
+  Future<void> generateNow({
+    required String uzbek,
+    required String english,
+  }) async {
+    // Cache + on-disk path are keyed by UZBEK — the Anki card first field +
+    // the regeneration seed all hang off it. The prompt runs on ENGLISH.
+    final key = uzbek.trim();
+    if (await cachedPath(key) != null) return;
 
-    final bytes = await _downloadWithRetry(_buildUrl(word));
-    final relativePath = buildAiImagePath(word);
+    final bytes = await _downloadWithRetry(
+      _buildUrl(english: english, seed: key),
+    );
+    final relativePath = buildAiImagePath(key);
     await _writeBytes(relativePath, bytes);
-    await cache.remember(uzbekWord: word, relativePath: relativePath);
-    logger.i(LogTag.ai, 'generated image for "$word" -> $relativePath');
+    await cache.remember(uzbekWord: key, relativePath: relativePath);
+    logger.i(
+      LogTag.ai,
+      'generated image for "$key" (prompt "$english") -> $relativePath',
+    );
   }
 
-  String _buildUrl(String word) {
-    final prompt = Uri.encodeComponent(buildPictographPrompt(word));
-    final seed = _stableSeed(word);
+  String _buildUrl({required String english, required String seed}) {
+    final prompt = Uri.encodeComponent(buildPictographPrompt(english));
+    final seedQ = _stableSeed(seed);
     return '$baseUrl/prompt/$prompt'
-        '?width=512&height=512&nologo=true&model=$model&seed=$seed';
+        '?width=512&height=512&nologo=true&model=$model&seed=$seedQ';
   }
 
   /// Stable, run-to-run hash of [word] so the same word yields the same seed

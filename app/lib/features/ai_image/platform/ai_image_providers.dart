@@ -108,18 +108,18 @@ Future<void> registerAiImageHandler(
   final service = await container.read(aiImageServiceProvider.future);
   final worker = await container.read(queueProcessorProvider.future);
   worker.registerHandler(aiImageQueueType, (payload) async {
-    final word = wordFromAiImagePayload(payload);
-    await service.generateNow(word);
+    final pair = pairFromAiImagePayload(payload);
+    await service.generateNow(uzbek: pair.uzbek, english: pair.english);
     final hook = onGenerated;
     if (hook == null) return;
     try {
-      await hook(word);
+      await hook(pair.uzbek);
     } on Object catch (e) {
       // Image generation (the queue's actual job) succeeded — a downstream
       // card-attach miss must not roll that back or mark the item failed.
       container
           .read(appLoggerProvider)
-          .w(LogTag.ai, 'post-generation hook for "$word" skipped: $e');
+          .w(LogTag.ai, 'post-generation hook for "${pair.uzbek}" skipped: $e');
     }
   });
 }

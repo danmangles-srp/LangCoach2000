@@ -118,12 +118,12 @@ void main() {
     expect(await queue.pendingByType(aiImageQueueType), isEmpty);
 
     // User taps Send-to-Anki. No manual drain, no network flap, no retry.
-    await service.enqueueGeneration('kurbaka');
+    await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
 
     // Pending row appears immediately.
     final pending = await queue.pendingByType(aiImageQueueType);
     expect(pending, hasLength(1));
-    expect(wordFromAiImagePayload(pending.single.payload), 'kurbaka');
+    expect(pairFromAiImagePayload(pending.single.payload).uzbek, 'qurbaqa');
 
     // Let the reactive drain fire on the queue-table change (T19.2) + the
     // download/write/cache chain complete.
@@ -131,11 +131,13 @@ void main() {
 
     // The image generated: GET happened, bytes landed, cache row present.
     expect(httpCalls, hasLength(1));
+    // T19.3: the prompt reached Pollinations with the ENGLISH gloss.
+    expect(httpCalls.single.url.toString(), contains('frog'));
     expect(
-      File('${docsDir.path}/${buildAiImagePath('kurbaka')}').existsSync(),
+      File('${docsDir.path}/${buildAiImagePath('qurbaqa')}').existsSync(),
       isTrue,
     );
-    final cached = await cache.pathFor('kurbaka');
+    final cached = await cache.pathFor('qurbaqa');
     expect(cached, isNotNull);
 
     // The row left Pending (markDone) — the user-visible "stuck in queue"
