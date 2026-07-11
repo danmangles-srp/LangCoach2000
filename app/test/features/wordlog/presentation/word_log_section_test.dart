@@ -10,10 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/queue/queue_repository.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
+import 'package:rivendell/features/ai_image/presentation/ai_image_queue_screen.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
 import 'package:rivendell/features/wordlog/application/word_log_providers.dart';
@@ -167,5 +169,91 @@ void main() {
     // The pending-count link renders + opens the queue-review screen on tap.
     expect(find.text('1 images queued →'), findsOneWidget);
     expect(find.byIcon(Icons.auto_awesome_motion_outlined), findsOneWidget);
+  });
+
+  testWidgets('tapping the queue link pushes the AI image queue route '
+      '(T19.5)', (tester) async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final id = await _seedRecording(db);
+    await WordLogRepository(db).setTextLog(id, body: 'cat: mushuk');
+
+    final pendingSnapshot = AiImageQueueSnapshot(
+      pending: [
+        QueueItem(
+          id: 1,
+          type: 'ai_image',
+          payload: '{"word":"mushuk"}',
+          attempts: 0,
+          createdAt: DateTime.utc(2026),
+        ),
+      ],
+      generated: const [],
+    );
+
+    final container = ProviderContainer(
+      overrides: [
+        wordLogRepositoryProvider.overrideWith(
+          (ref) async => WordLogRepository(db),
+        ),
+        appDocsDirProvider.overrideWith((ref) async => '/tmp'),
+        // Both the word-log link and the queue screen read this snapshot; a
+        // Stream.value lets the link render with pending=1 and the pushed
+        // AiImageQueueScreen build without the platform DB.
+        aiImageQueueSnapshotProvider.overrideWith(
+          (ref) => Stream.value(pendingSnapshot),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // Mount a real go_router so `context.push('/settings/ai-image-queue')` has
+    // a route table to resolve against — the production path.
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => Scaffold(
+            body: SingleChildScrollView(
+              child: WordLogSection(
+                recordingId: id,
+                recordingName: 'lecture.m4a',
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/settings/ai-image-queue',
+          builder: (context, state) => const AiImageQueueScreen(),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          routerConfig: router,
+          locale: const Locale('en'),
+          localizationsDelegates: const [
+            AppStrings.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 images queued →'), findsOneWidget);
+    // Queue screen is not mounted yet.
+    expect(find.byType(AiImageQueueScreen), findsNothing);
+
+    await tester.tap(find.text('1 images queued →'));
+    await tester.pumpAndSettle();
+
+    // The queue-review screen is now on stage.
+    expect(find.byType(AiImageQueueScreen), findsOneWidget);
   });
 }
