@@ -29,6 +29,7 @@ class QueueWorker {
     required this._logger,
     this.baseBackoff = const Duration(seconds: 3),
     this.maxBackoff = const Duration(seconds: 60),
+    this.reactiveDebounce = const Duration(milliseconds: 50),
   }) : _repo = repository;
 
   final QueueRepository _repo;
@@ -41,7 +42,14 @@ class QueueWorker {
   final Duration baseBackoff;
   final Duration maxBackoff;
 
+  /// Coalesce window for reactive drains (T19.2). A burst of pending-row writes
+  /// (e.g. a drain that markDone's several items) fires one drain after the
+  /// window, not one per write. Injectable so tests run in milliseconds.
+  final Duration reactiveDebounce;
+
   StreamSubscription<bool>? _sub;
+  StreamSubscription<void>? _pendingSub;
+  Timer? _reactiveTimer;
   Timer? _retryTimer;
   bool _draining = false;
   bool _started = false;
@@ -66,6 +74,12 @@ class QueueWorker {
   void start() {
     _started = true;
     _sub ??= _network.online.listen(_onEdge);
+    // T19.2: also drain the moment the pending set changes — an enqueue during
+    // an already-online foreground session otherwise sits until a network edge
+    // or app resume. The pending-row stream is the source of truth for "there
+    // is work to do"; the online stream stays the gate for whether a drain can
+    // actually reach the network.
+    _pendingSub ??= _repo.pendingChanges().listen(_onPendingChange);
   }
 
   /// Stop listening + cancel any pending retry. Idempotent.
@@ -73,9 +87,13 @@ class QueueWorker {
     _started = false;
     _retryTimer?.cancel();
     _retryTimer = null;
+    _reactiveTimer?.cancel();
+    _reactiveTimer = null;
     _noProgressRounds = 0;
     await _sub?.cancel();
     _sub = null;
+    await _pendingSub?.cancel();
+    _pendingSub = null;
     await _drainedController.close();
   }
 
@@ -87,6 +105,21 @@ class QueueWorker {
     _retryTimer?.cancel();
     _retryTimer = null;
     _drain();
+  }
+
+  /// A pending row appeared/changed/removed (T18.1 dedup insert, a markDone, a
+  /// markFailed, a cancel). Coalesce a burst into one drain so a batch doesn't
+  /// fire N overlapping attempts; the `_draining` re-entry guard is the final
+  /// safety. Offline: skip — the next online edge drives it, matching the
+  /// offline-retry contract (no wasted attempts while the radio is down).
+  void _onPendingChange(void _) {
+    _maybeDrainReactively();
+  }
+
+  Future<void> _maybeDrainReactively() async {
+    if (!await _network.isOnline) return;
+    _reactiveTimer?.cancel();
+    _reactiveTimer = Timer(reactiveDebounce, _drain);
   }
 
   /// Process every pending item once, in order. Re-entry guarded so a fast

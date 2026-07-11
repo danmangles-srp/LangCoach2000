@@ -65,6 +65,18 @@ class QueueRepository {
     return rows.map(_toItem).toList();
   }
 
+  /// Reactive signal over the pending set: emits whenever a pending row is
+  /// inserted, completed (done=1), failed (attempts bumped), or deleted. The
+  /// worker drains on this (T19.2) so an enqueue during an already-online
+  /// foreground session fires a drain without a network edge; the queue-review
+  /// snapshot re-fetches on this so the UI is live without manual refresh.
+  /// Emits void — observers re-query via [pending] / [pendingByType].
+  Stream<void> pendingChanges() {
+    final query = _db.select(_db.offlineQueueItems)
+      ..where((t) => t.done.equals(false));
+    return query.watch().map((rows) {});
+  }
+
   QueueItem _toItem(OfflineQueueItem r) => QueueItem(
     id: r.id,
     type: r.type,
