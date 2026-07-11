@@ -31,7 +31,8 @@ class PollinationsImageService implements AiImageService {
     required this.logger,
     required this.baseUrl,
     required this.model,
-  });
+    String Function()? promptTemplate,
+  }) : promptTemplate = promptTemplate ?? (() => defaultAiImagePrompt);
 
   final AiImageCacheRepository cache;
   final QueueRepository queue;
@@ -40,6 +41,10 @@ class PollinationsImageService implements AiImageService {
   final AppLogger logger;
   final String baseUrl;
   final String model;
+
+  /// Reads the current prompt template (T19.6). Read fresh per generate so a
+  /// Settings change takes effect on the next drain without re-queueing.
+  final String Function() promptTemplate;
 
   @override
   Future<String?> cachedPath(String uzbekWord) async {
@@ -77,7 +82,9 @@ class PollinationsImageService implements AiImageService {
   }
 
   String _buildUrl(String word) {
-    final prompt = Uri.encodeComponent(buildPictographPrompt(word));
+    final prompt = Uri.encodeComponent(
+      buildAiImagePrompt(word, promptTemplate()),
+    );
     final seed = _stableSeed(word);
     return '$baseUrl/prompt/$prompt'
         '?width=512&height=512&nologo=true&model=$model&seed=$seed';

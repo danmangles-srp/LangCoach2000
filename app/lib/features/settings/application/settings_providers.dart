@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/features/ai_image/domain/ai_image_prompt.dart';
 import 'package:rivendell/features/settings/domain/app_settings.dart';
 
 const _kAutoAdvanceNext = 'settings.auto_advance_next';
 const _kThemePreference = 'settings.theme_preference';
+const _kAiImagePromptTemplate = 'settings.ai_image_prompt_template';
 
 /// The [KvRepository] singleton backing user preferences.
 final settingsRepositoryProvider = FutureProvider<KvRepository>((ref) async {
@@ -37,6 +39,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       final repo = await ref.read(settingsRepositoryProvider.future);
       final autoRaw = await repo.read(_kAutoAdvanceNext);
       final themeRaw = await repo.read(_kThemePreference);
+      final promptRaw = await repo.read(_kAiImagePromptTemplate);
       // Only an explicit "false" disables auto-advance; a missing key keeps the
       // default-on behavior so upgrades don't surprise existing users.
       final autoAdvance = autoRaw != 'false';
@@ -44,7 +47,16 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
         (t) => t.name == themeRaw,
         orElse: () => ThemePreference.system,
       );
-      state = AppSettings(autoAdvanceNext: autoAdvance, themePreference: theme);
+      // A missing or cleared template keeps the default so a fresh install or
+      // a user who wiped the field never sends an empty prompt.
+      final prompt = (promptRaw == null || promptRaw.trim().isEmpty)
+          ? defaultAiImagePrompt
+          : promptRaw;
+      state = AppSettings(
+        autoAdvanceNext: autoAdvance,
+        themePreference: theme,
+        aiImagePromptTemplate: prompt,
+      );
     } on Object {
       // Hydration is best-effort: a missing or corrupt store keeps the defaults
       // so the detail screen's synchronous read never blocks or throws.
@@ -61,5 +73,15 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     state = state.copyWith(themePreference: value);
     final repo = await ref.read(settingsRepositoryProvider.future);
     await repo.write(_kThemePreference, value.name);
+  }
+
+  Future<void> setAiImagePromptTemplate(String value) async {
+    // A cleared field snaps back to the default rather than persisting an empty
+    // string the engine would have to defend against at drain time.
+    final resolved = value.trim().isEmpty ? defaultAiImagePrompt : value;
+    if (resolved == state.aiImagePromptTemplate) return;
+    state = state.copyWith(aiImagePromptTemplate: resolved);
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    await repo.write(_kAiImagePromptTemplate, resolved);
   }
 }

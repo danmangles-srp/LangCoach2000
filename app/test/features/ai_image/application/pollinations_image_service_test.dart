@@ -53,7 +53,10 @@ void main() {
     });
   }
 
-  PollinationsImageService buildService({required http.Client client}) {
+  PollinationsImageService buildService({
+    required http.Client client,
+    String Function()? promptTemplate,
+  }) {
     return PollinationsImageService(
       cache: cache,
       queue: queue,
@@ -62,6 +65,7 @@ void main() {
       logger: AppLogger(sink: RecordingSink()),
       baseUrl: 'https://image.pollinations.ai',
       model: 'flux',
+      promptTemplate: promptTemplate,
     );
   }
 
@@ -99,6 +103,33 @@ void main() {
         expect(await service.cachedPath('salom'), buildAiImagePath('salom'));
       },
     );
+
+    test('a custom prompt template reaches the GET path (T19.6)', () async {
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+        promptTemplate: () => 'watercolour still life of {word}',
+      );
+
+      await service.generateNow('salom');
+
+      final url = getCalls.single.url.toString();
+      expect(url, contains('watercolour%20still%20life%20of%20salom'));
+      // The default body must not leak in when a custom template is set.
+      expect(url, isNot(contains('pictographic')));
+    });
+
+    test('a blank template falls back to the default body (T19.6)', () async {
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+        promptTemplate: () => '   ',
+      );
+
+      await service.generateNow('salom');
+
+      expect(getCalls.single.url.toString(), contains('pictographic'));
+    });
 
     test('seed is deterministic for the same word across calls', () async {
       final getCalls = <http.Request>[];

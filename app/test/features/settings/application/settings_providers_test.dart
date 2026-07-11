@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/features/ai_image/domain/ai_image_prompt.dart';
 import 'package:rivendell/features/settings/application/settings_providers.dart';
 import 'package:rivendell/features/settings/domain/app_settings.dart';
 
@@ -91,5 +92,56 @@ void main() {
     await c.read(settingsRepositoryProvider.future);
     await _until(c, (s) => s.themePreference == ThemePreference.system);
     expect(c.read(appSettingsProvider).themePreference, ThemePreference.system);
+  });
+
+  test('defaults the AI image prompt template to the canonical body', () {
+    final c = _container(db);
+    expect(
+      c.read(appSettingsProvider).aiImagePromptTemplate,
+      defaultAiImagePrompt,
+    );
+  });
+
+  test('setAiImagePromptTemplate round-trips a custom template', () async {
+    final c1 = _container(db);
+    await c1.read(settingsRepositoryProvider.future);
+    await c1
+        .read(appSettingsProvider.notifier)
+        .setAiImagePromptTemplate('a watercolour of {word}');
+    expect(
+      c1.read(appSettingsProvider).aiImagePromptTemplate,
+      'a watercolour of {word}',
+    );
+
+    final c2 = _container(db);
+    await c2.read(settingsRepositoryProvider.future);
+    await _until(
+      c2,
+      (s) => s.aiImagePromptTemplate == 'a watercolour of {word}',
+    );
+    expect(
+      c2.read(appSettingsProvider).aiImagePromptTemplate,
+      'a watercolour of {word}',
+    );
+  });
+
+  test('a cleared template snaps back to the default + persists it', () async {
+    final c1 = _container(db);
+    await c1.read(settingsRepositoryProvider.future);
+    await c1.read(appSettingsProvider.notifier).setAiImagePromptTemplate('   ');
+
+    // The in-memory state is the default, not an empty string.
+    expect(
+      c1.read(appSettingsProvider).aiImagePromptTemplate,
+      defaultAiImagePrompt,
+    );
+    // And the persisted value is the default, so a fresh container hydrates it.
+    final c2 = _container(db);
+    await c2.read(settingsRepositoryProvider.future);
+    await _until(c2, (s) => s.aiImagePromptTemplate == defaultAiImagePrompt);
+    expect(
+      c2.read(appSettingsProvider).aiImagePromptTemplate,
+      defaultAiImagePrompt,
+    );
   });
 }

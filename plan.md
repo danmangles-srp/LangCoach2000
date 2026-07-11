@@ -1191,10 +1191,11 @@ never the enqueue→drain→screen contract.
   back), prompt source = English.
 - **F4 (auto-advance dead).** On natural completion, `_onCompletion` does
   `context.replace('/recordings/$nextId')`; the new detail screen's
-  `loadAndPlay` for the next recording shows zero length and doesn't start
-  playback. Under investigation in T19.6 — likely the duration binding racing
-  the async `MediaItem.duration` resolve, or `loadAndPlay` not auto-starting on
-  a fresh navigate.
+  `loadAndPlay` for the next recording showed zero length and didn't start
+  playback. Root cause found in T19.4: the controller's `_lastTransport` held
+  the completed state from the prior track, so the seed emit for the next
+  recording reported `isCompleted=true` → the new screen's completion listener
+  cascaded through the list, thrashing the engine.
 
 ### The robust fix (one mechanism for F1 + F2)
 
@@ -1255,9 +1256,30 @@ worker + provider observe it).
   `/settings/ai-image-queue`. Covered by extending the T19.1 harness to mount
   `WordLogSection`; add an assertion if cheap. *ACs:* the link is tappable and
   routes correctly. *Deps:* T19.2.
+- **T19.6 — User-tunable image prompt (Settings).** The prompt body becomes a
+  user-editable template stored in the SQLCipher settings KV, with a
+  `{word}` placeholder substituted at drain time. **Sensible default** = the
+  current `buildPictographPrompt` body verbatim (pictographic, no-text guard) —
+  pre-filled in Settings so out-of-box behavior is unchanged and a careless
+  edit is recoverable. Empty/missing template falls back to the hardcoded
+  default. UI: Settings → AI Image → multi-line text field. *ACs:* editing the
+  template changes the next generated image's prompt; clearing it restores the
+  default. *Deps:* none.
+- **T19.7 — Recording save SAF permission denial.** Saving an in-app recording
+  fails with `SecurityException: Permission Denial: writing
+  com.android.externalstorage.ExternalStorageProvider ...
+  requires android.permission.MANAGE_DOCUMENTS` at
+  `MainActivity.copyToFolder(MainActivity.kt:462)`. The SAF write path goes
+  through a tree-URI grant that needs `takePersistableUriPermission` (or the
+  copy must write via the granted `DocumentFile` rather than a raw `File`).
+  Audit the Kotlin save path, fix the permission/copy, and add a
+  Robolectric/instrumentation guard if feasible. *ACs:* Save succeeds into the
+  Samsung Voice Recorder folder without a SecurityException. *Deps:* none
+  (native slice; Android-only).
 
 **Order.** T19.1 (red test, proves the bugs) → T19.2 (reactive fix, green) →
 T19.3 (English prompt) → T19.4 (auto-advance, independent) → T19.5 (link
-verify). Each its own PR-sized slice off `dev`, standard gate before push.
-T18.2 (workmanager background drain) remains deferred — the foreground path
-is the product path; background is a fast-follow.
+verify) → T19.6 (tunable prompt) → T19.7 (SAF save). Each its own PR-sized
+slice off `dev`, standard gate before push. T18.2 (workmanager background
+drain) remains deferred — the foreground path is the product path; background
+is a fast-follow.

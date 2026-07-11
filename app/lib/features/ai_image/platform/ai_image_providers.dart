@@ -19,6 +19,7 @@ import 'package:rivendell/features/ai_image/application/pollinations_image_servi
 import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart';
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/platform/pollinations_config.dart';
+import 'package:rivendell/features/settings/application/settings_providers.dart';
 
 /// Base dir for cached AI images. MUST resolve to the same directory the
 /// Kotlin side reads in `addMediaToAnki` (`File(filesDir, relativePath)`) and
@@ -53,6 +54,9 @@ final aiImageServiceProvider = FutureProvider<AiImageService>((ref) async {
     logger: ref.watch(appLoggerProvider),
     baseUrl: pollinationsBaseUrl,
     model: pollinationsModel,
+    // Read fresh per generate (T19.6): a Settings edit applies on the next
+    // drain without re-queueing existing pending items.
+    promptTemplate: () => ref.read(appSettingsProvider).aiImagePromptTemplate,
   );
 });
 

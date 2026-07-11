@@ -25,4 +25,27 @@ void main() {
       expect(p, contains('"oʻgʻil"'));
     });
   });
+
+  group('buildAiImagePrompt (T19.6)', () {
+    test('substitutes the trimmed word into a custom template', () {
+      final p = buildAiImagePrompt('  salom  ', 'photo of {word}');
+      expect(p, 'photo of salom');
+    });
+
+    test('a blank template falls back to the default body', () {
+      final p = buildAiImagePrompt('salom', '   ');
+      expect(p, contains('"salom"'));
+      expect(p, contains('no text'));
+    });
+
+    test('the default template still forbids rendered script', () {
+      expect(defaultAiImagePrompt, contains('{word}'));
+      expect(defaultAiImagePrompt, contains('no letters'));
+    });
+
+    test('a template without a placeholder is returned verbatim', () {
+      final p = buildAiImagePrompt('salom', 'a still-life painting');
+      expect(p, 'a still-life painting');
+    });
+  });
 }
