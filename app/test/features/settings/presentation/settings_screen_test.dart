@@ -97,4 +97,30 @@ void main() {
       defaultAiImagePrompt,
     );
   });
+
+  // Regression: an edit must reach the store as it's typed, without depending
+  // on focus loss — a process kill between edit and nav-away lost the change.
+  testWidgets('typing into the field persists without a focus change', (
+    tester,
+  ) async {
+    _tallSurface(tester);
+    final container = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWith((ref) async => db)],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(_host(container));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byType(TextField).last,
+      'ink drawing of {word}',
+    );
+    await tester.pump();
+
+    expect(
+      container.read(appSettingsProvider).aiImagePromptTemplate,
+      'ink drawing of {word}',
+    );
+  });
 }

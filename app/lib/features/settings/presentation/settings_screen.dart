@@ -73,9 +73,9 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 /// User-tunable AI image prompt template (T19.6). Pre-filled with the current
-/// persisted template (default on first run); persisted on focus loss so the
-/// next drain picks it up without re-queueing. Reset restores the canonical
-/// pictographic body.
+/// persisted template (default on first run). Persists on every change so the
+/// edit survives a process kill without depending on focus loss or dispose
+/// (both unreliable on Android). Reset restores the canonical pictographic body.
 class _AiImagePromptSection extends ConsumerStatefulWidget {
   const _AiImagePromptSection();
 
@@ -139,16 +139,15 @@ class _AiImagePromptSectionState extends ConsumerState<_AiImagePromptSection> {
             ),
           ),
           const SizedBox(height: 12),
-          Focus(
-            onFocusChange: (hasFocus) {
-              if (!hasFocus) _persist();
-            },
-            child: TextField(
-              controller: _controller,
-              minLines: 4,
-              maxLines: 8,
-              decoration: const InputDecoration(border: OutlineInputBorder()),
-            ),
+          TextField(
+            controller: _controller,
+            minLines: 4,
+            maxLines: 8,
+            // Persist per change: a focus-loss or dispose trigger is unreliable
+            // on Android (tapping inert space doesn't unfocus; a process kill
+            // may skip dispose). The notifier dedupes unchanged writes.
+            onChanged: (_) => _persist(),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
           ),
           Align(
             alignment: Alignment.centerRight,
