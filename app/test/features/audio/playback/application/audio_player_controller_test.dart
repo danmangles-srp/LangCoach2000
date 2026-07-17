@@ -14,6 +14,7 @@ import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/playback/application/audio_playback_service.dart';
 import 'package:rivendell/features/audio/playback/application/audio_player_controller.dart';
 import 'package:rivendell/features/audio/playback/domain/media_item_mapper.dart';
+import 'package:rivendell/features/audio/playback/domain/playback_snapshot.dart';
 import 'package:rivendell/features/audio/playback/platform/audio_playback_providers.dart';
 
 Recording _recording({int? durationMs}) => Recording(
@@ -277,5 +278,66 @@ void main() {
     final snapshot = sub.read();
     expect(snapshot.recordingId, 42);
     expect(snapshot.duration, const Duration(seconds: 100));
+  });
+
+  // T19.4: auto-advance cascade. When recording A finishes (completed) and the
+  // detail screen advances to B, loadAndPlay(B) must NOT surface the stale
+  // completed state from A in ANY emit before B's own engine events arrive.
+  // The new screen's completion listener fires on every emit and treats
+  // isCompleted=true + recordingId=B as "B finished" → it cascades to C, D, …,
+  // thrashing the engine so the landing recording never plays and shows zero
+  // length. The controller must clear the carried-over completed transport on a
+  // fresh load so the FIRST emit for B reads not-completed.
+  test('loadAndPlay after completion does not emit a stale completed state for '
+      'the new recording (T19.4)', () async {
+    final fake = _FakePlaybackService();
+    final container = _containerWith(fake);
+    addTearDown(container.dispose);
+
+    final emits = <PlaybackSnapshot>[];
+    container.listen(
+      audioPlayerControllerProvider,
+      (_, next) => emits.add(next),
+      fireImmediately: true,
+    );
+
+    // Recording A finishes naturally.
+    await container
+        .read(audioPlayerControllerProvider.notifier)
+        .loadAndPlay(_recording(durationMs: 100000));
+    await _flush(container);
+    fake._state.add(
+      _transport(phase: AudioProcessingState.completed, playing: false),
+    );
+    await _flush(container);
+
+    final recordingB = Recording(
+      id: 43,
+      filePath: 'content://folder/next.m4a',
+      name: 'next.m4a',
+      createdAt: DateTime(2026),
+      sizeBytes: 1024,
+      format: 'm4a',
+      durationMs: 80000,
+      indexedAt: DateTime(2026),
+    );
+
+    emits.clear();
+    await container
+        .read(audioPlayerControllerProvider.notifier)
+        .loadAndPlay(recordingB);
+    await _flush(container);
+
+    // Every emit observed while recordingId == 43 (B) must read not-completed
+    // until B's own engine says otherwise — no carried-over completed from A.
+    final emitsForB = emits.where((e) => e.recordingId == 43).toList();
+    expect(emitsForB, isNotEmpty);
+    for (final e in emitsForB) {
+      expect(
+        e.isCompleted,
+        isFalse,
+        reason: 'stale completed state from A leaked into B: $e',
+      );
+    }
   });
 }

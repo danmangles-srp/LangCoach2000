@@ -112,6 +112,14 @@ class AudioPlayerController extends Notifier<PlaybackSnapshot> {
     // Stream-originated emits (below) don't, so only this seed needs deferring.
     _recordingId = recording.id;
     _duration = Duration(milliseconds: recording.durationMs ?? 0);
+    // T19.4: drop the prior transport so a stale `completed` state from the
+    // previous recording doesn't leak into the first emit for this one. On
+    // auto-advance the detail screen cues B the instant A finishes; without
+    // this reset, the seed emit reports isCompleted=true for B, the new
+    // screen's completion listener treats it as "B finished" and cascades to
+    // C, D, … — thrashing the engine so the landing recording never plays.
+    // `_emit` synthesizes a cued-but-idle snapshot when transport is null.
+    _lastTransport = null;
     scheduleMicrotask(_emit);
     await service.loadRecording(recording);
     await service.play();
