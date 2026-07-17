@@ -171,7 +171,7 @@ class _PendingItemCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final strings = AppStrings.of(context);
     final theme = Theme.of(context);
-    final word = wordFromAiImagePayload(item.payload);
+    final word = pairFromAiImagePayload(item.payload).uzbek;
     final labelStyle = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );

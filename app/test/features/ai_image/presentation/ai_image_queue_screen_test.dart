@@ -45,7 +45,7 @@ void main() {
     final cache = AiImageCacheRepository(db);
     final id = await queue.enqueue(
       type: aiImageQueueType,
-      payload: aiImagePayload('salom'),
+      payload: aiImagePayload(uzbek: 'salom', english: 'hello'),
     );
     await queue.markFailed(id, error: 'boom');
     await cache.remember(uzbekWord: 'rahmat', relativePath: 'ai_images/x.png');

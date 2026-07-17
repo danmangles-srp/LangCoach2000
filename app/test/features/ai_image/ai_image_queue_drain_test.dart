@@ -38,7 +38,8 @@ void main() {
           network: network,
           logger: AppLogger(sink: RecordingSink()),
         )..registerHandler(aiImageQueueType, (payload) async {
-          await ai.generateNow(wordFromAiImagePayload(payload));
+          final pair = pairFromAiImagePayload(payload);
+          await ai.generateNow(uzbek: pair.uzbek, english: pair.english);
         });
   });
 
@@ -52,7 +53,7 @@ void main() {
     // Enqueue while offline.
     await queue.enqueue(
       type: aiImageQueueType,
-      payload: aiImagePayload('salom'),
+      payload: aiImagePayload(uzbek: 'salom', english: 'hello'),
     );
     expect(await queue.pendingCount(), 1);
     expect(await ai.cachedPath('salom'), isNull);
@@ -64,7 +65,8 @@ void main() {
     // The drain is fire-and-forget; pump the microtask queue so it completes.
     await Future<void>.delayed(Duration.zero);
 
-    expect(ai.generated, ['salom']);
+    expect(ai.generated.single.uzbek, 'salom');
+    expect(ai.generated.single.english, 'hello');
     expect(await ai.cachedPath('salom'), isNotNull);
     // The item was marked done once the handler succeeded.
     expect(await queue.pendingCount(), 0);
@@ -73,11 +75,11 @@ void main() {
   test('a duplicate item for an already-cached word is a no-op', () async {
     await queue.enqueue(
       type: aiImageQueueType,
-      payload: aiImagePayload('salom'),
+      payload: aiImagePayload(uzbek: 'salom', english: 'hello'),
     );
     await queue.enqueue(
       type: aiImageQueueType,
-      payload: aiImagePayload('salom'),
+      payload: aiImagePayload(uzbek: 'salom', english: 'hello'),
     );
 
     worker.start();
@@ -85,7 +87,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     // Only one generation call across two items.
-    expect(ai.generated, ['salom']);
+    expect(ai.generated.single.uzbek, 'salom');
     expect(await queue.pendingCount(), 0);
   });
 
@@ -95,12 +97,13 @@ void main() {
       // A flaky fake: fails the first call, succeeds after.
       final flaky = _FlakyAi(failFirstNFails: 1);
       worker.registerHandler(aiImageQueueType, (payload) async {
-        await flaky.generateNow(wordFromAiImagePayload(payload));
+        final pair = pairFromAiImagePayload(payload);
+        await flaky.generateNow(uzbek: pair.uzbek, english: pair.english);
       });
 
       await queue.enqueue(
         type: aiImageQueueType,
-        payload: aiImagePayload('xayr'),
+        payload: aiImagePayload(uzbek: 'xayr', english: 'bye'),
       );
 
       worker.start();
@@ -130,15 +133,20 @@ class _FlakyAi implements AiImageService {
   Future<String?> cachedPath(String uzbekWord) => _inner.cachedPath(uzbekWord);
 
   @override
-  Future<void> enqueueGeneration(String uzbekWord) =>
-      _inner.enqueueGeneration(uzbekWord);
+  Future<void> enqueueGeneration({
+    required String uzbek,
+    required String english,
+  }) => _inner.enqueueGeneration(uzbek: uzbek, english: english);
 
   @override
-  Future<void> generateNow(String uzbekWord) async {
+  Future<void> generateNow({
+    required String uzbek,
+    required String english,
+  }) async {
     if (failFirstNFails > 0) {
       failFirstNFails--;
       throw Exception('transient failure');
     }
-    await _inner.generateNow(uzbekWord);
+    await _inner.generateNow(uzbek: uzbek, english: english);
   }
 }

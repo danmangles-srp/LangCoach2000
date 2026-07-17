@@ -118,7 +118,10 @@ class AnkiExportService {
     for (final pair in pairs) {
       final cached = await aiImageService.cachedPath(pair.uzbek);
       if (cached == null) {
-        await aiImageService.enqueueGeneration(pair.uzbek);
+        await aiImageService.enqueueGeneration(
+          uzbek: pair.uzbek,
+          english: pair.english,
+        );
         logger.i(
           LogTag.anki,
           'type2 "${pair.uzbek}": image not cached → enqueued, deferred',
@@ -180,11 +183,21 @@ class AnkiExportService {
   /// cached image when the user tapped Export (deferred as pending) but its
   /// image has since finished generating: the queue handler calls this once
   /// the image lands so the card attaches without a manual re-export.
-  /// Idempotent via the first-field guard. Type 2 only consumes the Uzbek
-  /// word + image, so the English half is unused.
-  Future<AnkiExportResult> exportType2Word(String uzbekWord) => exportType2(
-    pairs: [VocabPair(english: '', uzbek: uzbekWord)],
-  );
+  /// Idempotent via the first-field guard.
+  ///
+  /// Only the Uzbek word is known at this boundary (the post-generation hook
+  /// fires with the cache key). T19.3 split the prompt onto the English gloss,
+  /// so an UNCACHED word here cannot be re-enqueued (no english to prompt from)
+  /// — but the hook only fires after a successful generation, so uncached is a
+  /// no-op race rather than a re-queue. Returns an empty result in that case.
+  Future<AnkiExportResult> exportType2Word(String uzbekWord) async {
+    if (await aiImageService.cachedPath(uzbekWord) == null) {
+      return const AnkiExportResult(added: 0, skipped: 0, failed: 0);
+    }
+    return exportType2(
+      pairs: [VocabPair(english: '', uzbek: uzbekWord)],
+    );
+  }
 
   /// Filename stem of an app-relative image path (`a/b.png` → `b`).
   static String _stem(String relativePath) {

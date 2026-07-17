@@ -1,10 +1,10 @@
 // Pollinations implementation of [AiImageService] (FR-1.3.4, NFR-2.1.3).
 //
-// Style is locked to "language-neutral pictographic" — see
-// [buildPictographPrompt]. Pollinations generates directly from a prompt
-// encoded in the GET path, so a single GET returns the image bytes — no auth,
-// no JSON, no separate download hop. A deterministic per-word seed (fold of the
-// code units) keeps a regenerated word reproducible.
+// Style is locked to "language-neutral pictographic" — the no-text/no-letters
+// guard in [defaultAiImagePrompt] is load-bearing. Pollinations generates
+// directly from a prompt encoded in the GET path, so a single GET returns the
+// image bytes — no auth, no JSON, no separate download hop. A deterministic
+// per-word seed (fold of the code units) keeps a regenerated word reproducible.
 //
 // The HTTP client + endpoint are constructor-injected so the request/response
 // contract is unit-testable with a fake client — no network in tests.
@@ -88,36 +88,52 @@ class PollinationsImageService implements AiImageService {
   }
 
   @override
-  Future<void> enqueueGeneration(String uzbekWord) async {
+  Future<void> enqueueGeneration({
+    required String uzbek,
+    required String english,
+  }) async {
     // Already generated — nothing to do for this word.
-    if (await cachedPath(uzbekWord) != null) return;
+    if (await cachedPath(uzbek) != null) return;
     await queue.enqueue(
       type: aiImageQueueType,
-      payload: aiImagePayload(uzbekWord),
+      payload: aiImagePayload(uzbek: uzbek, english: english),
     );
-    logger.i(LogTag.ai, 'enqueued image for "$uzbekWord"');
+    logger.i(LogTag.ai, 'enqueued image for "$uzbek" (prompt "$english")');
   }
 
   @override
-  Future<void> generateNow(String uzbekWord) async {
-    final word = uzbekWord.trim();
-    if (await cachedPath(word) != null) return;
+  Future<void> generateNow({
+    required String uzbek,
+    required String english,
+  }) async {
+    // Cache + on-disk path are keyed by UZBEK — the Anki card first field +
+    // the regeneration seed all hang off it. The prompt runs on ENGLISH.
+    final key = uzbek.trim();
+    if (await cachedPath(key) != null) return;
 
     // Pace before the GET so a tight drain loop over N queued words can't
     // burst past the keyless tier's rate limit. Cached no-ops skip the gate.
     await gate();
-    final bytes = await _downloadWithRetry(_buildUrl(word));
-    final relativePath = buildAiImagePath(word);
+    final bytes = await _downloadWithRetry(
+      _buildUrl(uzbek: key, english: english),
+    );
+    final relativePath = buildAiImagePath(key);
     await _writeBytes(relativePath, bytes);
-    await cache.remember(uzbekWord: word, relativePath: relativePath);
-    logger.i(LogTag.ai, 'generated image for "$word" -> $relativePath');
+    await cache.remember(uzbekWord: key, relativePath: relativePath);
+    logger.i(
+      LogTag.ai,
+      'generated image for "$key" (prompt "$english") -> $relativePath',
+    );
   }
 
-  String _buildUrl(String word) {
+  String _buildUrl({required String uzbek, required String english}) {
+    // Prompt runs on the ENGLISH gloss (T19.3); the user-tunable template
+    // wraps it (T19.6). Seed stays keyed by UZBEK so the card's image is
+    // reproducible across regenerations of the same word.
     final prompt = Uri.encodeComponent(
-      buildAiImagePrompt(word, promptTemplate()),
+      buildAiImagePrompt(english, promptTemplate()),
     );
-    final seed = _stableSeed(word);
+    final seed = _stableSeed(uzbek);
     return '$baseUrl/prompt/$prompt'
         '?width=512&height=512&nologo=true&model=$model&seed=$seed';
   }
