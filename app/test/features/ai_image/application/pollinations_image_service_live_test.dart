@@ -101,9 +101,73 @@ void main() {
         isTrue,
         reason: 'first bytes: ${bytes.take(8).toList()}',
       );
-      expect(await service.cachedPath('cat'), buildAiImagePath('cat'));
+      expect(await service.cachedPath('mushuk'), buildAiImagePath('mushuk'));
     },
     skip: _live ? false : _skipReason,
     timeout: const Timeout(Duration(seconds: 90)),
+  );
+
+  // The regression that motivated the rate gate (M19): a multi-word drain
+  // fired N back-to-back GETs and the keyless tier 429'd every rapid successor,
+  // so only the first image rendered. This hits the real endpoint with the
+  // PRODUCTION gate (1.2s gap) + 3-attempt retry and asserts every word lands a
+  // real image with no thrown 429. If the gate regresses, this fails loudly.
+  test(
+    'generateNow across many back-to-back words all succeed (rate-gate + retry)',
+    () async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      final cache = AiImageCacheRepository(db);
+      final queue = QueueRepository(db);
+      final docsDir = await Directory.systemTemp.createTemp(
+        'pollinations_live_multi',
+      );
+      addTearDown(() async {
+        await db.close();
+        if (docsDir.existsSync()) await docsDir.delete(recursive: true);
+      });
+
+      final service = PollinationsImageService(
+        cache: cache,
+        queue: queue,
+        docsDir: docsDir,
+        client: http.Client(),
+        logger: AppLogger(sink: RecordingSink()),
+        baseUrl: pollinationsBaseUrl,
+        model: pollinationsModel,
+        gate: pollinationsRateGate(),
+      );
+
+      const pairs = <({String uzbek, String english})>[
+        (uzbek: 'mushuk', english: 'cat'),
+        (uzbek: 'qurbaqa', english: 'frog'),
+        (uzbek: 'baliq', english: 'fish'),
+      ];
+
+      for (final p in pairs) {
+        await service.generateNow(
+          uzbek: p.uzbek,
+          english: p.english,
+        ).timeout(const Duration(seconds: 120));
+      }
+
+      // Every word produced a real image file at its uzbek-keyed path.
+      for (final p in pairs) {
+        final file = File('${docsDir.path}/${buildAiImagePath(p.uzbek)}');
+        expect(file.existsSync(), isTrue, reason: 'missing image for ${p.uzbek}');
+        final bytes = await file.readAsBytes();
+        expect(bytes.length, greaterThan(1024));
+        expect(
+          _looksLikeImage(bytes),
+          isTrue,
+          reason: '${p.uzbek} first bytes: ${bytes.take(8).toList()}',
+        );
+        expect(
+          await service.cachedPath(p.uzbek),
+          buildAiImagePath(p.uzbek),
+        );
+      }
+    },
+    skip: _live ? false : _skipReason,
+    timeout: const Timeout(Duration(minutes: 7)),
   );
 }
