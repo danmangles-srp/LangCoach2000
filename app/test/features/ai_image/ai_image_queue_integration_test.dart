@@ -84,6 +84,7 @@ void main() {
             logger: AppLogger(sink: RecordingSink()),
             baseUrl: 'https://image.pollinations.ai',
             model: 'flux',
+            gate: () async {},
           );
         }),
       ],

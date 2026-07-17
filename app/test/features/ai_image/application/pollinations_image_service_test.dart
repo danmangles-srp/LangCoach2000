@@ -56,6 +56,7 @@ void main() {
   PollinationsImageService buildService({
     required http.Client client,
     String Function()? promptTemplate,
+    AiImageRequestGate gate,
   }) {
     return PollinationsImageService(
       cache: cache,
@@ -66,6 +67,7 @@ void main() {
       baseUrl: 'https://image.pollinations.ai',
       model: 'flux',
       promptTemplate: promptTemplate,
+      gate: gate ?? (() async {}),
     );
   }
 
@@ -176,7 +178,7 @@ void main() {
       expect(await service.cachedPath('salom'), isNull);
     });
 
-    test('retries once on a transient 429, then succeeds (T18.5)', () async {
+    test('retries on a transient 429, then succeeds (T18.5)', () async {
       final getCalls = <http.Request>[];
       var n = 0;
       final client = MockClient((request) async {
@@ -194,7 +196,7 @@ void main() {
       expect(await service.cachedPath('salom'), isNotNull);
     });
 
-    test('retries once on a socket exception, then succeeds (T18.5)', () async {
+    test('retries on a socket exception, then succeeds (T18.5)', () async {
       final getCalls = <http.Request>[];
       var n = 0;
       final client = MockClient((request) async {
@@ -213,7 +215,7 @@ void main() {
       expect(await service.cachedPath('salom'), isNotNull);
     });
 
-    test('gives up after retrying a persistent 429', () async {
+    test('gives up after exhausting retries on a persistent 429', () async {
       final getCalls = <http.Request>[];
       final client = MockClient((request) async {
         getCalls.add(request);
@@ -222,9 +224,31 @@ void main() {
       final service = buildService(client: client);
 
       await expectLater(service.generateNow('salom'), throwsException);
-      // Two attempts (initial + one retry), then rethrows.
-      expect(getCalls, hasLength(2));
+      // Three attempts (initial + two backoff retries), then rethrows.
+      expect(getCalls, hasLength(3));
       expect(await service.cachedPath('salom'), isNull);
+    });
+
+    test('paces back-to-back GETs through the gate (T19.x rate-limit)', () async {
+      // Two distinct uncached words; the gate must enforce a gap so the second
+      // GET doesn't land on the keyless tier while the first is still cooling.
+      // Real clock with a tiny gap keeps the test fast yet deterministic on the
+      // ordering invariant (second call follows the first by >= gap).
+      final gate = pollinationsRateGate(gap: const Duration(milliseconds: 60));
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+        gate: gate,
+      );
+
+      final start = DateTime.now();
+      await service.generateNow('salom');
+      await service.generateNow('rahmat');
+      final elapsed = DateTime.now().difference(start);
+
+      expect(getCalls, hasLength(2));
+      // Gap between the two paced calls is observable end-to-end.
+      expect(elapsed.inMilliseconds, greaterThanOrEqualTo(50));
     });
   });
 

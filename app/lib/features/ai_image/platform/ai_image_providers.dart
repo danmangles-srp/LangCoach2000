@@ -57,6 +57,9 @@ final aiImageServiceProvider = FutureProvider<AiImageService>((ref) async {
     // Read fresh per generate (T19.6): a Settings edit applies on the next
     // drain without re-queueing existing pending items.
     promptTemplate: () => ref.read(appSettingsProvider).aiImagePromptTemplate,
+    // Pace successive GETs so a multi-word drain can't burst past the keyless
+    // tier's rate limit (only the first word would render otherwise).
+    gate: pollinationsRateGate(),
   );
 });
 

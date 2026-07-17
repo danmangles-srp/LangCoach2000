@@ -22,6 +22,29 @@ import 'package:rivendell/features/ai_image/domain/ai_image_path.dart';
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/domain/ai_image_prompt.dart';
 
+/// Paces Pollinations GETs so a tight drain loop over N queued words doesn't
+/// trip the keyless tier's rate limiter. Without it, the first GET succeeds and
+/// every rapid successor 429s — so only the first image in a multi-word batch
+/// ever generated. Injected into [PollinationsImageService.gate]; pass a no-op
+/// in tests.
+typedef AiImageRequestGate = Future<void> Function();
+
+/// A gate enforcing a minimum gap between successive calls. The keyless tier
+/// recovers from a single request but rejects a burst; ~1.2s clears the common
+/// 429 storm during a foreground drain of a multi-pair word log.
+AiImageRequestGate pollinationsRateGate({
+  Duration gap = const Duration(milliseconds: 1200),
+}) {
+  DateTime last = DateTime.fromMillisecondsSinceEpoch(0);
+  return () async {
+    final wait = gap - DateTime.now().difference(last);
+    if (!wait.isNegative) {
+      await Future<void>.delayed(wait);
+    }
+    last = DateTime.now();
+  };
+}
+
 class PollinationsImageService implements AiImageService {
   PollinationsImageService({
     required this.cache,
@@ -31,6 +54,7 @@ class PollinationsImageService implements AiImageService {
     required this.logger,
     required this.baseUrl,
     required this.model,
+    required this.gate,
     String Function()? promptTemplate,
   }) : promptTemplate = promptTemplate ?? (() => defaultAiImagePrompt);
 
@@ -45,6 +69,11 @@ class PollinationsImageService implements AiImageService {
   /// Reads the current prompt template (T19.6). Read fresh per generate so a
   /// Settings change takes effect on the next drain without re-queueing.
   final String Function() promptTemplate;
+
+  /// Invoked before each network GET to enforce the rate-limit gap. The drain
+  /// loop dispatches one [generateNow] per queued word back-to-back; without a
+  /// gate, the burst 429s and only the first word renders.
+  final AiImageRequestGate gate;
 
   @override
   Future<String?> cachedPath(String uzbekWord) async {
@@ -74,6 +103,9 @@ class PollinationsImageService implements AiImageService {
     final word = uzbekWord.trim();
     if (await cachedPath(word) != null) return;
 
+    // Pace before the GET so a tight drain loop over N queued words can't
+    // burst past the keyless tier's rate limit. Cached no-ops skip the gate.
+    await gate();
     final bytes = await _downloadWithRetry(_buildUrl(word));
     final relativePath = buildAiImagePath(word);
     await _writeBytes(relativePath, bytes);
@@ -96,21 +128,27 @@ class PollinationsImageService implements AiImageService {
   int _stableSeed(String word) =>
       word.codeUnits.fold<int>(0, (acc, c) => (acc * 31 + c) & 0x7fffffff);
 
-  /// Download with a single immediate retry on a transient failure (T18.5).
-  /// The keyless Pollinations tier regularly returns 429/5xx at network
-  /// handovers and throws socket/timeout on a half-open radio; retrying once
-  /// in-handler clears the common blip without surfacing a failure (and the
-  /// queue-level backoff still covers repeated failures).
+  /// Download with bounded retries on a transient failure (T18.5). The keyless
+  /// Pollinations tier regularly returns 429/5xx at network handovers and
+  /// throws socket/timeout on a half-open radio. A single 500ms retry wasn't
+  /// enough for the free tier's cool-down during a multi-word drain: the second
+  /// attempt 429'd too and the whole batch (minus the first word) dead-lettered.
+  /// Three attempts with growing backoff (800ms, 1.6s) lets the tier recover
+  /// before the queue-level backoff takes over for repeated failures.
   Future<List<int>> _downloadWithRetry(String url) async {
-    for (var attempt = 0; attempt < 2; attempt++) {
+    const backoff = [
+      Duration(milliseconds: 800),
+      Duration(milliseconds: 1600),
+    ];
+    for (var attempt = 0; attempt <= backoff.length; attempt++) {
       try {
         return await _download(url);
       } on Object catch (e) {
-        if (attempt == 1 || !_isTransient(e)) rethrow;
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        if (attempt == backoff.length || !_isTransient(e)) rethrow;
+        await Future<void>.delayed(backoff[attempt]);
       }
     }
-    // Unreachable: the loop either returns or rethrows on attempt 1.
+    // Unreachable: the loop either returns or rethrows on the final attempt.
     throw StateError('download retry loop exhausted without a result');
   }
 

@@ -85,6 +85,7 @@ void main() {
         logger: AppLogger(sink: RecordingSink()),
         baseUrl: pollinationsBaseUrl,
         model: pollinationsModel,
+        gate: () async {},
       );
 
       await service.generateNow('cat').timeout(const Duration(seconds: 60));
