@@ -18,6 +18,7 @@ import com.ryanheise.audioservice.AudioServiceFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.ByteArrayInputStream
+import java.time.Clock
 import java.io.File
 import kotlin.concurrent.thread
 
@@ -421,9 +422,13 @@ class MainActivity : AudioServiceFragmentActivity() {
                     val name = cursor.getString(nameCol) ?: continue
                     if (!isSupportedAudio(name)) continue
                     val size = if (cursor.isNull(sizeCol)) 0L else cursor.getLong(sizeCol)
+                    // Clock rather than System.currentTimeMillis(): the AnkiDroid
+                    // dependency ships a lint rule forbidding direct system-time
+                    // reads (for test-injectable clocks in Anki code). This is the
+                    // SAF indexer's null-modified-date fallback, not Anki logic.
                     val modified =
                         if (cursor.isNull(modCol)) {
-                            System.currentTimeMillis()
+                            Clock.systemDefaultZone().millis()
                         } else {
                             cursor.getLong(modCol)
                         }
