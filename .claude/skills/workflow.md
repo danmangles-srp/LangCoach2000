@@ -21,16 +21,26 @@ the product. Working code that solved the wrong problem is a failure, not a near
 3. **Test (red).** Write a failing test mapped to an AC. See `testing.md`.
 4. **Code (green).** Implement the minimum to pass; run codegen if you touched annotated classes.
 5. **Refactor.** Clean up to meet `structure.md`.
-6. **Self-review (the feedback loops).** Before you call it done, review your own work with fresh eyes:
-   - **Code review** — run `/code-review` (or spawn a skeptical reviewer subagent) over the diff for
-     correctness, reuse, and simplification. Fix what it finds.
+6. **Self-review (the feedback loops — BLOCKING).** Before you call it done, review your own work with
+   fresh eyes. These are not optional and they run *before* the PR opens, every time, no exceptions:
+   - **Code review** — run `/code-review` over the diff for correctness, reuse, and simplification.
+     Address every CONFIRMED/PLAUSIBLE finding (fix, or explicitly justify keeping). Paste the finding
+     count into the PR. **If you did not run a review, the PR does not open.** "The gate is green" is not
+     a review — the gate proves the code runs, not that it is right.
    - **Design review** — for any UI change, run `/design-review`: render the screens, score them against
      the `ui-ux.md` rubric, and fix anything under 4/5. Don't ship a screen you haven't *looked* at.
 7. **Verify.** Run the full gate (below). Green Tier 1–2 ≠ shippable — be honest about the manual-
    acceptance gap (`testing.md`).
-8. **Check in.** Summarize what changed, what you decided, and what still needs human/device acceptance.
+8. **Write the "How to verify" section.** Before committing, write the exact steps a human follows to
+   confirm this works on a device — not "run the tests" (the gate did that), but the *product* behaviour:
+   the screen to open, the action to take, the expected result. Anything the gate can't prove (device,
+   audio, permissions, network, perf) goes here as an explicit unchecked item. The PR is incomplete
+   without it; do not merge a PR whose body has no human-verifiable steps.
+9. **Check in.** Summarize what changed, what you decided, and what still needs human/device acceptance.
    Surface any assumption you made so the user can correct it.
-9. **Commit & PR.** Follow the standards below.
+10. **Commit & PR.** Follow the standards below.
+11. Merge and update `plan.md`. Mark completed milestones and tickets as COMPLETE e.g. ## MS1 --> ## COMPLETE MS1. 
+e.g. `- T9.1` -> `- COMPLETE (#34) T9.1`
 
 ## Validation gate (before every commit)
 
@@ -82,7 +92,7 @@ spend the user's attention on decisions that actually fork the product.
 
 ## Self-review feedback loops (review your own work before the human does)
 
-Treat your first draft as a draft. Two loops, run before every PR:
+Treat your first draft as a draft. Two LIGHTWEIGHT loops, run before every PR:
 
 - **Code loop** — `/code-review` (or a `subagent` told to be adversarial: "find bugs, reuse, and
   simplifications in this diff; assume it's wrong"). Apply the valid findings; re-run until clean.
@@ -139,8 +149,9 @@ Once the work is complete, reviewed (both loops), and the gate is green, create 
 - [ ] No debug code or stray `print()` / `debugPrint`
 - [ ] Generated files (`*.g.dart` / `*.freezed.dart`) regenerated and committed
 - [ ] All commits follow conventional format
-- [ ] **Code self-review** done (`/code-review`) and findings addressed
+- [ ] **Code self-review** run (`/code-review`) and findings addressed — finding count recorded
 - [ ] **Design self-review** done (`/design-review`) for UI changes; scorecard ≥ 4/5
+- [ ] **"How to verify"** section written with concrete device steps + not-covered list
 - [ ] Full `sh scripts/gate.sh` passes
 - [ ] No secrets added; client keys come from `--dart-define`
 
@@ -154,18 +165,41 @@ What this PR accomplishes and which requirements story it serves.
 - [Rationale for non-obvious decisions]
 - [Assumptions made / questions still open]
 
-## Testing
-- Test cases added/verified (Tier 1 unit / Tier 2 widget / golden)
-- Manual-acceptance items NOT covered by the gate (device/IAP/camera/deep-link/perf), if any
-- How to check that this actually works (human reviewable steps)
+## How to verify (human steps)
+Concrete, numbered steps a reviewer follows on a device to confirm the *product*
+behaviour — not "tests pass" (the gate proved that). Lead with the golden path,
+then edge cases. No "run the gate.sh" "run tests" but actual steps on the app. Example:
+1. Launch the app on a Pixel API 34 emulator.
+2. Grant the mic permission when prompted.
+3. Tap Record, speak ~5s, tap Stop.
+4. Expected: the new recording appears at the top of the list within 1s.
 
-## Design review
-- Scorecard result for changed screens (link/paste); anything below 4 and why
+### Not covered by the gate (needs device/human)
+- [ ] e.g. real Samsung Voice Recorder folder indexing at 1000 files (perf NFR-2.2.1)
+- [ ] e.g. background playback survives screen-lock (FR-1.1.4)
+
+## Review
+- `/code-review`: <N findings, all addressed / none> — paste the summary.
+- `/design-review`: <scorecard per changed screen, or "no UI changes">.
+
+## Testing
+- Tier 1/2 tests added (name the cases that pin the behaviour).
 
 ## Acceptance Criteria Met
 - [ ] Acceptance criterion 1 (from the `plan.md` story / `requirements.md` FR/NFR)
 - [ ] Acceptance criterion 2
 ```
+
+### Never merge without (hard gate — even when merging autonomously)
+1. `/code-review` (or an adversarial review subagent) actually **run** on the diff, findings addressed.
+2. A filled **"How to verify"** section with concrete device steps + an explicit "not covered by the gate"
+   list.
+3. Full `sh scripts/gate.sh` PASS (analyze clean, tests green, coverage ≥ floor).
+4. `/design-review` for any UI change, ≥ 4/5 on every changed screen.
+5. No secrets; generated files committed; conventional-commit messages.
+
+If merging as you go (autonomous mode), these still all happen — the tight feedback loop is the point.
+A green gate + a merged PR with no review and no verify-steps is a process failure, not a shortcut.
 
 ### Scope Discipline
 - No unrelated refactors or "future improvements" in a PR.

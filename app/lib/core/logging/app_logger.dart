@@ -12,7 +12,19 @@
 import 'package:flutter/foundation.dart';
 
 /// A log tag — one per subsystem. Extend this enum as features land.
-enum LogTag { db, audio, record, anki, ai, mail, task, notify, chart, core }
+enum LogTag {
+  db,
+  audio,
+  record,
+  anki,
+  ai,
+  mail,
+  task,
+  notify,
+  chart,
+  wordlog,
+  core,
+}
 
 /// Severity (the levels a developer cares about at this stage).
 ///

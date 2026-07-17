@@ -46,12 +46,13 @@
 * **FR-1.3.1:** Users must be able to link a text vocab log and/or one or more image logs (JPG/PNG of
   notebook pages) directly to an audio recording record. Schema: one text log and/or multiple images per
   recording.
-* **FR-1.3.2:** A text-parsing engine must automatically extract English-definition ↔ Uzbek-word pairs
-  from text logs via delimiter maps (e.g. lines containing `:` or `-`) to feed card generation.
+* **FR-1.3.2:** A text-parsing engine must automatically extract Uzbek-word ↔ English-definition pairs
+  from text logs via delimiter maps (e.g. lines containing `:` or `-`, entry scheme `uzbek: english`)
+  to feed card generation.
 * **FR-1.3.3:** The app must push flashcards to **AnkiDroid via its Android intent API** (creating the
   deck, note type, and notes), tagging each note with the source recording's filename.
 * **FR-1.3.4:** An imaging pipeline must assign a concept graphic to newly generated vocab items by
-  calling **Fal.ai** when the device is online. Generation is queued + drained on reconnect, cached per
+  calling **Pollinations** (`image.pollinations.ai`, keyless free tier) when the device is online. Generation is queued + drained on reconnect, cached per
   word (never regenerated for the same Uzbek word), and skipped entirely when offline.
 
 ### 1.4 Task Tracking & Coaching Utilities
@@ -105,5 +106,7 @@
   words — is data, not UI strings.)
 
 ### 2.6 Security & Keys
-* **NFR-2.6.1:** No secrets in the client repo. The Fal.ai API key and SMTP credentials are injected via
-  `--dart-define` at build time. The only network egress is the two gated services in §1.3.4 / §1.5.3.
+* **NFR-2.6.1:** No secrets in the client repo. SMTP credentials are a **runtime setting** stored in the
+  SQLCipher-encrypted local KV store (entered via Settings); never via `--dart-define`, never in the repo.
+  AI image generation runs on the keyless Pollinations free tier and needs no credential. The only network
+  egress is the two gated services in §1.3.4 / §1.5.3.
