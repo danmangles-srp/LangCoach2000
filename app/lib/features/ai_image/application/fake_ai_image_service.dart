@@ -5,38 +5,49 @@
 
 import 'package:rivendell/features/ai_image/application/ai_image_service.dart';
 
+/// A recorded (uzbek, english) pair — the fake remembers the english it was
+/// asked to prompt so tests can assert "the prompt used English, not Uzbek"
+/// (T19.3).
+typedef RecordedAiWord = ({String uzbek, String english});
+
 class FakeAiImageService implements AiImageService {
   FakeAiImageService({this.generateDelay = Duration.zero});
 
   final Duration generateDelay;
 
-  /// Words whose `generateNow` has been called, in call order.
-  final List<String> generated = <String>[];
+  /// Pairs whose `generateNow` has been called, in call order.
+  final List<RecordedAiWord> generated = <RecordedAiWord>[];
 
-  /// Words whose `enqueueGeneration` has been called, in call order.
-  final List<String> enqueued = <String>[];
+  /// Pairs whose `enqueueGeneration` has been called, in call order.
+  final List<RecordedAiWord> enqueued = <RecordedAiWord>[];
 
-  /// The in-memory cache: word → synthetic relative path.
+  /// The in-memory cache: uzbek → synthetic relative path.
   final Map<String, String> _cache = {};
 
   @override
   Future<String?> cachedPath(String uzbekWord) async => _cache[uzbekWord];
 
   @override
-  Future<void> enqueueGeneration(String uzbekWord) async {
-    enqueued.add(uzbekWord);
+  Future<void> enqueueGeneration({
+    required String uzbek,
+    required String english,
+  }) async {
+    enqueued.add((uzbek: uzbek, english: english));
   }
 
   @override
-  Future<void> generateNow(String uzbekWord) async {
+  Future<void> generateNow({
+    required String uzbek,
+    required String english,
+  }) async {
     // Honor the same per-word idempotency contract as
     // PollinationsImageService: once generated, a second drain of the same
-    // word is a no-op.
-    if (_cache.containsKey(uzbekWord)) return;
+    // uzbek is a no-op.
+    if (_cache.containsKey(uzbek)) return;
     if (generateDelay > Duration.zero) {
       await Future<void>.delayed(generateDelay);
     }
-    generated.add(uzbekWord);
-    _cache[uzbekWord] = 'ai_images/fake_$uzbekWord.png';
+    generated.add((uzbek: uzbek, english: english));
+    _cache[uzbek] = 'ai_images/fake_$uzbek.png';
   }
 }

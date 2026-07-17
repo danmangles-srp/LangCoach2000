@@ -161,16 +161,20 @@ void main() {
         expect(result.added, 0);
         expect(result.skipped, 0);
         expect(result.failed, 0);
-        // No card yet, and generation was requested.
+        // No card yet, and generation was requested with BOTH fields.
         expect(gateway.notes, isEmpty);
-        expect(aiImages.enqueued, ['salom']);
+        expect(aiImages.enqueued.single.uzbek, 'salom');
+        expect(aiImages.enqueued.single.english, 'hello');
       },
     );
 
     test(
       'cached image imported; note carries the <img> field + type2 tag',
       () async {
-        await aiImages.generateNow('salom'); // seeds ai_images/fake_salom.png
+        await aiImages.generateNow(
+          uzbek: 'salom',
+          english: 'hello',
+        ); // seeds ai_images/fake_salom.png
         gateway.mediaResults['ai_images/fake_salom.png'] =
             '<img src="rivendell_fake_salom.png" />';
 
@@ -189,7 +193,7 @@ void main() {
     );
 
     test('is idempotent: re-exporting a cached word skips the card', () async {
-      await aiImages.generateNow('salom');
+      await aiImages.generateNow(uzbek: 'salom', english: 'hello');
       gateway.mediaResults['ai_images/fake_salom.png'] = '<img src="x.png" />';
 
       await service.exportType2(pairs: pairs([('hello', 'salom')]));
@@ -205,7 +209,10 @@ void main() {
     test(
       'a null media import is a retryable failure, not a skip or a card',
       () async {
-        await aiImages.generateNow('salom'); // cached path present
+        await aiImages.generateNow(
+          uzbek: 'salom',
+          english: 'hello',
+        ); // cached path present
         // No mediaResults entry → gateway.addMedia returns null.
 
         final result = await service.exportType2(
@@ -220,7 +227,7 @@ void main() {
     );
 
     test('mixed run: cached added, uncached pending, dupe skipped', () async {
-      await aiImages.generateNow('salom'); // cached
+      await aiImages.generateNow(uzbek: 'salom', english: 'hello'); // cached
       gateway.mediaResults['ai_images/fake_salom.png'] = '<img src="a.png" />';
 
       // First pass: salom added.
@@ -238,11 +245,14 @@ void main() {
       expect(result.skipped, 1);
       expect(result.pending, 1);
       expect(result.added, 0);
-      expect(aiImages.enqueued, contains('rahmat'));
+      expect(aiImages.enqueued.any((e) => e.uzbek == 'rahmat'), isTrue);
     });
 
     test('logs a warning when addMedia returns null', () async {
-      await aiImages.generateNow('salom'); // cached, no mediaResults → null
+      await aiImages.generateNow(
+        uzbek: 'salom',
+        english: 'hello',
+      ); // cached, no mediaResults → null
       await service.exportType2(pairs: pairs([('hello', 'salom')]));
 
       final warns = sink.lines
@@ -264,7 +274,7 @@ void main() {
 
   group('exportType2Word (post-generation re-export)', () {
     test('attaches one Type 2 card for a cached word', () async {
-      await aiImages.generateNow('salom');
+      await aiImages.generateNow(uzbek: 'salom', english: 'hello');
       gateway.mediaResults['ai_images/fake_salom.png'] = '<img src="s.png" />';
 
       final result = await service.exportType2Word('salom');
@@ -274,13 +284,19 @@ void main() {
       expect(gateway.notes.single.fields.first, 'salom');
     });
 
-    test('defers an uncached word as pending (no card)', () async {
-      final result = await service.exportType2Word('xayr');
+    test(
+      'an uncached word is a no-op (no english to re-prompt from, T19.3)',
+      () async {
+        final result = await service.exportType2Word('xayr');
 
-      expect(result.pending, 1);
-      expect(aiImages.enqueued, contains('xayr'));
-      expect(gateway.notes, isEmpty);
-    });
+        // The post-gen hook only knows the uzbek; without english it cannot
+        // enqueue a fresh generation. The hook fires post-generation anyway, so
+        // uncached here is a no-op race — not a re-queue.
+        expect(result.pending, 0);
+        expect(aiImages.enqueued, isEmpty);
+        expect(gateway.notes, isEmpty);
+      },
+    );
   });
 }
 

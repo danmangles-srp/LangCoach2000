@@ -19,6 +19,7 @@ import 'package:rivendell/features/ai_image/application/pollinations_image_servi
 import 'package:rivendell/features/ai_image/data/ai_image_cache_repository.dart';
 import 'package:rivendell/features/ai_image/domain/ai_image_payload.dart';
 import 'package:rivendell/features/ai_image/platform/pollinations_config.dart';
+import 'package:rivendell/features/settings/application/settings_providers.dart';
 
 /// Base dir for cached AI images. MUST resolve to the same directory the
 /// Kotlin side reads in `addMediaToAnki` (`File(filesDir, relativePath)`) and
@@ -53,6 +54,12 @@ final aiImageServiceProvider = FutureProvider<AiImageService>((ref) async {
     logger: ref.watch(appLoggerProvider),
     baseUrl: pollinationsBaseUrl,
     model: pollinationsModel,
+    // Read fresh per generate (T19.6): a Settings edit applies on the next
+    // drain without re-queueing existing pending items.
+    promptTemplate: () => ref.read(appSettingsProvider).aiImagePromptTemplate,
+    // Pace successive GETs so a multi-word drain can't burst past the keyless
+    // tier's rate limit (only the first word would render otherwise).
+    gate: pollinationsRateGate(),
   );
 });
 
@@ -108,18 +115,18 @@ Future<void> registerAiImageHandler(
   final service = await container.read(aiImageServiceProvider.future);
   final worker = await container.read(queueProcessorProvider.future);
   worker.registerHandler(aiImageQueueType, (payload) async {
-    final word = wordFromAiImagePayload(payload);
-    await service.generateNow(word);
+    final pair = pairFromAiImagePayload(payload);
+    await service.generateNow(uzbek: pair.uzbek, english: pair.english);
     final hook = onGenerated;
     if (hook == null) return;
     try {
-      await hook(word);
+      await hook(pair.uzbek);
     } on Object catch (e) {
       // Image generation (the queue's actual job) succeeded — a downstream
       // card-attach miss must not roll that back or mark the item failed.
       container
           .read(appLoggerProvider)
-          .w(LogTag.ai, 'post-generation hook for "$word" skipped: $e');
+          .w(LogTag.ai, 'post-generation hook for "${pair.uzbek}" skipped: $e');
     }
   });
 }

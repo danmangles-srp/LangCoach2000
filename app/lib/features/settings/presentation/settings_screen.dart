@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:rivendell/features/ai_image/domain/ai_image_prompt.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/report/presentation/weekly_report_settings_section.dart';
 import 'package:rivendell/features/settings/application/settings_providers.dart';
@@ -61,8 +62,101 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(height: 1, indent: 16, endIndent: 16),
           const WeeklyReportSettingsSection(),
           const Divider(height: 1, indent: 16, endIndent: 16),
+          const _AiImagePromptSection(),
+          const Divider(height: 1, indent: 16, endIndent: 16),
           const _AiImageQueueTile(),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+/// User-tunable AI image prompt template (T19.6). Pre-filled with the current
+/// persisted template (default on first run). Persists on every change so the
+/// edit survives a process kill without depending on focus loss or dispose
+/// (both unreliable on Android). Reset restores the canonical pictographic body.
+class _AiImagePromptSection extends ConsumerStatefulWidget {
+  const _AiImagePromptSection();
+
+  @override
+  ConsumerState<_AiImagePromptSection> createState() =>
+      _AiImagePromptSectionState();
+}
+
+class _AiImagePromptSectionState extends ConsumerState<_AiImagePromptSection> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: ref.read(appSettingsProvider).aiImagePromptTemplate,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _persist() {
+    ref
+        .read(appSettingsProvider.notifier)
+        .setAiImagePromptTemplate(_controller.text);
+  }
+
+  void _resetToDefault() {
+    _controller.text = defaultAiImagePrompt;
+    _controller.selection = TextSelection.collapsed(
+      offset: _controller.text.length,
+    );
+    _persist();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            strings.settingsAiImagePromptTitle,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            strings.settingsAiImagePromptSubtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            minLines: 4,
+            maxLines: 8,
+            // Persist per change: a focus-loss or dispose trigger is unreliable
+            // on Android (tapping inert space doesn't unfocus; a process kill
+            // may skip dispose). The notifier dedupes unchanged writes.
+            onChanged: (_) => _persist(),
+            decoration: const InputDecoration(border: OutlineInputBorder()),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _resetToDefault,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text(strings.settingsAiImagePromptReset),
+            ),
+          ),
         ],
       ),
     );

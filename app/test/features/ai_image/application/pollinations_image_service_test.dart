@@ -4,6 +4,9 @@
 // side effect is asserted. Pins the request shape (keyless GET, prompt in the
 // path, square dims, deterministic seed), the per-word cache idempotency, and
 // the non-200 failure mode.
+//
+// T19.3: the prompt must run on the ENGLISH gloss while the cache key + on-disk
+// path stay keyed by the UZBEK word. These tests assert both halves.
 
 import 'dart:io';
 
@@ -53,7 +56,11 @@ void main() {
     });
   }
 
-  PollinationsImageService buildService({required http.Client client}) {
+  PollinationsImageService buildService({
+    required http.Client client,
+    String Function()? promptTemplate,
+    AiImageRequestGate gate,
+  }) {
     return PollinationsImageService(
       cache: cache,
       queue: queue,
@@ -62,58 +69,87 @@ void main() {
       logger: AppLogger(sink: RecordingSink()),
       baseUrl: 'https://image.pollinations.ai',
       model: 'flux',
+      promptTemplate: promptTemplate,
+      gate: gate ?? (() async {}),
     );
   }
 
   group('generateNow', () {
-    test(
-      'GETs the prompt path with square dims + seed, writes, caches',
-      () async {
-        final getCalls = <http.Request>[];
-        final service = buildService(
-          client: succeedingClient(getCalls: getCalls),
-        );
+    test('a custom prompt template wraps the ENGLISH gloss (T19.6)', () async {
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+        promptTemplate: () => 'watercolour still life of {word}',
+      );
 
-        await service.generateNow('salom');
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
 
-        // Exactly one GET (no retry, no duplicate).
-        expect(getCalls, hasLength(1));
-        final url = getCalls.single.url;
-        expect(url.host, 'image.pollinations.ai');
-        // Prompt is in the path; the word survives URL-encoding.
-        expect(url.toString(), contains('/prompt/'));
-        expect(url.toString(), contains('salom'));
-        // Keyless: no auth header.
-        expect(getCalls.single.headers.containsKey('Authorization'), isFalse);
-        // Square dims, model, watermark-off, deterministic seed.
-        expect(url.queryParameters['width'], '512');
-        expect(url.queryParameters['height'], '512');
-        expect(url.queryParameters['model'], 'flux');
-        expect(url.queryParameters['nologo'], 'true');
-        expect(url.queryParameters['seed'], isNotNull);
+      final url = getCalls.single.url.toString();
+      // Template wraps the ENGLISH gloss, not the Uzbek word.
+      expect(url, contains('watercolour%20still%20life%20of%20frog'));
+      expect(url, isNot(contains('qurbaqa')));
+      // The default body must not leak in when a custom template is set.
+      expect(url, isNot(contains('pictographic')));
+    });
 
-        // File written at the canonical cache path; cache path now resolvable.
-        final file = File('${docsDir.path}/${buildAiImagePath('salom')}');
-        expect(file.existsSync(), isTrue);
-        expect(await file.readAsBytes(), [1, 2, 3, 4]);
-        expect(await service.cachedPath('salom'), buildAiImagePath('salom'));
-      },
-    );
+    test('a blank template falls back to the default body (T19.6)', () async {
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+        promptTemplate: () => '   ',
+      );
 
-    test('seed is deterministic for the same word across calls', () async {
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
+
+      expect(getCalls.single.url.toString(), contains('pictographic'));
+    });
+
+    test('GETs the prompt path with the ENGLISH gloss, caches the file at the '
+        'UZBEK path (T19.3)', () async {
       final getCalls = <http.Request>[];
       final service = buildService(
         client: succeedingClient(getCalls: getCalls),
       );
 
-      await service.generateNow('salom');
-      await cache.pathFor('salom'); // cached now
-      // Compute the seed a second word would get; assert it differs from a
-      // different word but repeats for the same word.
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
+
+      // Exactly one GET (no retry, no duplicate).
+      expect(getCalls, hasLength(1));
+      final url = getCalls.single.url;
+      expect(url.host, 'image.pollinations.ai');
+      // Prompt is in the path; the ENGLISH gloss survives URL-encoding.
+      expect(url.toString(), contains('/prompt/'));
+      expect(url.toString(), contains('frog'));
+      // The Uzbek word must NOT leak into the prompt path.
+      expect(url.toString(), isNot(contains('qurbaqa')));
+      // Keyless: no auth header.
+      expect(getCalls.single.headers.containsKey('Authorization'), isFalse);
+      // Square dims, model, watermark-off, deterministic seed.
+      expect(url.queryParameters['width'], '512');
+      expect(url.queryParameters['height'], '512');
+      expect(url.queryParameters['model'], 'flux');
+      expect(url.queryParameters['nologo'], 'true');
+      expect(url.queryParameters['seed'], isNotNull);
+
+      // File written at the UZBEK-keyed cache path; resolvable by uzbek.
+      final file = File('${docsDir.path}/${buildAiImagePath('qurbaqa')}');
+      expect(file.existsSync(), isTrue);
+      expect(await file.readAsBytes(), [1, 2, 3, 4]);
+      expect(await service.cachedPath('qurbaqa'), buildAiImagePath('qurbaqa'));
+    });
+
+    test('seed is deterministic for the same uzbek across calls', () async {
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+      );
+
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
+      await cache.pathFor('qurbaqa'); // cached now
       final firstSeed = getCalls.single.url.queryParameters['seed'];
       expect(firstSeed, isNotNull);
-      // Different word -> different seed (sanity on the fold).
-      await service.generateNow('rahmat');
+      // Different uzbek -> different seed.
+      await service.generateNow(uzbek: 'mushuk', english: 'cat');
       final secondSeed = getCalls.last.url.queryParameters['seed'];
       expect(secondSeed, isNotNull);
       expect(secondSeed, isNot(firstSeed));
@@ -125,8 +161,11 @@ void main() {
         client: succeedingClient(getCalls: getCalls),
       );
 
-      await service.generateNow('salom');
-      await service.generateNow('salom'); // second call
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
+      await service.generateNow(
+        uzbek: 'qurbaqa',
+        english: 'frog',
+      ); // second call
 
       expect(getCalls, hasLength(1));
     });
@@ -139,13 +178,16 @@ void main() {
       });
       final service = buildService(client: client);
 
-      await expectLater(service.generateNow('salom'), throwsException);
+      await expectLater(
+        service.generateNow(uzbek: 'qurbaqa', english: 'frog'),
+        throwsException,
+      );
       // Permanent → exactly one attempt, no retry.
       expect(getCalls, hasLength(1));
-      expect(await service.cachedPath('salom'), isNull);
+      expect(await service.cachedPath('qurbaqa'), isNull);
     });
 
-    test('retries once on a transient 429, then succeeds (T18.5)', () async {
+    test('retries on a transient 429, then succeeds (T18.5)', () async {
       final getCalls = <http.Request>[];
       var n = 0;
       final client = MockClient((request) async {
@@ -157,13 +199,13 @@ void main() {
       });
       final service = buildService(client: client);
 
-      await service.generateNow('salom');
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
 
       expect(getCalls, hasLength(2));
-      expect(await service.cachedPath('salom'), isNotNull);
+      expect(await service.cachedPath('qurbaqa'), isNotNull);
     });
 
-    test('retries once on a socket exception, then succeeds (T18.5)', () async {
+    test('retries on a socket exception, then succeeds (T18.5)', () async {
       final getCalls = <http.Request>[];
       var n = 0;
       final client = MockClient((request) async {
@@ -176,13 +218,13 @@ void main() {
       });
       final service = buildService(client: client);
 
-      await service.generateNow('salom');
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
 
       expect(getCalls, hasLength(2));
-      expect(await service.cachedPath('salom'), isNotNull);
+      expect(await service.cachedPath('qurbaqa'), isNotNull);
     });
 
-    test('gives up after retrying a persistent 429', () async {
+    test('gives up after exhausting retries on a persistent 429', () async {
       final getCalls = <http.Request>[];
       final client = MockClient((request) async {
         getCalls.add(request);
@@ -190,33 +232,60 @@ void main() {
       });
       final service = buildService(client: client);
 
-      await expectLater(service.generateNow('salom'), throwsException);
-      // Two attempts (initial + one retry), then rethrows.
+      await expectLater(
+        service.generateNow(uzbek: 'qurbaqa', english: 'frog'),
+        throwsException,
+      );
+      // Three attempts (initial + two backoff retries), then rethrows.
+      expect(getCalls, hasLength(3));
+      expect(await service.cachedPath('qurbaqa'), isNull);
+    });
+
+    test('paces back-to-back GETs through the gate (T19.x rate-limit)', () async {
+      // Two distinct uncached words; the gate must enforce a gap so the second
+      // GET doesn't land on the keyless tier while the first is still cooling.
+      // Real clock with a tiny gap keeps the test fast yet deterministic on the
+      // ordering invariant (second call follows the first by >= gap).
+      final gate = pollinationsRateGate(gap: const Duration(milliseconds: 60));
+      final getCalls = <http.Request>[];
+      final service = buildService(
+        client: succeedingClient(getCalls: getCalls),
+        gate: gate,
+      );
+
+      final start = DateTime.now();
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
+      await service.generateNow(uzbek: 'mushuk', english: 'cat');
+      final elapsed = DateTime.now().difference(start);
+
       expect(getCalls, hasLength(2));
-      expect(await service.cachedPath('salom'), isNull);
+      // Gap between the two paced calls is observable end-to-end.
+      expect(elapsed.inMilliseconds, greaterThanOrEqualTo(50));
     });
   });
 
   group('enqueueGeneration', () {
-    test('enqueues an ai_image item when the word is not cached', () async {
+    test('enqueues an ai_image item carrying both uzbek + english', () async {
       final service = buildService(client: succeedingClient(getCalls: []));
 
-      await service.enqueueGeneration('salom');
+      await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
 
       final pending = await queue.pending();
       expect(pending, hasLength(1));
       expect(pending.single.type, aiImageQueueType);
-      expect(wordFromAiImagePayload(pending.single.payload), 'salom');
+      final pair = pairFromAiImagePayload(pending.single.payload);
+      expect(pair.uzbek, 'qurbaqa');
+      expect(pair.english, 'frog');
     });
 
-    test('spamming enqueueGeneration for the same word creates only one item '
+    test('spamming enqueueGeneration for the same uzbek creates only one item '
         '(T18.1 queue-level dedup)', () async {
       final service = buildService(client: succeedingClient(getCalls: []));
 
       // Repeated taps on "Send to Anki" before the image lands.
-      await service.enqueueGeneration('salom');
-      await service.enqueueGeneration('salom');
-      await service.enqueueGeneration('salom');
+      await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
+      await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
+      await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
 
       expect(await queue.pending(), hasLength(1));
     });
@@ -224,7 +293,7 @@ void main() {
     test('is a no-op when the word is already cached', () async {
       // Seed the cache directly: a prior generation succeeded.
       await cache.remember(
-        uzbekWord: 'salom',
+        uzbekWord: 'qurbaqa',
         relativePath: 'ai_images/seed.png',
       );
       // A cache row is honoured only when its backing file is on disk.
@@ -233,7 +302,7 @@ void main() {
       await file.writeAsBytes([1, 2, 3, 4]);
       final service = buildService(client: succeedingClient(getCalls: []));
 
-      await service.enqueueGeneration('salom');
+      await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
 
       expect(await queue.pending(), isEmpty);
     });
@@ -242,12 +311,12 @@ void main() {
       // Orphan row (e.g. left by the app_flutter → filesDir path fix): the
       // file is gone, so the word must regenerate rather than pin a miss.
       await cache.remember(
-        uzbekWord: 'salom',
+        uzbekWord: 'qurbaqa',
         relativePath: 'ai_images/seed.png',
       );
       final service = buildService(client: succeedingClient(getCalls: []));
 
-      await service.enqueueGeneration('salom');
+      await service.enqueueGeneration(uzbek: 'qurbaqa', english: 'frog');
 
       expect(await queue.pending(), hasLength(1));
     });

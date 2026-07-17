@@ -211,6 +211,10 @@ class AppStrings {
         'Add your Gmail address + app password to enable weekly reports.',
     settingsAiImageQueueTitle: 'AI image queue',
     settingsAiImageQueueSubtitle: 'Review pending image generations',
+    settingsAiImagePromptTitle: 'AI image prompt',
+    settingsAiImagePromptSubtitle:
+        'Tune the prompt that draws each word. Use {word} for the concept.',
+    settingsAiImagePromptReset: 'Reset to default',
     aiQueuePendingHeader: 'Pending',
     aiQueuePendingEmpty: 'No pending images.',
     aiQueuePendingLinkN: '{n} images queued →',
@@ -414,6 +418,10 @@ class AppStrings {
         'parolini kiriting.',
     settingsAiImageQueueTitle: 'Tasvir navbati',
     settingsAiImageQueueSubtitle: 'Kutilayotgan tasvir generatsiyasini ko‘rish',
+    settingsAiImagePromptTitle: 'Tasvir so‘rovi',
+    settingsAiImagePromptSubtitle:
+        'Har so‘z uchun so‘rovni sozlang. {word} — tushuncha o‘rnida.',
+    settingsAiImagePromptReset: 'Standartga qaytarish',
     aiQueuePendingHeader: 'Kutilmoqda',
     aiQueuePendingEmpty: 'Kutilayotgan tasvir yo‘q.',
     aiQueuePendingLinkN: '{n} ta tasvir navbatda →',
@@ -604,6 +612,10 @@ class AppStrings {
   String get settingsAiImageQueueTitle => _bundle.settingsAiImageQueueTitle;
   String get settingsAiImageQueueSubtitle =>
       _bundle.settingsAiImageQueueSubtitle;
+  String get settingsAiImagePromptTitle => _bundle.settingsAiImagePromptTitle;
+  String get settingsAiImagePromptSubtitle =>
+      _bundle.settingsAiImagePromptSubtitle;
+  String get settingsAiImagePromptReset => _bundle.settingsAiImagePromptReset;
   String get aiQueuePendingHeader => _bundle.aiQueuePendingHeader;
   String get aiQueuePendingEmpty => _bundle.aiQueuePendingEmpty;
   String aiQueuePendingLink(int n) =>
@@ -786,6 +798,9 @@ class _Bundle {
     required this.settingsReportNotConfigured,
     required this.settingsAiImageQueueTitle,
     required this.settingsAiImageQueueSubtitle,
+    required this.settingsAiImagePromptTitle,
+    required this.settingsAiImagePromptSubtitle,
+    required this.settingsAiImagePromptReset,
     required this.aiQueuePendingHeader,
     required this.aiQueuePendingLinkN,
     required this.aiQueuePendingEmpty,
@@ -955,6 +970,9 @@ class _Bundle {
   final String settingsReportNotConfigured;
   final String settingsAiImageQueueTitle;
   final String settingsAiImageQueueSubtitle;
+  final String settingsAiImagePromptTitle;
+  final String settingsAiImagePromptSubtitle;
+  final String settingsAiImagePromptReset;
   final String aiQueuePendingHeader;
   final String aiQueuePendingLinkN;
   final String aiQueuePendingEmpty;
