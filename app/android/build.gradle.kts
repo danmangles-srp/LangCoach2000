@@ -2,9 +2,6 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // AnkiDroid API artifact (api-v1.1.0) is published on JitPack, not
-        // Maven Central (FR-1.3.3, T4.1).
-        maven { url = uri("https://jitpack.io") }
     }
 }
 

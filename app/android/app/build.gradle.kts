@@ -12,11 +12,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // flutter_local_notifications (T5.3, FR-1.4.2) uses java.time, which
-        // only ships on Android API 26+ at runtime — desugaring backports it
-        // so the plugin works on the minSdk 26 floor. The plugin's AAR metadata
-        // check enforces this flag is on.
-        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -45,16 +40,4 @@ kotlin {
 
 flutter {
     source = "../.."
-}
-
-dependencies {
-    // AnkiDroid content-provider API (FR-1.3.3, T4.1). The api-v1.1.0 artifact
-    // drags an old kotlin-stdlib; exclude it so the project's Kotlin 2.3.20
-    // stdlib wins (the API itself is Java and needs no kotlin-stdlib).
-    implementation("com.github.ankidroid:Anki-Android:api-v1.1.0") {
-        exclude(group = "org.jetbrains.kotlin")
-    }
-    // Core-library desugaring backport (T5.3): supplies java.time to
-    // flutter_local_notifications on API 26.
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

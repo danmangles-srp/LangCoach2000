@@ -29,10 +29,6 @@ env.json
 *.keystore
 *.jks
 
-### Local scratch / test databases (never commit a DB file)
-*.db
-mock_rivendell.db
-
 ### Windows
 # Windows thumbnail cache files
 Thumbs.db
