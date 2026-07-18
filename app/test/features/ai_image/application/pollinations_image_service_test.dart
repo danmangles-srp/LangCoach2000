@@ -9,6 +9,7 @@
 // path stay keyed by the UZBEK word. These tests assert both halves.
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -136,6 +137,30 @@ void main() {
       expect(file.existsSync(), isTrue);
       expect(await file.readAsBytes(), [1, 2, 3, 4]);
       expect(await service.cachedPath('qurbaqa'), buildAiImagePath('qurbaqa'));
+    });
+
+    test('writes a multi-KB image payload intact via the offloaded write '
+        '(T15.11)', () async {
+      // A real 512x512 PNG is hundreds of KB. The write is dispatched to a
+      // background isolate so the foreground drain (one write per queued word)
+      // can't drop frames. Pin that a non-trivial payload survives the isolate
+      // transfer byte-for-byte — not just the 4-byte smoke payload above.
+      final payload = Uint8List.fromList(
+        List<int>.generate(64 * 1024, (i) => i % 256),
+      );
+      final getCalls = <http.Request>[];
+      final client = MockClient((request) async {
+        getCalls.add(request);
+        return http.Response.bytes(payload, 200);
+      });
+      final service = buildService(client: client);
+
+      await service.generateNow(uzbek: 'qurbaqa', english: 'frog');
+
+      expect(getCalls, hasLength(1));
+      final file = File('${docsDir.path}/${buildAiImagePath('qurbaqa')}');
+      expect(file.existsSync(), isTrue);
+      expect(await file.readAsBytes(), payload);
     });
 
     test('seed is deterministic for the same uzbek across calls', () async {
