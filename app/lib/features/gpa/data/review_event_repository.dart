@@ -12,6 +12,8 @@ import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/gpa/domain/gpa_review.dart';
 import 'package:rivendell/features/gpa/domain/queue_warmup.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 
 /// One row of a queue window (T7.1, T14.1): the recording, its derived status,
 /// and the stale flag (always false post-T14.1 — the Today backlog dropped the
@@ -37,9 +39,14 @@ class WarmedQueue {
 }
 
 class ReviewEventRepository {
-  ReviewEventRepository(this._db);
+  ReviewEventRepository(this._db, {this.xp});
 
   final AppDatabase _db;
+
+  /// Optional XP sink (M11 T11.2). When wired, a milestone earn appends a
+  /// +10 review award in the SAME transaction as the review event — so a
+  /// failed append rolls the award back too. Null in tests that don't care.
+  final XpRepository? xp;
 
   /// All events for a recording, oldest first. Drives derivation (T2.3) and
   /// the detail-screen review history (T2.6).
@@ -173,6 +180,18 @@ class ReviewEventRepository {
         reachedPrior: reachedPrior,
       );
       await _insert(recordingId, assigned, completedAt);
+      // M11 T11.2: a real milestone earn awards +10 (canonical). A null
+      // assignment is a bonus replay the catch-up rule already counted — no
+      // XP, so rewatching a reviewed recording can't farm XP. Same tx as the
+      // event insert (ambient), so a downstream failure rolls both back.
+      if (assigned != null) {
+        await xp?.record(
+          source: XpSource.review,
+          points: 10,
+          recordingId: recordingId,
+          at: completedAt,
+        );
+      }
     });
   }
 
@@ -197,6 +216,14 @@ class ReviewEventRepository {
               .get();
       if (existing.isNotEmpty) return;
       await _insert(recordingId, milestoneIndex, completedAt);
+      // M11 T11.2: a manual milestone assertion awards +10. The existing-event
+      // guard above makes this fire once per milestone; same tx as the insert.
+      await xp?.record(
+        source: XpSource.review,
+        points: 10,
+        recordingId: recordingId,
+        at: completedAt,
+      );
     });
   }
 

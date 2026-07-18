@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
 import 'package:rivendell/core/logging/app_logger_provider.dart';
+import 'package:rivendell/features/progress/application/progress_providers.dart';
 import 'package:rivendell/features/wordlog/application/image_log_picker_service.dart';
 import 'package:rivendell/features/wordlog/application/image_log_service.dart';
 import 'package:rivendell/features/wordlog/application/image_log_writer_service.dart';
@@ -15,9 +16,13 @@ import 'package:rivendell/features/wordlog/data/word_log_repository.dart';
 import 'package:rivendell/features/wordlog/platform/saf_image_log_picker_service.dart';
 import 'package:rivendell/features/wordlog/platform/saf_image_writer_service.dart';
 
-/// Singleton [WordLogRepository] over the local store.
+/// Singleton [WordLogRepository] over the local store. XP sink wired so an
+/// empty→non-empty text-log attach posts +5.
 final wordLogRepositoryProvider = FutureProvider<WordLogRepository>(
-  (ref) async => WordLogRepository(await ref.watch(appDatabaseProvider.future)),
+  (ref) async => WordLogRepository(
+    await ref.watch(appDatabaseProvider.future),
+    xp: await ref.watch(xpRepositoryProvider.future),
+  ),
 );
 
 /// Injectable wall clock so the stem (millisecond timestamp) is deterministic
@@ -46,6 +51,7 @@ final appDocsDirProvider = FutureProvider<String>(
 );
 
 /// Singleton [ImageLogService] wiring the writer, repo, and logger together.
+/// XP sink wired so a successful image attach posts +5.
 final imageLogServiceProvider = FutureProvider<ImageLogService>((ref) async {
   final repository = await ref.watch(wordLogRepositoryProvider.future);
   return ImageLogService(
@@ -53,6 +59,7 @@ final imageLogServiceProvider = FutureProvider<ImageLogService>((ref) async {
     writer: ref.watch(imageLogWriterServiceProvider),
     logger: ref.watch(appLoggerProvider),
     clock: ref.watch(imageLogClockProvider),
+    xp: await ref.watch(xpRepositoryProvider.future),
   );
 });
 

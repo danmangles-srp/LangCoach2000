@@ -16,6 +16,8 @@ import 'package:rivendell/features/ai_image/application/ai_image_service.dart';
 import 'package:rivendell/features/anki/application/anki_gateway.dart';
 import 'package:rivendell/features/anki/domain/anki_model_spec.dart';
 import 'package:rivendell/features/anki/domain/anki_tag.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 import 'package:rivendell/features/wordlog/domain/vocab_pair.dart';
 
 class AnkiExportResult {
@@ -52,11 +54,23 @@ class AnkiExportService {
     required this.gateway,
     required this.aiImageService,
     required this.logger,
+    this.xp,
   });
 
   final AnkiGateway gateway;
   final AiImageService aiImageService;
   final AppLogger logger;
+
+  /// Optional XP sink (M11 T11.2). When wired, a run awards +2 per newly
+  /// created note (only `added`, not skipped/failed/pending). Null in tests
+  /// that don't care.
+  final XpRepository? xp;
+
+  /// Award +2 × [added] (canonical, per card created). No-op when [added] is
+  /// 0 (a pure-skip or all-failed run earns nothing) or when the sink is null.
+  Future<void> _awardXp(int added) => added <= 0
+      ? Future.value()
+      : xp?.record(source: XpSource.anki, points: 2 * added) ?? Future.value();
 
   /// Export [pairs] as Type 1 (English↔Uzbek) notes tagged [tag] (a recording
   /// name; see [ankiTagForRecording]) into the Rivendell deck. Idempotent.
@@ -96,6 +110,7 @@ class AnkiExportService {
       LogTag.anki,
       'type1 export tag=$safeTag added=$added skipped=$skipped failed=$failed',
     );
+    await _awardXp(added);
     return AnkiExportResult(added: added, skipped: skipped, failed: failed);
   }
 
@@ -171,6 +186,7 @@ class AnkiExportService {
       'type2 export added=$added skipped=$skipped failed=$failed '
       'pending=$pending',
     );
+    await _awardXp(added);
     return AnkiExportResult(
       added: added,
       skipped: skipped,

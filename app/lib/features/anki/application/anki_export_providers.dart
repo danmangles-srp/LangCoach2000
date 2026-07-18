@@ -8,6 +8,7 @@ import 'package:rivendell/core/logging/app_logger_provider.dart';
 import 'package:rivendell/features/ai_image/platform/ai_image_providers.dart';
 import 'package:rivendell/features/anki/application/anki_export_service.dart';
 import 'package:rivendell/features/anki/application/anki_providers.dart';
+import 'package:rivendell/features/progress/application/progress_providers.dart';
 
 final ankiExportServiceProvider = FutureProvider<AnkiExportService>((
   ref,
@@ -17,5 +18,6 @@ final ankiExportServiceProvider = FutureProvider<AnkiExportService>((
     gateway: ref.watch(ankiGatewayProvider),
     aiImageService: aiImageService,
     logger: ref.watch(appLoggerProvider),
+    xp: await ref.watch(xpRepositoryProvider.future),
   );
 });

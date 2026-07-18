@@ -8,6 +8,8 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 import 'package:rivendell/features/tasks/application/fake_task_notification_gateway.dart';
 import 'package:rivendell/features/tasks/application/task_commands.dart';
 import 'package:rivendell/features/tasks/data/task_repository.dart';
@@ -143,5 +145,55 @@ void main() {
     await commands.delete(task.id);
 
     expect(gateway.canceled, [task.id]);
+  });
+
+  group('XP awards (M11 T11.2)', () {
+    late AppDatabase xpDb;
+    late XpRepository xp;
+    late TaskCommands commandsWithXp;
+
+    setUp(() {
+      xpDb = _db();
+      xp = XpRepository(xpDb);
+      commandsWithXp = TaskCommands(
+        TaskRepository(xpDb),
+        FakeTaskNotificationGateway(),
+        () => _now,
+        xp: xp,
+      );
+    });
+    tearDown(() => xpDb.close());
+
+    test('completing a pending task awards +8', () async {
+      final task = await commandsWithXp.create(title: 'Memorize Yor-Yor');
+      await commandsWithXp.setCompleted(task.id, completed: true);
+      expect(await xp.total(), 8);
+    });
+
+    test('the award traces to the task', () async {
+      final task = await commandsWithXp.create(title: 'task');
+      await commandsWithXp.setCompleted(task.id, completed: true);
+      final row = await (xpDb.select(xpDb.xpEvents)..limit(1)).getSingle();
+      expect(row.source, XpSource.task.columnValue);
+      expect(row.points, 8);
+      expect(row.taskId, task.id);
+    });
+
+    test(
+      'a no-op re-complete of an already-done task does not re-award',
+      () async {
+        final task = await commandsWithXp.create(title: 'task');
+        await commandsWithXp.setCompleted(task.id, completed: true); // +8
+        await commandsWithXp.setCompleted(task.id, completed: true); // no-op
+        expect(await xp.total(), 8);
+      },
+    );
+
+    test('un-completing awards nothing', () async {
+      final task = await commandsWithXp.create(title: 'task');
+      await commandsWithXp.setCompleted(task.id, completed: true); // +8
+      await commandsWithXp.setCompleted(task.id, completed: false);
+      expect(await xp.total(), 8); // unchanged
+    });
   });
 }

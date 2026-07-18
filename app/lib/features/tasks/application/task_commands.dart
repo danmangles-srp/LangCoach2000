@@ -9,16 +9,21 @@
 // deterministic in tests.
 
 import 'package:rivendell/core/database/app_database.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 import 'package:rivendell/features/tasks/application/task_notification_gateway.dart';
 import 'package:rivendell/features/tasks/data/task_repository.dart';
 import 'package:rivendell/features/tasks/domain/task_reminder.dart';
 
 class TaskCommands {
-  TaskCommands(this._repo, this._notifications, this._now);
+  TaskCommands(this._repo, this._notifications, this._now, {this.xp});
 
   final TaskRepository _repo;
   final TaskNotificationGateway _notifications;
   final DateTime Function() _now;
+
+  /// Optional XP sink (M11 T11.2). When wired, completing a task awards +8.
+  final XpRepository? xp;
   bool _permissionsRequested = false;
 
   Future<Task> create({
@@ -52,10 +57,19 @@ class TaskCommands {
   }
 
   Future<Task> setCompleted(int id, {required bool completed}) async {
+    final prior = await _repo.getById(id);
     final task = await _repo.setCompleted(id, completed: completed);
     // A completed task has no reminder; un-completing reschedules if still due.
     if (task.completed) {
       await _notifications.cancel(id);
+      // M11 T11.2: award +8 only on the not-done → done transition. A no-op
+      // setCompleted(true) on an already-done task doesn't re-award; a
+      // deliberate toggle off-then-on does (each completion is a real event;
+      // XP is informational, nothing is gated on it). Prior null = the task
+      // was deleted concurrently → no award.
+      if (prior != null && !prior.completed) {
+        await xp?.record(source: XpSource.task, points: 8, taskId: id);
+      }
     } else {
       await _sync(task);
     }

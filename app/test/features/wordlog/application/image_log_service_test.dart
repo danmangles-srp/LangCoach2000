@@ -8,6 +8,7 @@ import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
 import 'package:rivendell/features/wordlog/application/image_log_service.dart';
 import 'package:rivendell/features/wordlog/application/image_log_writer_service.dart';
 import 'package:rivendell/features/wordlog/data/word_log_repository.dart';
@@ -105,5 +106,54 @@ void main() {
     );
     expect(writer.copies, 1);
     expect(await repo.imagesFor(id), isEmpty); // no orphan row
+  });
+
+  group('XP awards (M11 T11.2)', () {
+    test('attach awards +5 on a successful copy', () async {
+      final id = await seedRecording();
+      final writer = _RecordingWriter();
+      final xp = XpRepository(db);
+      final service = ImageLogService(
+        repository: repo,
+        writer: writer,
+        logger: AppLogger(sink: RecordingSink()),
+        clock: () => DateTime(2026, 6, 30, 12, 5, 7),
+        xp: xp,
+      );
+
+      await service.attach(
+        recordingId: id,
+        sourceUri: 'content://picker/note1.jpg',
+        extension: 'jpg',
+      );
+
+      expect(await xp.total(), 5);
+      final row = await (db.select(db.xpEvents)..limit(1)).getSingle();
+      expect(row.source, 'wordlog');
+      expect(row.recordingId, id);
+    });
+
+    test('a failed copy awards nothing', () async {
+      final id = await seedRecording();
+      final writer = _RecordingWriter()..throwOnCopy = Exception('disk full');
+      final xp = XpRepository(db);
+      final service = ImageLogService(
+        repository: repo,
+        writer: writer,
+        logger: AppLogger(sink: RecordingSink()),
+        clock: () => DateTime(2026, 6, 30, 12, 5, 7),
+        xp: xp,
+      );
+
+      await expectLater(
+        service.attach(
+          recordingId: id,
+          sourceUri: 'content://picker/note1.jpg',
+          extension: 'png',
+        ),
+        throwsA(isA<Exception>()),
+      );
+      expect(await xp.total(), 0);
+    });
   });
 }
