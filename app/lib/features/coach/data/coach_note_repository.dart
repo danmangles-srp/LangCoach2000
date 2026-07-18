@@ -27,7 +27,11 @@ class CoachNoteRepository {
           .into(_db.coachNotes)
           .insert(CoachNotesCompanion.insert(title: title, body: Value(body)));
       await _writeLinks(id, recordingIds, wordLogIds);
-      return (await _load(id))!;
+      final created = await _load(id);
+      if (created == null) {
+        throw StateError('coach note $id missing after insert');
+      }
+      return created;
     });
   }
 
@@ -55,7 +59,11 @@ class CoachNoteRepository {
         throw StateError('coach note $id not found');
       }
       await _writeLinks(id, recordingIds, wordLogIds);
-      return (await _load(id))!;
+      final updated = await _load(id);
+      if (updated == null) {
+        throw StateError('coach note $id missing after update');
+      }
+      return updated;
     });
   }
 
