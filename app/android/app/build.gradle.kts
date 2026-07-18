@@ -33,6 +33,14 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // R8 minify runs in release (Flutter default). Without these keep rules
+            // it strips androidx.work.impl.WorkDatabase_Impl's no-arg ctor, so
+            // androidx.startup throws NoSuchMethodException and the app crashes on
+            // launch before Flutter loads. See app/proguard-rules.pro.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
