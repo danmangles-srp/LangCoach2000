@@ -11,7 +11,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:rivendell/features/audio/application/folder_providers.dart';
+import 'package:rivendell/features/audio/application/recording_providers.dart';
 import 'package:rivendell/features/audio/recording/application/recorder_controller.dart';
 import 'package:rivendell/features/audio/recording/domain/recording_state.dart';
 import 'package:rivendell/l10n/app_strings.dart';
@@ -118,13 +121,19 @@ class _Body extends ConsumerWidget {
     final strings = AppStrings.of(context);
 
     if (state.isError) {
+      // T19.7: a lapsed SAF grant routes to re-pick (clears the stale URI +
+      // opens onboarding) instead of a dead-end retry. Other errors retry.
+      final grantLost = state.error == 'no-folder-grant';
       return _MessageView(
         icon: Icons.error_outline_rounded,
         message: _errorText(strings, state.error),
         action: FilledButton.tonal(
-          onPressed: () =>
-              ref.read(recorderControllerProvider.notifier).dismissError(),
-          child: Text(strings.retry),
+          onPressed: grantLost
+              ? () => _rePickFolder(context, ref)
+              : () => ref
+                    .read(recorderControllerProvider.notifier)
+                    .dismissError(),
+          child: Text(grantLost ? strings.recordRepickFolder : strings.retry),
         ),
       );
     }
@@ -153,9 +162,22 @@ class _Body extends ConsumerWidget {
         return strings.recordPermissionDenied;
       case 'no-folder':
         return strings.recordNoFolder;
+      case 'no-folder-grant':
+        return strings.recordFolderGrantLost;
       default:
         return strings.recordFailed;
     }
+  }
+
+  Future<void> _rePickFolder(BuildContext context, WidgetRef ref) async {
+    final repo = await ref.read(folderRepositoryProvider.future);
+    await repo.clear();
+    // Drop the cached folder + recordings so the redirect re-evaluates and
+    // onboarding renders against the now-empty pick.
+    ref
+      ..invalidate(hasFolderProvider)
+      ..invalidate(recordingsProvider);
+    if (context.mounted) context.go('/onboarding');
   }
 }
 

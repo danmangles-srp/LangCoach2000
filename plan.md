@@ -1276,6 +1276,29 @@ worker + provider observe it).
   Robolectric/instrumentation guard if feasible. *ACs:* Save succeeds into the
   Samsung Voice Recorder folder without a SecurityException. *Deps:* none
   (native slice; Android-only).
+  **Shipped (pending PR; device-confirm still required).** Root cause: the
+  persistable WRITE grant taken at folder-pick can lapse (app reinstall, data
+  clear, OS prune) while the URI string survives in KV, so the next
+  `DocumentsContract.createDocument` / `openOutputStream` throws
+  `MANAGE_DOCUMENTS` — and the old `catch (Exception)` flattened every failure
+  to a generic `COPY_FAILED` with no recovery path. Fix: `MainActivity.kt`
+  `copyToFolder` now `ensureWriteGrant`s first — prechecks
+  `persistedUriPermissions` for WRITE, defensively re-takes
+  (`takePersistableUriPermission`; no-op when held, SecurityException when
+  truly gone), and the channel handler maps `SecurityException` → typed
+  `NO_PERSISTED_GRANT` ahead of the generic `COPY_FAILED`. Dart:
+  `FolderGrantLostException` on the writer port seam; `SafRecordingWriterService`
+  maps the code; `RecorderController.stop` routes it to a distinct
+  `no-folder-grant` error; the record sheet shows a "Re-pick folder" action that
+  clears the stale URI + navigates to `/onboarding` (other errors still retry).
+  l10n (en + uz) for the new message + action. Tests: controller routing,
+  writer code-mapping, sheet affordance render. Gate green (560 tests, 91.5%
+  coverage, arm64 debug APK builds). **Device-confirm still required** (mirrors
+  T14.4/T14.5/T16): on a device where the grant has lapsed, verify the first
+  save surfaces "Re-pick folder" instead of `MANAGE_DOCUMENTS`, and that
+  re-picking + saving completes cleanly. Secondary note (out of scope): the
+  startup indexer scan reads the same tree URI and also degrades silently on a
+  lapsed grant — separate path, pre-existing graceful-empty behavior.
 
 **Order.** T19.1 (red test, proves the bugs) → T19.2 (reactive fix, green) →
 T19.3 (English prompt) → T19.4 (auto-advance, independent) → T19.5 (link

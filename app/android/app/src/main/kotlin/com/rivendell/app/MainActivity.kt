@@ -177,11 +177,13 @@ class MainActivity : AudioServiceFragmentActivity() {
                     thread(start = true) {
                         try {
                             val docUri = copyToFolder(treeUri, sourcePath, displayName)
-                            if (docUri != null) {
-                                result.success(docUri)
-                            } else {
-                                result.error("COPY_FAILED", "could not create document", null)
-                            }
+                            result.success(docUri)
+                        } catch (e: SecurityException) {
+                            // The persistable write grant for the tree is gone
+                            // (app reinstall, data clear, OS prune, or never
+                            // persisted). Route Dart to re-pick instead of a
+                            // dead-end retry (T19.7).
+                            result.error("NO_PERSISTED_GRANT", e.message, null)
                         } catch (e: Exception) {
                             result.error("COPY_FAILED", e.message, null)
                         }
@@ -453,31 +455,78 @@ class MainActivity : AudioServiceFragmentActivity() {
      * [sourcePath]'s bytes into it (FR-1.1.3). Returns the new document's URI
      * so the indexer's next scan picks it up. If a document with the name
      * already exists SAF appends a suffix; the returned URI is authoritative.
+     *
+     * T19.7: the write requires the persistable tree grant taken at pick time
+     * ([openTreeLauncher]). If that grant has lapsed (app reinstall, data
+     * clear, OS prune), [DocumentsContract.createDocument] /
+     * [android.content.ContentResolver.openOutputStream] throw
+     * `SecurityException: ... requires android.permission.MANAGE_DOCUMENTS`.
+     * We precheck the persisted grant, defensively re-take it, and surface a
+     * typed [SecurityException] so the Dart caller routes the user to re-pick
+     * the folder instead of a dead-end "write failed" retry.
      */
     private fun copyToFolder(
         treeUriStr: String,
         sourcePath: String,
         displayName: String,
-    ): String? {
+    ): String {
         val treeUri = Uri.parse(treeUriStr)
+        ensureWriteGrant(treeUri, treeUriStr)
         val parentDoc = DocumentsContract.buildDocumentUriUsingTree(
             treeUri,
             DocumentsContract.getTreeDocumentId(treeUri),
-        ) ?: return null
+        ) ?: throw java.io.IOException("could not build parent document uri")
         val newDoc = DocumentsContract.createDocument(
             contentResolver,
             parentDoc,
             // audio/mp4 is the standard MIME for the .m4a AAC container.
             "audio/mp4",
             displayName,
-        ) ?: return null
+        ) ?: throw java.io.IOException("createDocument returned null")
 
         File(sourcePath).inputStream().use { input ->
             contentResolver.openOutputStream(newDoc, "w")?.use { output ->
                 input.copyTo(output)
-            } ?: return null
+            } ?: throw java.io.IOException("openOutputStream returned null")
         }
         return newDoc.toString()
+    }
+
+    /**
+     * True when this process still holds a persistable WRITE grant on [treeUri]
+     * (T19.7). Absent → the SAF write will throw MANAGE_DOCUMENTS; the caller
+     * routes the user to re-pick.
+     */
+    private fun hasWriteGrant(treeUri: Uri): Boolean =
+        contentResolver.persistedUriPermissions.any {
+            it.uri == treeUri && it.isWritePermission
+        }
+
+    /**
+     * Verify + defensively restore the persistable write grant on [treeUri]
+     * before a SAF write (T19.7). [takePersistableUriPermission] is a no-op when
+     * the grant is already held and throws [SecurityException] when the system
+     * no longer holds it for our UID — caught here and rethrown as a typed
+     * SecurityException the channel handler maps to `NO_PERSISTED_GRANT`.
+     */
+    private fun ensureWriteGrant(treeUri: Uri, treeUriStr: String) {
+        if (hasWriteGrant(treeUri)) return
+        try {
+            contentResolver.takePersistableUriPermission(
+                treeUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        } catch (e: SecurityException) {
+            throw SecurityException(
+                "no persistable write grant for tree: $treeUriStr (${e.message})",
+            )
+        }
+        if (!hasWriteGrant(treeUri)) {
+            throw SecurityException(
+                "write grant still missing after re-take for tree: $treeUriStr",
+            )
+        }
     }
 
     /**
