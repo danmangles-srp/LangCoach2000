@@ -63,4 +63,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Microphone permission'), findsOneWidget);
   });
+
+  // T19.7: a lapsed SAF grant renders the re-pick message + action, not the
+  // generic retry.
+  testWidgets('grant-lost error maps to the re-pick affordance', (
+    tester,
+  ) async {
+    _injected = const RecordingState(
+      phase: RecordPhase.error,
+      error: 'no-folder-grant',
+    );
+    await tester.pumpWidget(_host());
+    await tester.pumpAndSettle();
+    expect(find.textContaining("folder's access was lost"), findsOneWidget);
+    expect(find.text('Re-pick folder'), findsOneWidget);
+    expect(find.text('Try again'), findsNothing);
+  });
 }

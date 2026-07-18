@@ -4,6 +4,20 @@
 // controller is unit-tested with a fake; the Kotlin channel impl is in
 // platform/. Throws on failure — the controller surfaces an error state.
 
+/// The persistable SAF write grant for the chosen folder is no longer held
+/// (app reinstall, data clear, OS prune, or never persisted). Distinct from a
+/// generic IO failure so the controller can route the user to re-pick the
+/// folder rather than retrying a write that will keep failing (T19.7).
+class FolderGrantLostException implements Exception {
+  const FolderGrantLostException([this.message]);
+  final String? message;
+
+  @override
+  String toString() => message == null
+      ? 'FolderGrantLostException'
+      : 'FolderGrantLostException: $message';
+}
+
 abstract class RecordingWriterService {
   /// Copy [sourcePath] into [treeUri] as [displayName], returning the new
   /// document URI string. Overwrites are NOT collapsed — callers ensure a

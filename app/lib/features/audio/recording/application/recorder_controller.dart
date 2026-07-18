@@ -151,6 +151,12 @@ class RecorderController extends Notifier<RecordingState> {
         sourcePath: recordedPath,
         displayName: saveName,
       );
+    } on FolderGrantLostException catch (e) {
+      // T19.7: the SAF write grant lapsed (reinstall/data-clear/OS prune).
+      // Route the user to re-pick the folder rather than retrying.
+      _logger.e(LogTag.record, 'folder grant lost: $e');
+      _fail('no-folder-grant');
+      return;
     } on Object catch (e) {
       _logger.e(LogTag.record, 'copy to folder failed: $e');
       _fail('write');

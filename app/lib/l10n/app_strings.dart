@@ -92,6 +92,10 @@ class AppStrings {
         'Microphone permission denied. Grant it in system settings to record.',
     recordNoFolder: 'Pick a Samsung Voice Recorder folder before recording.',
     recordFailed: "Couldn't save the recording. Try again.",
+    recordFolderGrantLost:
+        "This folder's access was lost (app reinstalled or storage cleared). "
+        'Re-pick your Samsung Voice Recorder folder to record again.',
+    recordRepickFolder: 'Re-pick folder',
     recordSavedN: 'Saved “{name}”.',
     recordingMenuRename: 'Rename',
     recordingMenuDelete: 'Delete',
@@ -295,6 +299,10 @@ class AppStrings {
     recordNoFolder:
         'Yozib olishdan oldin Samsung Voice Recorder jildini tanlang.',
     recordFailed: 'Yozuvni saqlab bo‘lmadi. Qayta urinib ko‘ring.',
+    recordFolderGrantLost:
+        'Bu jild ruxsati yo‘qolgan (dastur qayta o‘rnatilgan yoki tozalgan). '
+        'Yozib olish uchun Samsung Voice Recorder jildini qayta tanlang.',
+    recordRepickFolder: 'Jildni qayta tanlang',
     recordSavedN: '“{name}” saqlandi.',
     recordingMenuRename: 'Nomini o‘zgartirish',
     recordingMenuDelete: 'O‘chirish',
@@ -495,6 +503,8 @@ class AppStrings {
   String get recordPermissionDenied => _bundle.recordPermissionDenied;
   String get recordNoFolder => _bundle.recordNoFolder;
   String get recordFailed => _bundle.recordFailed;
+  String get recordFolderGrantLost => _bundle.recordFolderGrantLost;
+  String get recordRepickFolder => _bundle.recordRepickFolder;
   String recordSaved(String name) =>
       _bundle.recordSavedN.replaceAll('{name}', name);
   String get recordingMenuRename => _bundle.recordingMenuRename;
@@ -697,6 +707,8 @@ class _Bundle {
     required this.recordPermissionDenied,
     required this.recordNoFolder,
     required this.recordFailed,
+    required this.recordFolderGrantLost,
+    required this.recordRepickFolder,
     required this.recordSavedN,
     required this.recordingMenuRename,
     required this.recordingMenuDelete,
@@ -869,6 +881,8 @@ class _Bundle {
   final String recordPermissionDenied;
   final String recordNoFolder;
   final String recordFailed;
+  final String recordFolderGrantLost;
+  final String recordRepickFolder;
   final String recordSavedN;
   final String recordingMenuRename;
   final String recordingMenuDelete;

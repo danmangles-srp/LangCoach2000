@@ -278,6 +278,38 @@ void main() {
     expect(controller.lastSavedName, isNull);
   });
 
+  // T19.7: a lapsed SAF grant surfaces as a distinct error code so the sheet
+  // routes to re-pick instead of a dead-end retry.
+  test(
+    'stop when the grant lapsed → error(no-folder-grant), no rescan',
+    () async {
+      await _setFolder(db);
+      final writer = _FakeWriter()
+        ..throwOnCopy = const FolderGrantLostException('grant gone');
+      final indexer = _FakeIndexer();
+      final container = _container(
+        recorder: _FakeRecorder(),
+        writer: writer,
+        indexer: indexer,
+        db: db,
+      );
+      final controller = container.read(recorderControllerProvider.notifier);
+      await controller.start();
+      await controller.stop();
+
+      expect(
+        container.read(recorderControllerProvider).phase,
+        RecordPhase.error,
+      );
+      expect(
+        container.read(recorderControllerProvider).error,
+        'no-folder-grant',
+      );
+      expect(indexer.scanCalls, 0);
+      expect(controller.lastSavedName, isNull);
+    },
+  );
+
   test('toggle stops when recording', () async {
     await _setFolder(db);
     final indexer = _FakeIndexer();
