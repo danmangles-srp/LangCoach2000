@@ -75,7 +75,8 @@ class SettingsScreen extends ConsumerWidget {
 /// User-tunable AI image prompt template (T19.6). Pre-filled with the current
 /// persisted template (default on first run). Persists on every change so the
 /// edit survives a process kill without depending on focus loss or dispose
-/// (both unreliable on Android). Reset restores the canonical pictographic body.
+/// (both unreliable on Android). Reset restores the canonical pictographic
+/// body.
 class _AiImagePromptSection extends ConsumerStatefulWidget {
   const _AiImagePromptSection();
 
