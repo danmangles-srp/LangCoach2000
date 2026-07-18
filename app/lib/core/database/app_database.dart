@@ -17,6 +17,7 @@ import 'package:rivendell/features/coach/data/coach_note_word_logs_table.dart';
 import 'package:rivendell/features/coach/data/coach_notes_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
 import 'package:rivendell/features/metrics/data/metrics_events_table.dart';
+import 'package:rivendell/features/progress/data/xp_events_table.dart';
 import 'package:rivendell/features/tasks/data/tasks_table.dart';
 import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
 
@@ -35,6 +36,7 @@ part 'app_database.g.dart';
     CoachNoteRecordings,
     CoachNoteWordLogs,
     MetricsEvents,
+    XpEvents,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -49,7 +51,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -102,6 +104,12 @@ class AppDatabase extends _$AppDatabase {
           'WHERE done = 0 GROUP BY type, payload)',
         );
         await _createPendingUniqueIndex();
+      }
+      if (from < 11) {
+        // M11 T11.1: append-only XP ledger. Level/total are derived from the
+        // sum of `points`; FK traces to recordings/tasks SET NULL on delete so
+        // earned XP survives a source-row deletion.
+        await m.createTable(xpEvents);
       }
     },
     beforeOpen: (details) async {
