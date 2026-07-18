@@ -12,6 +12,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:rivendell/core/logging/app_logger.dart';
@@ -198,8 +199,22 @@ class PollinationsImageService implements AiImageService {
   }
 
   Future<void> _writeBytes(String relativePath, List<int> bytes) async {
-    final file = File('${docsDir.path}/$relativePath');
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(bytes, flush: true);
+    final path = '${docsDir.path}/$relativePath';
+    // Off-main-isolate: the 1.2s rate gate dwarfs `compute`'s spawn cost, so a
+    // per-word MB-scale write stays off the UI thread (NFR-2.4.1 no frame drops).
+    await compute(_writeImageBytes, _ImageWriteArgs(path: path, bytes: bytes));
   }
+}
+
+class _ImageWriteArgs {
+  const _ImageWriteArgs({required this.path, required this.bytes});
+  final String path;
+  final List<int> bytes;
+}
+
+// Top-level so it can be sent to a background isolate.
+Future<void> _writeImageBytes(_ImageWriteArgs args) async {
+  final file = File(args.path);
+  await file.parent.create(recursive: true);
+  await file.writeAsBytes(args.bytes, flush: true);
 }
