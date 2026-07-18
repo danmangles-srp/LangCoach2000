@@ -151,18 +151,21 @@ void main() {
   });
 
   group('schema', () {
-    test('is at the current schema version with the recordings table', () async {
-      // Floor, not equality: a future schema bump must NOT break this test,
-      // only a rollback below v11 (when recordings already existed) would.
-      expect(db.schemaVersion, greaterThanOrEqualTo(11));
-      final tables = await db
-          .customSelect(
-            'SELECT name FROM sqlite_master '
-            "WHERE type='table' AND name='recordings'",
-          )
-          .get();
-      expect(tables, hasLength(1));
-    });
+    test(
+      'is at the current schema version with the recordings table',
+      () async {
+        // Floor, not equality: a future schema bump must NOT break this test,
+        // only a rollback below v11 (when recordings already existed) would.
+        expect(db.schemaVersion, greaterThanOrEqualTo(11));
+        final tables = await db
+            .customSelect(
+              'SELECT name FROM sqlite_master '
+              "WHERE type='table' AND name='recordings'",
+            )
+            .get();
+        expect(tables, hasLength(1));
+      },
+    );
 
     test('filePath is unique: a duplicate path insert is rejected', () async {
       await repo.upsertScanned([
