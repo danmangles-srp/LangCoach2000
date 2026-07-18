@@ -36,13 +36,17 @@ class SafRecordingWriterService implements RecordingWriterService {
         throw const FileSystemException('copy returned no uri');
       }
       return result;
-    } on PlatformException catch (e) {
+    } on PlatformException catch (e, st) {
       // NO_PERSISTED_GRANT = the SAF tree grant lapsed; route to re-pick
-      // (T19.7). Anything else is a genuine IO/provider failure.
+      // (T19.7). Anything else is a genuine IO/provider failure. Both paths
+      // preserve the original stack (T15.9).
       if (e.code == _noGrantCode) {
-        throw FolderGrantLostException(e.message);
+        Error.throwWithStackTrace(FolderGrantLostException(e.message), st);
       }
-      throw FileSystemException('copy failed: ${e.code} ${e.message ?? ''}');
+      Error.throwWithStackTrace(
+        FileSystemException('copy failed: ${e.code} ${e.message ?? ''}'),
+        st,
+      );
     }
   }
 
@@ -56,9 +60,12 @@ class SafRecordingWriterService implements RecordingWriterService {
         'publishToMediaStore',
         <String, Object?>{'sourceUri': sourceUri, 'displayName': displayName},
       );
-    } on PlatformException catch (e) {
-      throw FileSystemException(
-        'mediastore publish failed: ${e.code} ${e.message ?? ''}',
+    } on PlatformException catch (e, st) {
+      Error.throwWithStackTrace(
+        FileSystemException(
+          'mediastore publish failed: ${e.code} ${e.message ?? ''}',
+        ),
+        st,
       );
     }
   }

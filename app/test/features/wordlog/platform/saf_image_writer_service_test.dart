@@ -62,6 +62,30 @@ void main() {
     );
   });
 
+  // T15.9: the rethrow must keep the original platform stack so an image-copy
+  // failure points into the channel machinery, not this adapter's rethrow line.
+  test('preserves the platform stack across the rethrow (T15.9)', () async {
+    mockHandler((_) async {
+      throw PlatformException(code: 'IO', message: 'read failed');
+    });
+
+    late StackTrace caught;
+    try {
+      await SafImageWriterService().copyIntoAppData(
+        sourceUri: 'content://x',
+        destRelativePath: 'wordlog/7/s.jpg',
+      );
+      fail('did not throw');
+    } on FileSystemException catch (_, st) {
+      caught = st;
+    }
+
+    // Pre-fix the rethrow's leading frame was this adapter's throw line;
+    // post-fix the PlatformException's own stack survives.
+    final leading = caught.toString().split('\n').first;
+    expect(leading, isNot(contains('saf_image_writer_service.dart')));
+  });
+
   test(
     'a missing handler (non-Android) throws a FileSystemException',
     () async {
