@@ -151,8 +151,10 @@ void main() {
   });
 
   group('schema', () {
-    test('is at version 11 with the recordings table', () async {
-      expect(db.schemaVersion, 11);
+    test('is at the current schema version with the recordings table', () async {
+      // Floor, not equality: a future schema bump must NOT break this test,
+      // only a rollback below v11 (when recordings already existed) would.
+      expect(db.schemaVersion, greaterThanOrEqualTo(11));
       final tables = await db
           .customSelect(
             'SELECT name FROM sqlite_master '
