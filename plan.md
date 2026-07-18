@@ -606,7 +606,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   + `int xpIntoLevel(int total) => total % 500;` + an `XpSource` enum with stable `columnValue`
   strings (mirror `MetricKind`). Pure-Dart unit tests: level banding at 0/499/500/999/1000, negative
   total clamps to 0. *ACs:* M11 AC 1. *Deps:* T0.2.
-- COMPLETE (#TBD) **T11.2 — XP awarding hooks.** Wire `xp_events` inserts into the five completion points — no new UI
+- COMPLETE (#99) **T11.2 — XP awarding hooks.** Wire `xp_events` inserts into the five completion points — no new UI
   for four of them, XP is a side effect:
   - **review** (+10): `ReviewEventRepository.recordReview` + `markReviewed` (`features/gpa/data/review_event_repository.dart`) — insert the xp row in the same transaction.
   - **wordlog** (+5): `WordLogRepository.setTextLog` (non-empty body) + `ImageLogService.attach` success (`features/wordlog/`).
@@ -619,7 +619,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   award only when the body changes from empty→non-empty (track via the prior row). Unit tests assert
   each hook writes exactly one row with the expected source+points. *ACs:* M11 AC 2. *Deps:* T11.1,
   T2.2, T3.2, T4.4, T5.2.
-- **T11.3 — Streak + freeze engine (pure Dart).** Domain
+- COMPLETE (#TBD) **T11.3 — Streak + freeze engine (pure Dart).** Domain
   `features/progress/domain/streak_engine.dart`. `StreakResult computeStreak({required
   List<DateTime> reviewDays, required DateTime asOf, required int freezesBanked})` — consecutive
   calendar days with ≥1 review-event ending on `asOf` (or `asOf-1` if asOf itself has none, so "today

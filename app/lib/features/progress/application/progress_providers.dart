@@ -1,10 +1,14 @@
-// Riverpod wiring for the progress feature (M11 T11.2). The repository wraps
-// the Drift store; every awarding site (review, word-log, Anki, task) reads
-// this singleton to post XP. The dashboard snapshot lands in T11.5.
+// Riverpod wiring for the progress feature (M11). The XP repository (T11.2) is
+// shared by every awarding site; the streak service (T11.3) derives the streak
+// + freeze balance for the dashboard (T11.5). Both are singletons over the
+// local store.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/core/database/platform/database_provider.dart';
+import 'package:rivendell/features/gpa/application/review_providers.dart';
+import 'package:rivendell/features/progress/application/streak_service.dart';
 import 'package:rivendell/features/progress/data/xp_repository.dart';
 
 /// Singleton [XpRepository] over the local store. Shared by every awarding
@@ -12,4 +16,20 @@ import 'package:rivendell/features/progress/data/xp_repository.dart';
 /// ambient tx via the shared AppDatabase).
 final xpRepositoryProvider = FutureProvider<XpRepository>(
   (ref) async => XpRepository(await ref.watch(appDatabaseProvider.future)),
+);
+
+/// Singleton [KvRepository] for progress state (the freeze bank). Scoped per
+/// the codebase convention — each feature owns its KV provider.
+final progressKvRepositoryProvider = FutureProvider<KvRepository>(
+  (ref) async => KvRepository(await ref.watch(appDatabaseProvider.future)),
+);
+
+/// Singleton [StreakService]. [DateTime.now] is injected so the asOf boundary
+/// is deterministic in tests.
+final streakServiceProvider = FutureProvider<StreakService>(
+  (ref) async => StreakService(
+    kv: await ref.watch(progressKvRepositoryProvider.future),
+    reviews: await ref.watch(reviewEventRepositoryProvider.future),
+    now: DateTime.now,
+  ),
 );
