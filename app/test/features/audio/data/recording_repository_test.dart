@@ -151,8 +151,8 @@ void main() {
   });
 
   group('schema', () {
-    test('is at version 10 with the recordings table', () async {
-      expect(db.schemaVersion, 10);
+    test('is at version 11 with the recordings table', () async {
+      expect(db.schemaVersion, 11);
       final tables = await db
           .customSelect(
             'SELECT name FROM sqlite_master '
