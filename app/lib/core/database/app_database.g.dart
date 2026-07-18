@@ -3685,6 +3685,416 @@ class MetricsEventsCompanion extends UpdateCompanion<MetricsEvent> {
   }
 }
 
+class $XpEventsTable extends XpEvents with TableInfo<$XpEventsTable, XpEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $XpEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pointsMeta = const VerificationMeta('points');
+  @override
+  late final GeneratedColumn<int> points = GeneratedColumn<int>(
+    'points',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordingIdMeta = const VerificationMeta(
+    'recordingId',
+  );
+  @override
+  late final GeneratedColumn<int> recordingId = GeneratedColumn<int>(
+    'recording_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recordings (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<int> taskId = GeneratedColumn<int>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tasks (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _atMeta = const VerificationMeta('at');
+  @override
+  late final GeneratedColumn<DateTime> at = GeneratedColumn<DateTime>(
+    'at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    source,
+    points,
+    recordingId,
+    taskId,
+    at,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'xp_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<XpEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('points')) {
+      context.handle(
+        _pointsMeta,
+        points.isAcceptableOrUnknown(data['points']!, _pointsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pointsMeta);
+    }
+    if (data.containsKey('recording_id')) {
+      context.handle(
+        _recordingIdMeta,
+        recordingId.isAcceptableOrUnknown(
+          data['recording_id']!,
+          _recordingIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
+    if (data.containsKey('at')) {
+      context.handle(_atMeta, at.isAcceptableOrUnknown(data['at']!, _atMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  XpEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return XpEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      points: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}points'],
+      )!,
+      recordingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recording_id'],
+      ),
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}task_id'],
+      ),
+      at: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}at'],
+      )!,
+    );
+  }
+
+  @override
+  $XpEventsTable createAlias(String alias) {
+    return $XpEventsTable(attachedDatabase, alias);
+  }
+}
+
+class XpEvent extends DataClass implements Insertable<XpEvent> {
+  final int id;
+
+  /// Which action earned this XP (an xp_level.dart XpSource columnValue).
+  final String source;
+
+  /// The points awarded. Always non-negative; the award site computes it
+  /// (e.g. Anki = 2 × cards exported).
+  final int points;
+
+  /// The recording this award traces to (review/wordlog/anki), or null.
+  /// SET NULL on recording delete — the XP event survives.
+  final int? recordingId;
+
+  /// The task this award traces to, or null. SET NULL on task delete.
+  final int? taskId;
+
+  /// When the award happened. Drives nothing today; kept for future analytics.
+  final DateTime at;
+  const XpEvent({
+    required this.id,
+    required this.source,
+    required this.points,
+    this.recordingId,
+    this.taskId,
+    required this.at,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['source'] = Variable<String>(source);
+    map['points'] = Variable<int>(points);
+    if (!nullToAbsent || recordingId != null) {
+      map['recording_id'] = Variable<int>(recordingId);
+    }
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<int>(taskId);
+    }
+    map['at'] = Variable<DateTime>(at);
+    return map;
+  }
+
+  XpEventsCompanion toCompanion(bool nullToAbsent) {
+    return XpEventsCompanion(
+      id: Value(id),
+      source: Value(source),
+      points: Value(points),
+      recordingId: recordingId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recordingId),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
+      at: Value(at),
+    );
+  }
+
+  factory XpEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return XpEvent(
+      id: serializer.fromJson<int>(json['id']),
+      source: serializer.fromJson<String>(json['source']),
+      points: serializer.fromJson<int>(json['points']),
+      recordingId: serializer.fromJson<int?>(json['recordingId']),
+      taskId: serializer.fromJson<int?>(json['taskId']),
+      at: serializer.fromJson<DateTime>(json['at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'source': serializer.toJson<String>(source),
+      'points': serializer.toJson<int>(points),
+      'recordingId': serializer.toJson<int?>(recordingId),
+      'taskId': serializer.toJson<int?>(taskId),
+      'at': serializer.toJson<DateTime>(at),
+    };
+  }
+
+  XpEvent copyWith({
+    int? id,
+    String? source,
+    int? points,
+    Value<int?> recordingId = const Value.absent(),
+    Value<int?> taskId = const Value.absent(),
+    DateTime? at,
+  }) => XpEvent(
+    id: id ?? this.id,
+    source: source ?? this.source,
+    points: points ?? this.points,
+    recordingId: recordingId.present ? recordingId.value : this.recordingId,
+    taskId: taskId.present ? taskId.value : this.taskId,
+    at: at ?? this.at,
+  );
+  XpEvent copyWithCompanion(XpEventsCompanion data) {
+    return XpEvent(
+      id: data.id.present ? data.id.value : this.id,
+      source: data.source.present ? data.source.value : this.source,
+      points: data.points.present ? data.points.value : this.points,
+      recordingId: data.recordingId.present
+          ? data.recordingId.value
+          : this.recordingId,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      at: data.at.present ? data.at.value : this.at,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('XpEvent(')
+          ..write('id: $id, ')
+          ..write('source: $source, ')
+          ..write('points: $points, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('taskId: $taskId, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, source, points, recordingId, taskId, at);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is XpEvent &&
+          other.id == this.id &&
+          other.source == this.source &&
+          other.points == this.points &&
+          other.recordingId == this.recordingId &&
+          other.taskId == this.taskId &&
+          other.at == this.at);
+}
+
+class XpEventsCompanion extends UpdateCompanion<XpEvent> {
+  final Value<int> id;
+  final Value<String> source;
+  final Value<int> points;
+  final Value<int?> recordingId;
+  final Value<int?> taskId;
+  final Value<DateTime> at;
+  const XpEventsCompanion({
+    this.id = const Value.absent(),
+    this.source = const Value.absent(),
+    this.points = const Value.absent(),
+    this.recordingId = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.at = const Value.absent(),
+  });
+  XpEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required String source,
+    required int points,
+    this.recordingId = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.at = const Value.absent(),
+  }) : source = Value(source),
+       points = Value(points);
+  static Insertable<XpEvent> custom({
+    Expression<int>? id,
+    Expression<String>? source,
+    Expression<int>? points,
+    Expression<int>? recordingId,
+    Expression<int>? taskId,
+    Expression<DateTime>? at,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (source != null) 'source': source,
+      if (points != null) 'points': points,
+      if (recordingId != null) 'recording_id': recordingId,
+      if (taskId != null) 'task_id': taskId,
+      if (at != null) 'at': at,
+    });
+  }
+
+  XpEventsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? source,
+    Value<int>? points,
+    Value<int?>? recordingId,
+    Value<int?>? taskId,
+    Value<DateTime>? at,
+  }) {
+    return XpEventsCompanion(
+      id: id ?? this.id,
+      source: source ?? this.source,
+      points: points ?? this.points,
+      recordingId: recordingId ?? this.recordingId,
+      taskId: taskId ?? this.taskId,
+      at: at ?? this.at,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (points.present) {
+      map['points'] = Variable<int>(points.value);
+    }
+    if (recordingId.present) {
+      map['recording_id'] = Variable<int>(recordingId.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<int>(taskId.value);
+    }
+    if (at.present) {
+      map['at'] = Variable<DateTime>(at.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('XpEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('source: $source, ')
+          ..write('points: $points, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('taskId: $taskId, ')
+          ..write('at: $at')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3703,6 +4113,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CoachNoteWordLogsTable coachNoteWordLogs =
       $CoachNoteWordLogsTable(this);
   late final $MetricsEventsTable metricsEvents = $MetricsEventsTable(this);
+  late final $XpEventsTable xpEvents = $XpEventsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3719,6 +4130,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     coachNoteRecordings,
     coachNoteWordLogs,
     metricsEvents,
+    xpEvents,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3763,6 +4175,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('coach_note_word_logs', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'recordings',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('xp_events', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tasks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('xp_events', kind: UpdateKind.update)],
     ),
   ]);
 }
@@ -4232,6 +4658,25 @@ final class $$RecordingsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$XpEventsTable, List<XpEvent>> _xpEventsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.xpEvents,
+    aliasName: 'recordings__id__xp_events__recording_id',
+  );
+
+  $$XpEventsTableProcessedTableManager get xpEventsRefs {
+    final manager = $$XpEventsTableTableManager(
+      $_db,
+      $_db.xpEvents,
+    ).filter((f) => f.recordingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_xpEventsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$RecordingsTableFilterComposer
@@ -4349,6 +4794,31 @@ class $$RecordingsTableFilterComposer
           }) => $$CoachNoteRecordingsTableFilterComposer(
             $db: $db,
             $table: $db.coachNoteRecordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> xpEventsRefs(
+    Expression<bool> Function($$XpEventsTableFilterComposer f) f,
+  ) {
+    final $$XpEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.xpEvents,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$XpEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.xpEvents,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4519,6 +4989,31 @@ class $$RecordingsTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> xpEventsRefs<T extends Object>(
+    Expression<T> Function($$XpEventsTableAnnotationComposer a) f,
+  ) {
+    final $$XpEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.xpEvents,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$XpEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.xpEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$RecordingsTableTableManager
@@ -4538,6 +5033,7 @@ class $$RecordingsTableTableManager
             bool reviewEventsRefs,
             bool wordLogsRefs,
             bool coachNoteRecordingsRefs,
+            bool xpEventsRefs,
           })
         > {
   $$RecordingsTableTableManager(_$AppDatabase db, $RecordingsTable table)
@@ -4604,6 +5100,7 @@ class $$RecordingsTableTableManager
                 reviewEventsRefs = false,
                 wordLogsRefs = false,
                 coachNoteRecordingsRefs = false,
+                xpEventsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4611,6 +5108,7 @@ class $$RecordingsTableTableManager
                     if (reviewEventsRefs) db.reviewEvents,
                     if (wordLogsRefs) db.wordLogs,
                     if (coachNoteRecordingsRefs) db.coachNoteRecordings,
+                    if (xpEventsRefs) db.xpEvents,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4678,6 +5176,27 @@ class $$RecordingsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (xpEventsRefs)
+                        await $_getPrefetchedData<
+                          Recording,
+                          $RecordingsTable,
+                          XpEvent
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RecordingsTableReferences
+                              ._xpEventsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RecordingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).xpEventsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.recordingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4702,6 +5221,7 @@ typedef $$RecordingsTableProcessedTableManager =
         bool reviewEventsRefs,
         bool wordLogsRefs,
         bool coachNoteRecordingsRefs,
+        bool xpEventsRefs,
       })
     >;
 typedef $$ReviewEventsTableCreateCompanionBuilder =
@@ -5606,6 +6126,30 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
     });
 
+final class $$TasksTableReferences
+    extends BaseReferences<_$AppDatabase, $TasksTable, Task> {
+  $$TasksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$XpEventsTable, List<XpEvent>> _xpEventsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.xpEvents,
+    aliasName: 'tasks__id__xp_events__task_id',
+  );
+
+  $$XpEventsTableProcessedTableManager get xpEventsRefs {
+    final manager = $$XpEventsTableTableManager(
+      $_db,
+      $_db.xpEvents,
+    ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_xpEventsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
 class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   $$TasksTableFilterComposer({
     required super.$db,
@@ -5648,6 +6192,31 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> xpEventsRefs(
+    Expression<bool> Function($$XpEventsTableFilterComposer f) f,
+  ) {
+    final $$XpEventsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.xpEvents,
+      getReferencedColumn: (t) => t.taskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$XpEventsTableFilterComposer(
+            $db: $db,
+            $table: $db.xpEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TasksTableOrderingComposer
@@ -5728,6 +6297,31 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> xpEventsRefs<T extends Object>(
+    Expression<T> Function($$XpEventsTableAnnotationComposer a) f,
+  ) {
+    final $$XpEventsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.xpEvents,
+      getReferencedColumn: (t) => t.taskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$XpEventsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.xpEvents,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TasksTableTableManager
@@ -5741,9 +6335,9 @@ class $$TasksTableTableManager
           $$TasksTableAnnotationComposer,
           $$TasksTableCreateCompanionBuilder,
           $$TasksTableUpdateCompanionBuilder,
-          (Task, BaseReferences<_$AppDatabase, $TasksTable, Task>),
+          (Task, $$TasksTableReferences),
           Task,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool xpEventsRefs})
         > {
   $$TasksTableTableManager(_$AppDatabase db, $TasksTable table)
     : super(
@@ -5793,9 +6387,33 @@ class $$TasksTableTableManager
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) =>
+                    (e.readTable(table), $$TasksTableReferences(db, table, e)),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({xpEventsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (xpEventsRefs) db.xpEvents],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (xpEventsRefs)
+                    await $_getPrefetchedData<Task, $TasksTable, XpEvent>(
+                      currentTable: table,
+                      referencedTable: $$TasksTableReferences
+                          ._xpEventsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$TasksTableReferences(db, table, p0).xpEventsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.taskId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -5810,9 +6428,9 @@ typedef $$TasksTableProcessedTableManager =
       $$TasksTableAnnotationComposer,
       $$TasksTableCreateCompanionBuilder,
       $$TasksTableUpdateCompanionBuilder,
-      (Task, BaseReferences<_$AppDatabase, $TasksTable, Task>),
+      (Task, $$TasksTableReferences),
       Task,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool xpEventsRefs})
     >;
 typedef $$CoachNotesTableCreateCompanionBuilder =
     CoachNotesCompanion Function({
@@ -7132,6 +7750,422 @@ typedef $$MetricsEventsTableProcessedTableManager =
       MetricsEvent,
       PrefetchHooks Function()
     >;
+typedef $$XpEventsTableCreateCompanionBuilder =
+    XpEventsCompanion Function({
+      Value<int> id,
+      required String source,
+      required int points,
+      Value<int?> recordingId,
+      Value<int?> taskId,
+      Value<DateTime> at,
+    });
+typedef $$XpEventsTableUpdateCompanionBuilder =
+    XpEventsCompanion Function({
+      Value<int> id,
+      Value<String> source,
+      Value<int> points,
+      Value<int?> recordingId,
+      Value<int?> taskId,
+      Value<DateTime> at,
+    });
+
+final class $$XpEventsTableReferences
+    extends BaseReferences<_$AppDatabase, $XpEventsTable, XpEvent> {
+  $$XpEventsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $RecordingsTable _recordingIdTable(_$AppDatabase db) =>
+      db.recordings.createAlias('xp_events__recording_id__recordings__id');
+
+  $$RecordingsTableProcessedTableManager? get recordingId {
+    final $_column = $_itemColumn<int>('recording_id');
+    if ($_column == null) return null;
+    final manager = $$RecordingsTableTableManager(
+      $_db,
+      $_db.recordings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recordingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TasksTable _taskIdTable(_$AppDatabase db) =>
+      db.tasks.createAlias('xp_events__task_id__tasks__id');
+
+  $$TasksTableProcessedTableManager? get taskId {
+    final $_column = $_itemColumn<int>('task_id');
+    if ($_column == null) return null;
+    final manager = $$TasksTableTableManager(
+      $_db,
+      $_db.tasks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$XpEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $XpEventsTable> {
+  $$XpEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get points => $composableBuilder(
+    column: $table.points,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RecordingsTableFilterComposer get recordingId {
+    final $$RecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TasksTableFilterComposer get taskId {
+    final $$TasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableFilterComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$XpEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $XpEventsTable> {
+  $$XpEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get points => $composableBuilder(
+    column: $table.points,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get at => $composableBuilder(
+    column: $table.at,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RecordingsTableOrderingComposer get recordingId {
+    final $$RecordingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TasksTableOrderingComposer get taskId {
+    final $$TasksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableOrderingComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$XpEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $XpEventsTable> {
+  $$XpEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get points =>
+      $composableBuilder(column: $table.points, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get at =>
+      $composableBuilder(column: $table.at, builder: (column) => column);
+
+  $$RecordingsTableAnnotationComposer get recordingId {
+    final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TasksTableAnnotationComposer get taskId {
+    final $$TasksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$XpEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $XpEventsTable,
+          XpEvent,
+          $$XpEventsTableFilterComposer,
+          $$XpEventsTableOrderingComposer,
+          $$XpEventsTableAnnotationComposer,
+          $$XpEventsTableCreateCompanionBuilder,
+          $$XpEventsTableUpdateCompanionBuilder,
+          (XpEvent, $$XpEventsTableReferences),
+          XpEvent,
+          PrefetchHooks Function({bool recordingId, bool taskId})
+        > {
+  $$XpEventsTableTableManager(_$AppDatabase db, $XpEventsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$XpEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$XpEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$XpEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int> points = const Value.absent(),
+                Value<int?> recordingId = const Value.absent(),
+                Value<int?> taskId = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+              }) => XpEventsCompanion(
+                id: id,
+                source: source,
+                points: points,
+                recordingId: recordingId,
+                taskId: taskId,
+                at: at,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String source,
+                required int points,
+                Value<int?> recordingId = const Value.absent(),
+                Value<int?> taskId = const Value.absent(),
+                Value<DateTime> at = const Value.absent(),
+              }) => XpEventsCompanion.insert(
+                id: id,
+                source: source,
+                points: points,
+                recordingId: recordingId,
+                taskId: taskId,
+                at: at,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$XpEventsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({recordingId = false, taskId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (recordingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.recordingId,
+                                referencedTable: $$XpEventsTableReferences
+                                    ._recordingIdTable(db),
+                                referencedColumn: $$XpEventsTableReferences
+                                    ._recordingIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (taskId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.taskId,
+                                referencedTable: $$XpEventsTableReferences
+                                    ._taskIdTable(db),
+                                referencedColumn: $$XpEventsTableReferences
+                                    ._taskIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$XpEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $XpEventsTable,
+      XpEvent,
+      $$XpEventsTableFilterComposer,
+      $$XpEventsTableOrderingComposer,
+      $$XpEventsTableAnnotationComposer,
+      $$XpEventsTableCreateCompanionBuilder,
+      $$XpEventsTableUpdateCompanionBuilder,
+      (XpEvent, $$XpEventsTableReferences),
+      XpEvent,
+      PrefetchHooks Function({bool recordingId, bool taskId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7158,4 +8192,6 @@ class $AppDatabaseManager {
       $$CoachNoteWordLogsTableTableManager(_db, _db.coachNoteWordLogs);
   $$MetricsEventsTableTableManager get metricsEvents =>
       $$MetricsEventsTableTableManager(_db, _db.metricsEvents);
+  $$XpEventsTableTableManager get xpEvents =>
+      $$XpEventsTableTableManager(_db, _db.xpEvents);
 }
