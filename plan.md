@@ -619,7 +619,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   award only when the body changes from empty→non-empty (track via the prior row). Unit tests assert
   each hook writes exactly one row with the expected source+points. *ACs:* M11 AC 2. *Deps:* T11.1,
   T2.2, T3.2, T4.4, T5.2.
-- COMPLETE (#TBD) **T11.3 — Streak + freeze engine (pure Dart).** Domain
+- COMPLETE (#100) **T11.3 — Streak + freeze engine (pure Dart).** Domain
   `features/progress/domain/streak_engine.dart`. `StreakResult computeStreak({required
   List<DateTime> reviewDays, required DateTime asOf, required int freezesBanked})` — consecutive
   calendar days with ≥1 review-event ending on `asOf` (or `asOf-1` if asOf itself has none, so "today
@@ -631,7 +631,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   current ISO week > last-grant week and banked < 1, set banked = 1 and stamp last-grant. Pure-Dart
   engine tests: 3-day run, gap-with-freeze continues, gap-no-freeze resets, freeze auto-grant fires
   once per ISO week, cap-1 banking. **No UI gating on reset.** *ACs:* M11 AC 3. *Deps:* T2.3, T11.1.
-- **T11.4 — Reading/movie activity log.** New manual XP source. Schema: `activity_logs` table
+- COMPLETE (#TBD) **T11.4 — Reading/movie activity log.** New manual XP source. Schema: `activity_logs` table
   (`features/progress/data/activity_logs_table.dart`): `id`, `kind` (`reading`/`movie`), `title`
   (text), `durationMinutes` (int, nullable), `at` (DateTime). Register in `app_database.dart`
   (schemaVersion bump to 11 — fold with T11.1's bump if shipped together). Repository +

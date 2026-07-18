@@ -15,6 +15,7 @@ import 'package:rivendell/features/audio/playback/application/audio_player_contr
 import 'package:rivendell/features/audio/presentation/recording_nav_context.dart';
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
+import 'package:rivendell/features/progress/presentation/log_activity_dialog.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class TodayQueueScreen extends ConsumerWidget {
@@ -30,6 +31,11 @@ class TodayQueueScreen extends ConsumerWidget {
         title: Text(strings.queueTitle),
         centerTitle: false,
         actions: [
+          IconButton(
+            tooltip: strings.activityLogTooltip,
+            icon: const Icon(Icons.history_edu_outlined),
+            onPressed: () => logActivity(context, ref),
+          ),
           IconButton(
             tooltip: strings.settingsTooltip,
             icon: const Icon(Icons.settings_outlined),
