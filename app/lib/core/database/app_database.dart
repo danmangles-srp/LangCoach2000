@@ -17,6 +17,7 @@ import 'package:rivendell/features/coach/data/coach_note_word_logs_table.dart';
 import 'package:rivendell/features/coach/data/coach_notes_table.dart';
 import 'package:rivendell/features/gpa/data/review_events_table.dart';
 import 'package:rivendell/features/metrics/data/metrics_events_table.dart';
+import 'package:rivendell/features/progress/data/activity_logs_table.dart';
 import 'package:rivendell/features/progress/data/xp_events_table.dart';
 import 'package:rivendell/features/tasks/data/tasks_table.dart';
 import 'package:rivendell/features/wordlog/data/word_logs_table.dart';
@@ -37,6 +38,7 @@ part 'app_database.g.dart';
     CoachNoteWordLogs,
     MetricsEvents,
     XpEvents,
+    ActivityLogs,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -51,7 +53,7 @@ class AppDatabase extends _$AppDatabase {
       AppDatabase(executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -110,6 +112,11 @@ class AppDatabase extends _$AppDatabase {
         // sum of `points`; FK traces to recordings/tasks SET NULL on delete so
         // earned XP survives a source-row deletion.
         await m.createTable(xpEvents);
+      }
+      if (from < 12) {
+        // M11 T11.4: manual reading/movie activity log (the 5th XP source).
+        // Each insert is the single site that awards the reading/movie +15.
+        await m.createTable(activityLogs);
       }
     },
     beforeOpen: (details) async {

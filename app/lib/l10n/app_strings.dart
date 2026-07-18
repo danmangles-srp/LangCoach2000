@@ -159,6 +159,13 @@ class AppStrings {
     taskEditAction: 'Edit',
     taskCreatedOnN: 'Created {date}',
     taskNotFound: 'This task is no longer available.',
+    activityLogTooltip: 'Log activity',
+    activityLogTitle: 'Log activity',
+    activityKindReading: 'Reading',
+    activityKindMovie: 'Movie',
+    activityFieldTitle: 'Title',
+    activityFieldDurationMinutes: 'Minutes (optional)',
+    activitySave: 'Save',
     coachTitle: 'Coach Bank',
     coachEmptyTitle: 'No notes yet',
     coachEmptyBody:
@@ -369,6 +376,13 @@ class AppStrings {
     taskEditAction: 'Tahrirlash',
     taskCreatedOnN: 'Yaratilgan: {date}',
     taskNotFound: 'Bu vazifa endi mavjud emas.',
+    activityLogTooltip: 'Faollikni qayd etish',
+    activityLogTitle: 'Faollikni qayd etish',
+    activityKindReading: 'O‘qish',
+    activityKindMovie: 'Film',
+    activityFieldTitle: 'Sarlavha',
+    activityFieldDurationMinutes: 'Daqiqalar (ixtiyoriy)',
+    activitySave: 'Saqlash',
     coachTitle: 'Murabbiy banki',
     coachEmptyTitle: 'Hali yozuvlar yo‘q',
     coachEmptyBody:
@@ -562,6 +576,15 @@ class AppStrings {
   String taskCreatedOn(String date) =>
       _bundle.taskCreatedOnN.replaceAll('{date}', date);
   String get taskNotFound => _bundle.taskNotFound;
+
+  String get activityLogTooltip => _bundle.activityLogTooltip;
+  String get activityLogTitle => _bundle.activityLogTitle;
+  String get activityKindReading => _bundle.activityKindReading;
+  String get activityKindMovie => _bundle.activityKindMovie;
+  String get activityFieldTitle => _bundle.activityFieldTitle;
+  String get activityFieldDurationMinutes =>
+      _bundle.activityFieldDurationMinutes;
+  String get activitySave => _bundle.activitySave;
 
   String get coachTitle => _bundle.coachTitle;
   String get coachEmptyTitle => _bundle.coachEmptyTitle;
@@ -762,6 +785,13 @@ class _Bundle {
     required this.taskEditAction,
     required this.taskCreatedOnN,
     required this.taskNotFound,
+    required this.activityLogTooltip,
+    required this.activityLogTitle,
+    required this.activityKindReading,
+    required this.activityKindMovie,
+    required this.activityFieldTitle,
+    required this.activityFieldDurationMinutes,
+    required this.activitySave,
     required this.coachTitle,
     required this.coachEmptyTitle,
     required this.coachEmptyBody,
@@ -936,6 +966,13 @@ class _Bundle {
   final String taskEditAction;
   final String taskCreatedOnN;
   final String taskNotFound;
+  final String activityLogTooltip;
+  final String activityLogTitle;
+  final String activityKindReading;
+  final String activityKindMovie;
+  final String activityFieldTitle;
+  final String activityFieldDurationMinutes;
+  final String activitySave;
   final String coachTitle;
   final String coachEmptyTitle;
   final String coachEmptyBody;
