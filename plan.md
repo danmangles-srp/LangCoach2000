@@ -596,7 +596,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   balance — streak/XP are purely informational.
 
 ### Tickets
-- **T11.1 — XP ledger schema + engine (pure Dart).** Add an `xp_events` table
+- COMPLETE (#98) **T11.1 — XP ledger schema + engine (pure Dart).** Add an `xp_events` table
   (`features/progress/data/xp_events_table.dart`, mirroring `metrics_events_table.dart`): columns
   `id` (autoInc), `source` (text — `review`/`wordlog`/`anki`/`task`/`reading`/`movie`), `points`
   (int, non-negative), `recordingId` (int, nullable, FK→recordings), `taskId` (int, nullable,
@@ -606,7 +606,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   + `int xpIntoLevel(int total) => total % 500;` + an `XpSource` enum with stable `columnValue`
   strings (mirror `MetricKind`). Pure-Dart unit tests: level banding at 0/499/500/999/1000, negative
   total clamps to 0. *ACs:* M11 AC 1. *Deps:* T0.2.
-- **T11.2 — XP awarding hooks.** Wire `xp_events` inserts into the five completion points — no new UI
+- COMPLETE (#TBD) **T11.2 — XP awarding hooks.** Wire `xp_events` inserts into the five completion points — no new UI
   for four of them, XP is a side effect:
   - **review** (+10): `ReviewEventRepository.recordReview` + `markReviewed` (`features/gpa/data/review_event_repository.dart`) — insert the xp row in the same transaction.
   - **wordlog** (+5): `WordLogRepository.setTextLog` (non-empty body) + `ImageLogService.attach` success (`features/wordlog/`).

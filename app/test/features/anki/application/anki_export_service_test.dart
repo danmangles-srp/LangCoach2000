@@ -5,14 +5,17 @@
 // inserts what is genuinely new. Failures (addNote → null) are counted, not
 // mistaken for dupes.
 
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/features/ai_image/application/fake_ai_image_service.dart';
 import 'package:rivendell/features/anki/application/anki_export_service.dart';
 import 'package:rivendell/features/anki/application/fake_anki_gateway.dart';
 import 'package:rivendell/features/anki/domain/anki_model_spec.dart';
 import 'package:rivendell/features/anki/domain/anki_tag.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
 import 'package:rivendell/features/wordlog/domain/vocab_pair.dart';
 
 void main() {
@@ -297,6 +300,74 @@ void main() {
         expect(gateway.notes, isEmpty);
       },
     );
+  });
+
+  group('XP awards (M11 T11.2)', () {
+    late AppDatabase db;
+    late XpRepository xp;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      xp = XpRepository(db);
+    });
+
+    tearDown(() => db.close());
+
+    AnkiExportService serviceWithXp({
+      required FakeAnkiGateway gateway,
+      required FakeAiImageService aiImages,
+    }) => AnkiExportService(
+      gateway: gateway,
+      aiImageService: aiImages,
+      logger: AppLogger(sink: RecordingSink()),
+      xp: xp,
+    );
+
+    test('exportType1 awards +2 per card created', () async {
+      final s = serviceWithXp(
+        gateway: FakeAnkiGateway(),
+        aiImages: FakeAiImageService(),
+      );
+      final result = await s.exportType1(
+        tag: 'Lecture.m4a',
+        pairs: pairs([('hello', 'salom'), ('goodbye', 'xayr')]),
+      );
+      expect(result.added, 2);
+      expect(await xp.total(), 4); // 2 × 2
+    });
+
+    test('a pure-skip re-export awards nothing', () async {
+      final gw = FakeAnkiGateway();
+      final ai = FakeAiImageService();
+      final s = serviceWithXp(gateway: gw, aiImages: ai);
+      final raw = pairs([('hello', 'salom')]);
+      await s.exportType1(tag: 'Lecture.m4a', pairs: raw);
+      final second = await s.exportType1(tag: 'Lecture.m4a', pairs: raw);
+      expect(second.added, 0);
+      // Only the first run's +2, nothing for the all-skip re-export.
+      expect(await xp.total(), 2);
+    });
+
+    test('exportType2 awards +2 per card created', () async {
+      final ai = FakeAiImageService();
+      await ai.generateNow(uzbek: 'salom', english: 'hello');
+      final gw = FakeAnkiGateway();
+      gw.mediaResults['ai_images/fake_salom.png'] = '<img src="s.png" />';
+      final s = serviceWithXp(gateway: gw, aiImages: ai);
+      final result = await s.exportType2(pairs: pairs([('hello', 'salom')]));
+      expect(result.added, 1);
+      expect(await xp.total(), 2);
+    });
+
+    test('exportType2Word awards via exportType2 (no double-award)', () async {
+      final ai = FakeAiImageService();
+      await ai.generateNow(uzbek: 'salom', english: 'hello');
+      final gw = FakeAnkiGateway();
+      gw.mediaResults['ai_images/fake_salom.png'] = '<img src="s.png" />';
+      final s = serviceWithXp(gateway: gw, aiImages: ai);
+      await s.exportType2Word('salom');
+      expect(await xp.total(), 2); // exactly one card's worth, not two
+    });
   });
 }
 

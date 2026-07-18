@@ -9,6 +9,8 @@ import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 
 void main() {
   late AppDatabase db;
@@ -388,5 +390,82 @@ void main() {
         expect(q.tomorrow, isEmpty);
       },
     );
+  });
+
+  group('XP awards (M11 T11.2)', () {
+    late XpRepository xp;
+    late ReviewEventRepository reviewsWithXp;
+
+    setUp(() {
+      xp = XpRepository(db);
+      reviewsWithXp = ReviewEventRepository(db, xp: xp);
+    });
+
+    test('recordReview awards +10 when a milestone is earned', () async {
+      final id = await seed();
+      await reviewsWithXp.recordReview(
+        id,
+        completedAt: created.add(const Duration(days: 30)),
+      ); // milestone 4
+      expect(await xp.total(), 10);
+    });
+
+    test(
+      'recordReview awards nothing on a null-milestone bonus play',
+      () async {
+        // A same-day play assigns no milestone — and no XP, so replaying a
+        // fully-reviewed recording can't farm XP.
+        final id = await seed();
+        await reviewsWithXp.recordReview(id, completedAt: created);
+        expect(await xp.total(), 0);
+      },
+    );
+
+    test(
+      'recordReview awards once per milestone, not on the bonus replay',
+      () async {
+        final id = await seed();
+        final day30 = created.add(const Duration(days: 30));
+        await reviewsWithXp.recordReview(id, completedAt: day30); // +10 (m4)
+        await reviewsWithXp.recordReview(id, completedAt: day30); // bonus, +0
+        expect(await xp.total(), 10);
+      },
+    );
+
+    test(
+      'markReviewed awards +10 once (the existing-event guard dedupes)',
+      () async {
+        final id = await seed();
+        final at = created.add(const Duration(days: 7));
+        await reviewsWithXp.markReviewed(
+          id,
+          milestoneIndex: 3,
+          completedAt: at,
+        );
+        await reviewsWithXp.markReviewed(
+          id,
+          milestoneIndex: 3,
+          completedAt: at,
+        );
+        expect(await xp.total(), 10);
+      },
+    );
+
+    test('the review award traces to the recording', () async {
+      final id = await seed();
+      await reviewsWithXp.recordReview(
+        id,
+        completedAt: created.add(const Duration(days: 30)),
+      );
+      final row = await (db.select(db.xpEvents)..limit(1)).getSingle();
+      expect(row.source, XpSource.review.columnValue);
+      expect(row.points, 10);
+      expect(row.recordingId, id);
+    });
+
+    test('no xp award on the gone-recording no-op path', () async {
+      await reviewsWithXp.recordReview(999, completedAt: created);
+      expect(await xp.total(), 0);
+    });
   });
 }
