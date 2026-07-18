@@ -35,7 +35,7 @@ typedef AiImageRequestGate = Future<void> Function();
 AiImageRequestGate pollinationsRateGate({
   Duration gap = const Duration(milliseconds: 1200),
 }) {
-  DateTime last = DateTime.fromMillisecondsSinceEpoch(0);
+  var last = DateTime.fromMillisecondsSinceEpoch(0);
   return () async {
     final wait = gap - DateTime.now().difference(last);
     if (!wait.isNegative) {
@@ -148,14 +148,12 @@ class PollinationsImageService implements AiImageService {
   /// Pollinations tier regularly returns 429/5xx at network handovers and
   /// throws socket/timeout on a half-open radio. A single 500ms retry wasn't
   /// enough for the free tier's cool-down during a multi-word drain: the second
-  /// attempt 429'd too and the whole batch (minus the first word) dead-lettered.
+  /// attempt 429'd too and the whole batch (minus the first word)
+  /// dead-lettered.
   /// Three attempts with growing backoff (800ms, 1.6s) lets the tier recover
   /// before the queue-level backoff takes over for repeated failures.
   Future<List<int>> _downloadWithRetry(String url) async {
-    const backoff = [
-      Duration(milliseconds: 800),
-      Duration(milliseconds: 1600),
-    ];
+    const backoff = [Duration(milliseconds: 800), Duration(milliseconds: 1600)];
     for (var attempt = 0; attempt <= backoff.length; attempt++) {
       try {
         return await _download(url);

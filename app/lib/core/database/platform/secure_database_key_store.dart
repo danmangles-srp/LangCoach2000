@@ -25,9 +25,20 @@ class SecureDatabaseKeyStore implements DatabaseKeyStore {
     await _storage.write(key: _key, value: fresh);
     // Write-then-reread converges a same-isolate race (two callers observe null
     // before either write lands): both end up returning the persisted value.
-    // Cross-isolate (UI + workmanager) needs a single-key-owner design — see
-    // the TODO bound to T0.3 in database_connection.dart.
+    // Cross-isolate (UI + workmanager) is handled by giving the background
+    // isolate a read-only path (read below) — only this main-isolate path
+    // ever creates, satisfying the T0.3 single-key-owner rule.
     final persisted = await _storage.read(key: _key);
     return persisted ?? fresh;
+  }
+
+  @override
+  Future<String?> read() async {
+    // Read-only: never create. The workmanager background isolate calls this
+    // (T18.2) so it cannot race a main-isolate create. The periodic task is
+    // registered only after main-isolate boot has created the key, so this
+    // returns null only on a pre-boot fire — in which case the caller no-ops.
+    final existing = await _storage.read(key: _key);
+    return (existing != null && existing.isNotEmpty) ? existing : null;
   }
 }

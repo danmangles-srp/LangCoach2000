@@ -59,7 +59,7 @@ void main() {
   PollinationsImageService buildService({
     required http.Client client,
     String Function()? promptTemplate,
-    AiImageRequestGate gate,
+    AiImageRequestGate? gate,
   }) {
     return PollinationsImageService(
       cache: cache,
@@ -241,7 +241,7 @@ void main() {
       expect(await service.cachedPath('qurbaqa'), isNull);
     });
 
-    test('paces back-to-back GETs through the gate (T19.x rate-limit)', () async {
+    test('paces back-to-back GETs through the rate gate', () async {
       // Two distinct uncached words; the gate must enforce a gap so the second
       // GET doesn't land on the keyless tier while the first is still cooling.
       // Real clock with a tiny gap keeps the test fast yet deterministic on the

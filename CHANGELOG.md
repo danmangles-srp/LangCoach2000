@@ -5,6 +5,56 @@ All notable changes to **Rivendell** are documented here. The format follows
 [SemVer](https://semver.org/). Notation `(T x.y)` references the task in
 `plan.md`.
 
+## [0.1.1] — 2026-07-18
+
+First beta cut (re-cuts the deleted 0.1.0 RC). Adds the Rivendell brand icon
+and fixes three release-only issues that blocked the RC — a launch crash, a
+missing INTERNET declaration, and a stale-timestamp indexer. Safe to install
+on a clean device over the prior RC.
+
+### Added
+- Rivendell launcher icon — white tree-in-speech-bubble on teal `#00897B`,
+  across all legacy mipmap densities + adaptive (API 26+) foreground/
+  background. `(#89)`
+- Repository pins LF line endings via `.gitattributes` so generated
+  `*.g.dart` stops flipping CRLF↔LF on Windows checkouts. `(#91)`
+- Background AI-image drain via workmanager (`T18.2`) — pending concept images
+  now generate while the app is closed, not only in the foreground. The
+  background isolate opens the SQLCipher store with a read-only-resolved key
+  (`T0.3` single-key-owner), runs one drain pass, and closes. The custom
+  prompt template (`T19.6`) is still foreground-applied; background uses the
+  default pictographic prompt.
+
+### Fixed
+- Release-only launch crash — R8 minification stripped the no-arg ctor of
+  `androidx.work.impl.WorkDatabase_Impl`, so `androidx.startup` threw
+  `NoSuchMethodException` before Flutter loaded. ProGuard keep rules
+  restore it. `(#87)`
+- Release builds now declare `INTERNET` + `ACCESS_NETWORK_STATE`. Debug
+  builds auto-inject INTERNET for the VM service; release did not, so the
+  first AI-image GET threw `SocketException(Failed host lookup, errno 7)`
+  even though the same URL loaded in the browser. `(#88)`
+- SAF indexer timestamp falls back to the device `Clock` instead of a path
+  that R8 stripped. `(#86)`
+- Coach-note `create` / `update` no longer null-assert the freshly written
+  row — explicit `StateError` if the invariant ever breaks. `(#90)`
+
+### Concessions — not-working / not-done (beta)
+- **In-app recording save** hits a SAF permission denial on some devices —
+  `T19.7` deferred (native Kotlin slice).
+- **Manual image attach to a word log** retired in M18. Beta uses
+  AI-generated concept images via the queue only; re-add is post-beta.
+- **XP / streak motivation layer** (plan M11) — not built; no gamification
+  ships in this beta.
+- **iOS port** — out of scope; Android-first beta (future goal, NFR-2.3.1).
+- **Network egress is limited** by design — AI concept-image generation and
+  weekly email reports are the only online features, both queue + connectivity
+  gated. Everything else runs offline against the on-device SQLCipher store.
+- **~14 internal `!` null-assertions** remain (guarded, non-crashing) —
+  CLAUDE.md rule-compliance cleanup deferred.
+- **Architecture health med/low tickets** (`T15.9`–`T15.16`) open —
+  maintainability, not beta-blocking.
+
 ## [0.1.0] — RC
 
 First release candidate. Offline-first GPA review pipeline: Samsung Voice

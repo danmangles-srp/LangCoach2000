@@ -113,7 +113,8 @@ void main() {
   // PRODUCTION gate (1.2s gap) + 3-attempt retry and asserts every word lands a
   // real image with no thrown 429. If the gate regresses, this fails loudly.
   test(
-    'generateNow across many back-to-back words all succeed (rate-gate + retry)',
+    'generateNow across many back-to-back words '
+    'all succeed (rate-gate + retry)',
     () async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       final cache = AiImageCacheRepository(db);
@@ -144,16 +145,19 @@ void main() {
       ];
 
       for (final p in pairs) {
-        await service.generateNow(
-          uzbek: p.uzbek,
-          english: p.english,
-        ).timeout(const Duration(seconds: 120));
+        await service
+            .generateNow(uzbek: p.uzbek, english: p.english)
+            .timeout(const Duration(seconds: 120));
       }
 
       // Every word produced a real image file at its uzbek-keyed path.
       for (final p in pairs) {
         final file = File('${docsDir.path}/${buildAiImagePath(p.uzbek)}');
-        expect(file.existsSync(), isTrue, reason: 'missing image for ${p.uzbek}');
+        expect(
+          file.existsSync(),
+          isTrue,
+          reason: 'missing image for ${p.uzbek}',
+        );
         final bytes = await file.readAsBytes();
         expect(bytes.length, greaterThan(1024));
         expect(
@@ -161,10 +165,7 @@ void main() {
           isTrue,
           reason: '${p.uzbek} first bytes: ${bytes.take(8).toList()}',
         );
-        expect(
-          await service.cachedPath(p.uzbek),
-          buildAiImagePath(p.uzbek),
-        );
+        expect(await service.cachedPath(p.uzbek), buildAiImagePath(p.uzbek));
       }
     },
     skip: _live ? false : _skipReason,

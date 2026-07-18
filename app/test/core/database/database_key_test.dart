@@ -32,4 +32,24 @@ void main() {
       expect(k, matches(RegExp(r'^[0-9a-f]{64}$')));
     });
   });
+
+  group('read (T18.2 background key path)', () {
+    test('InMemory echoes the seeded key', () async {
+      expect(await InMemoryDatabaseKeyStore('deadbeef').read(), 'deadbeef');
+    });
+
+    test('an absent key resolves to null (background no-op path)', () async {
+      // The workmanager isolate reads; if the key isn't there yet it must get
+      // null (not create) so it cannot race the main isolate's create.
+      expect(await _AbsentKeyStore().read(), isNull);
+    });
+  });
+}
+
+class _AbsentKeyStore implements DatabaseKeyStore {
+  @override
+  Future<String> readOrCreate() => throw UnimplementedError();
+
+  @override
+  Future<String?> read() async => null;
 }

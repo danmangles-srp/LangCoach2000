@@ -1,7 +1,7 @@
 name: rivendell
 description: Rivendell — an offline-first GPA review pipeline for learners of Uzbek.
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.1.1+2
 
 environment:
   sdk: ^3.12.0
@@ -72,6 +72,22 @@ dev_dependencies:
   mocktail: ^1.0.4
   very_good_analysis: ^7.0.0
   drift_dev: ^2.34.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+
+# App launcher icon (FR-adjacent brand identity). Source PNG lives at the repo
+# app root (app/rivendell.png) and is full-bleed teal (#00897B) with a white
+# tree-in-speech-bubble mark. The adaptive background reuses that same teal so
+# the system-applied mask (circle/squircle/etc. on API 26+) reads as seamless
+# with the legacy square icon; the foreground is the same image, which
+# flutter_launcher_icons insets so the tree survives the ~25% edge clip.
+# Regenerate after editing the source: `dart run flutter_launcher_icons`.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "rivendell.png"
+  min_sdk_android: 26
+  adaptive_icon_background: "#00897B"
+  adaptive_icon_foreground: "rivendell.png"
