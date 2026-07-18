@@ -18,6 +18,10 @@ the product. Working code that solved the wrong problem is a failure, not a near
    build in one or two lines and **confirm scope + any ambiguity with the user before coding** (batched
    questions — see "How to ask well"). The ACs are the definition of done.
 2. **Branch.** `<type>/t<n>-<slug>` off `dev` (per `plan.md` — e.g. `feat/t2-1-gpa-interval-engine`).
+   **PRs target `dev`, NEVER `main`** — `main` is release-only (the release PR lands there on
+   cut). If `origin/dev` is missing or stale, **recreate or refresh it** from the local `dev` tip
+   (`git push origin dev:dev`) or ask the user — do **not** retarget the PR to `main` as a
+   workaround. Branching and PRs are two halves of the same rule: branch off `dev`, merge into `dev`.
 3. **Test (red).** Write a failing test mapped to an AC. See `testing.md`.
 4. **Code (green).** Implement the minimum to pass; run codegen if you touched annotated classes.
 5. **Refactor.** Clean up to meet `structure.md`.
@@ -191,12 +195,14 @@ then edge cases. No "run the gate.sh" "run tests" but actual steps on the app. E
 ```
 
 ### Never merge without (hard gate — even when merging autonomously)
-1. `/code-review` (or an adversarial review subagent) actually **run** on the diff, findings addressed.
-2. A filled **"How to verify"** section with concrete device steps + an explicit "not covered by the gate"
+1. **PR base is `dev`** — never `main` (release-only). Confirm the `--base` flag / base dropdown
+   before opening or merging. If `origin/dev` is missing, recreate it or stop and ask — don't retarget.
+2. `/code-review` (or an adversarial review subagent) actually **run** on the diff, findings addressed.
+3. A filled **"How to verify"** section with concrete device steps + an explicit "not covered by the gate"
    list.
-3. Full `sh scripts/gate.sh` PASS (analyze clean, tests green, coverage ≥ floor).
-4. `/design-review` for any UI change, ≥ 4/5 on every changed screen.
-5. No secrets; generated files committed; conventional-commit messages.
+4. Full `sh scripts/gate.sh` PASS (analyze clean, tests green, coverage ≥ floor).
+5. `/design-review` for any UI change, ≥ 4/5 on every changed screen.
+6. No secrets; generated files committed; conventional-commit messages.
 
 If merging as you go (autonomous mode), these still all happen — the tight feedback loop is the point.
 A green gate + a merged PR with no review and no verify-steps is a process failure, not a shortcut.
