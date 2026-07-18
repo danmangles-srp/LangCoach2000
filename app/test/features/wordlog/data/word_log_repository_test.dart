@@ -8,6 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/features/audio/data/recording_repository.dart';
 import 'package:rivendell/features/audio/domain/audio_format.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 import 'package:rivendell/features/wordlog/data/word_log_repository.dart';
 
 void main() {
@@ -155,6 +157,44 @@ void main() {
       // recordings table delete cascades via ON DELETE CASCADE.
       await (db.delete(db.recordings)..where((t) => t.id.equals(id))).go();
       expect(await wordLogs.allForRecording(id), isEmpty);
+    });
+  });
+
+  group('XP awards (M11 T11.2)', () {
+    late XpRepository xp;
+    late WordLogRepository wordLogsXp;
+
+    setUp(() {
+      xp = XpRepository(db);
+      wordLogsXp = WordLogRepository(db, xp: xp);
+    });
+
+    test('first text-log attach (empty→non-empty) awards +5', () async {
+      final id = await seed();
+      await wordLogsXp.setTextLog(id, body: 'cat: mushuk');
+      expect(await xp.total(), 5);
+    });
+
+    test('editing an already-populated log does not re-award', () async {
+      final id = await seed();
+      await wordLogsXp.setTextLog(id, body: 'old');
+      await wordLogsXp.setTextLog(id, body: 'new');
+      expect(await xp.total(), 5);
+    });
+
+    test('attaching an empty body awards nothing', () async {
+      final id = await seed();
+      await wordLogsXp.setTextLog(id, body: '');
+      expect(await xp.total(), 0);
+    });
+
+    test('the wordlog award traces to the recording', () async {
+      final id = await seed();
+      await wordLogsXp.setTextLog(id, body: 'cat: mushuk');
+      final row = await (db.select(db.xpEvents)..limit(1)).getSingle();
+      expect(row.source, XpSource.wordlog.columnValue);
+      expect(row.points, 5);
+      expect(row.recordingId, id);
     });
   });
 }

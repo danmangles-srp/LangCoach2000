@@ -15,11 +15,15 @@ import 'package:rivendell/features/audio/playback/application/audio_player_contr
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
 import 'package:rivendell/features/gpa/domain/review_progress_gate.dart';
 import 'package:rivendell/features/gpa/domain/review_status.dart';
+import 'package:rivendell/features/progress/application/progress_providers.dart';
 
-/// Singleton [ReviewEventRepository] over the local store.
+/// Singleton [ReviewEventRepository] over the local store. XP sink wired so a
+/// milestone earn posts +10 in the same transaction as the review event.
 final reviewEventRepositoryProvider = FutureProvider<ReviewEventRepository>(
-  (ref) async =>
-      ReviewEventRepository(await ref.watch(appDatabaseProvider.future)),
+  (ref) async => ReviewEventRepository(
+    await ref.watch(appDatabaseProvider.future),
+    xp: await ref.watch(xpRepositoryProvider.future),
+  ),
 );
 
 /// Monotonic bump that invalidates anything derived from the review-event log.

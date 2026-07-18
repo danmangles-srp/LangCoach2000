@@ -9,17 +9,24 @@
 import 'package:drift/drift.dart';
 
 import 'package:rivendell/core/database/app_database.dart';
+import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/xp_level.dart';
 
 class WordLogRepository {
-  WordLogRepository(this._db);
+  WordLogRepository(this._db, {this.xp});
 
   final AppDatabase _db;
+
+  /// Optional XP sink (M11 T11.2). When wired, a text-log attach awards +5 on
+  /// the empty→non-empty transition. Null in tests that don't care.
+  final XpRepository? xp;
 
   /// Attach or replace the single text vocab log for [recordingId]. Runs in a
   /// transaction so the replace is atomic — a concurrent call can't leave two
   /// text rows.
   Future<void> setTextLog(int recordingId, {required String body}) {
     return _db.transaction(() async {
+      final prior = await textLogFor(recordingId);
       await (_db.delete(_db.wordLogs)..where(
             (t) => t.recordingId.equals(recordingId) & t.kind.equals('text'),
           ))
@@ -33,6 +40,17 @@ class WordLogRepository {
               body: body,
             ),
           );
+      // M11 T11.2: award +5 only on the empty→non-empty transition. An edit
+      // of an already-populated log (replace-on-edit) doesn't re-award, and
+      // clearing the body awards nothing — so spamming edits can't farm XP.
+      // Same tx as the replace (ambient).
+      if (body.isNotEmpty && (prior == null || prior.body.isEmpty)) {
+        await xp?.record(
+          source: XpSource.wordlog,
+          points: 5,
+          recordingId: recordingId,
+        );
+      }
     });
   }
 
