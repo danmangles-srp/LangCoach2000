@@ -11,20 +11,42 @@ import 'package:drift_flutter/drift_flutter.dart';
 import 'package:rivendell/core/database/app_database.dart';
 import 'package:rivendell/core/database/database_key.dart';
 
-/// Open the production encrypted database at [dbPath].
+/// Open the production encrypted database at [dbPath]. Main-isolate path: it
+/// creates the key on first launch via [DatabaseKeyStore.readOrCreate].
 ///
-/// Cross-isolate key race (TODO T0.3): when the workmanager isolate opens its
-/// own DB connection, both it and the UI isolate may resolve the key on first
-/// launch. flutter_secure_storage has no atomic CAS, so two keys could be
-/// generated and the DB orphaned. T0.3 must designate a single key owner
-/// (resolve in main isolate, pass to the worker) before a second opener exists.
+/// Cross-isolate key ownership (T0.3): the main isolate is the sole key owner.
+/// The workmanager background isolate opens its own connection via
+/// [openAppDatabaseWithKey] with a key it READ (never created) through
+/// [DatabaseKeyStore.read] — so there is no dual-create race to orphan the DB.
+/// Task registration is ordered after main-isolate boot creates the key, so the
+/// background read always finds one present.
 Future<AppDatabase> openAppDatabase({
   required DatabaseKeyStore keyStore,
   required String Function() dbPath,
 }) async {
   final key = await keyStore.readOrCreate();
-  // generateDatabaseKey() emits hex only — no quoting/escaping needed. Do NOT
-  // log this statement: the PRAGMA carries the plaintext SQLCipher key.
+  return _openEncrypted(key: key, dbPath: dbPath);
+}
+
+/// Open the encrypted DB with a key already resolved by the main isolate.
+///
+/// Used by the workmanager background drain (T18.2). The background isolate
+/// resolves the key via the read-only [DatabaseKeyStore.read] (no create) and
+/// passes it here, so this opener has no keyStore + no create path — it cannot
+/// race the main isolate.
+Future<AppDatabase> openAppDatabaseWithKey({
+  required String key,
+  required String Function() dbPath,
+}) async {
+  return _openEncrypted(key: key, dbPath: dbPath);
+}
+
+// generateDatabaseKey() emits hex only — no quoting/escaping needed. Do NOT
+// log this statement: the PRAGMA carries the plaintext SQLCipher key.
+AppDatabase _openEncrypted({
+  required String key,
+  required String Function() dbPath,
+}) {
   return AppDatabase(
     driftDatabase(
       name: 'rivendell',

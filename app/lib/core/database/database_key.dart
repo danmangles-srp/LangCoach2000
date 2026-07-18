@@ -12,6 +12,13 @@ import 'package:flutter/foundation.dart';
 abstract class DatabaseKeyStore {
   /// Returns the existing key, or creates + persists a fresh random key.
   Future<String> readOrCreate();
+
+  /// Returns the existing key, or `null` if none has been created yet.
+  ///
+  /// Never creates. Safe for the workmanager background isolate (T18.2): the
+  /// main isolate owns key creation (T0.3 single-key-owner rule), so a second
+  /// opener that only reads cannot race a create and orphan the DB.
+  Future<String?> read();
 }
 
 /// Generate a fresh 256-bit SQLCipher key as 64 hex chars.
@@ -33,4 +40,7 @@ class InMemoryDatabaseKeyStore implements DatabaseKeyStore {
 
   @override
   Future<String> readOrCreate() async => _key;
+
+  @override
+  Future<String?> read() async => _key;
 }
