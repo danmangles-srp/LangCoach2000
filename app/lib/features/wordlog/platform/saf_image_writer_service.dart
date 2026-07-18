@@ -25,9 +25,10 @@ class SafImageWriterService implements ImageLogWriterService {
         'sourceUri': sourceUri,
         'destRelativePath': destRelativePath,
       });
-    } on PlatformException catch (e) {
-      throw FileSystemException(
-        'image copy failed: ${e.code} ${e.message ?? ''}',
+    } on PlatformException catch (e, st) {
+      Error.throwWithStackTrace(
+        FileSystemException('image copy failed: ${e.code} ${e.message ?? ''}'),
+        st,
       );
     } on MissingPluginException {
       throw const FileSystemException(
