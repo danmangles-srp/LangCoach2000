@@ -1,5 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- Network egress for the only two online features (NFR-2.1.3): AI concept
+         images via Pollinations (FR-1.3.4) + weekly email reports (FR-1.5.3).
+         Both are queue + connectivity gated. Flutter's debug build injects
+         INTERNET for the VM service; the release build does NOT, so without
+         this declaration release builds throw
+         SocketException(Failed host lookup, errno 7) on the first GET even
+         though the same URL loads in the browser. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <!-- Background audio (FR-1.1.4): keep playback alive while the screen is off,
          and run it as a foreground media service on Android 14+ (API 34). -->
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
