@@ -200,8 +200,8 @@ class PollinationsImageService implements AiImageService {
 
   Future<void> _writeBytes(String relativePath, List<int> bytes) async {
     final path = '${docsDir.path}/$relativePath';
-    // Off-main-isolate: the 1.2s rate gate dwarfs `compute`'s spawn cost, so a
-    // per-word MB-scale write stays off the UI thread (NFR-2.4.1 no frame drops).
+    // Off-main-isolate: the 1.2s rate gate dwarfs `compute`'s spawn cost, so
+    // a per-word MB-scale write stays off the UI thread (NFR-2.4.1).
     await compute(_writeImageBytes, _ImageWriteArgs(path: path, bytes: bytes));
   }
 }

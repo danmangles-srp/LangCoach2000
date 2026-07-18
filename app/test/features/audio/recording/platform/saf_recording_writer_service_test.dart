@@ -89,6 +89,67 @@ void main() {
     },
   );
 
+  // T15.9: the rethrown FileSystemException must carry the ORIGINAL platform
+  // stack, not a fresh stack captured at the adapter's rethrow line —
+  // otherwise a SAVE failure logs only the adapter, never the channel frame.
+  test(
+    'copyToFolder preserves the platform stack across the rethrow (T15.9)',
+    () async {
+      messenger.setMockMethodCallHandler(
+        channel,
+        (call) async =>
+            throw PlatformException(code: 'COPY_FAILED', message: 'no'),
+      );
+      late StackTrace caught;
+      try {
+        await SafRecordingWriterService().copyToFolder(
+          treeUri: 'content://tree',
+          sourcePath: '/tmp/x.m4a',
+          displayName: 'x.m4a',
+        );
+        fail('did not throw');
+      } on FileSystemException catch (_, st) {
+        caught = st;
+      }
+      // Pre-fix the rethrow's leading frame was this adapter's throw line;
+      // post-fix the PlatformException's own stack survives, so the adapter is
+      // no longer the leading frame.
+      final leading = caught.toString().split('\n').first;
+      expect(leading, isNot(contains('saf_recording_writer_service.dart')));
+    },
+  );
+
+  test('publishToMediaStore returns void on success', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'publishToMediaStore');
+      return null;
+    });
+    await SafRecordingWriterService().publishToMediaStore(
+      sourceUri: 'content://x',
+      displayName: 'x.m4a',
+    );
+  });
+
+  test('publishToMediaStore preserves the platform stack across the rethrow '
+      '(T15.9)', () async {
+    messenger.setMockMethodCallHandler(
+      channel,
+      (call) async => throw PlatformException(code: 'IO', message: 'x'),
+    );
+    late StackTrace caught;
+    try {
+      await SafRecordingWriterService().publishToMediaStore(
+        sourceUri: 'content://x',
+        displayName: 'x.m4a',
+      );
+      fail('did not throw');
+    } on FileSystemException catch (_, st) {
+      caught = st;
+    }
+    final leading = caught.toString().split('\n').first;
+    expect(leading, isNot(contains('saf_recording_writer_service.dart')));
+  });
+
   test('a missing handler (non-Android) throws', () async {
     expect(
       () => SafRecordingWriterService().copyToFolder(

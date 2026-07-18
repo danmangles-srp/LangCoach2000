@@ -27,8 +27,11 @@ class SafRecordingFileService implements RecordingFileService {
         throw const FileSystemException('rename returned no uri');
       }
       return result;
-    } on PlatformException catch (e) {
-      throw FileSystemException('rename failed: ${e.code} ${e.message ?? ''}');
+    } on PlatformException catch (e, st) {
+      Error.throwWithStackTrace(
+        FileSystemException('rename failed: ${e.code} ${e.message ?? ''}'),
+        st,
+      );
     }
   }
 
@@ -40,8 +43,11 @@ class SafRecordingFileService implements RecordingFileService {
         <String, Object?>{'docUri': docUri},
       );
       return result ?? false;
-    } on PlatformException catch (e) {
-      throw FileSystemException('delete failed: ${e.code} ${e.message ?? ''}');
+    } on PlatformException catch (e, st) {
+      Error.throwWithStackTrace(
+        FileSystemException('delete failed: ${e.code} ${e.message ?? ''}'),
+        st,
+      );
     }
   }
 }

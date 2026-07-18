@@ -904,6 +904,14 @@ guarantee it's wired as a hook. No user-visible behavior change.
   (`:28-31`), `saf_recording_writer_service` (`:36-38` copyToFolder + `:51-55` T14.5 publishToMediaStore),
   `saf_recording_file_service` (`:30-32` rename + `:43-45` delete). Use `Error.throwWithStackTrace`.
   *Deps:* none.
+  **Shipped.** All five rethrow sites now use `Error.throwWithStackTrace(fse, st)` so the
+  PlatformException's own stack survives — a save/rename/delete/image-copy failure now points
+  at the channel machinery that produced it, not the adapter's rethrow line. Pinned by a
+  stack-preservation test at each site (the leading frame must not be the adapter file). Also
+  added a new `saf_recording_file_service_test.dart` (rename + delete channel contract —
+  previously had no host-side test). Gate green (567 pass, 91.4%, Android skipped — Dart-only).
+  Overlaps T19.7 PR #94 in `saf_recording_writer_service.dart` (same catch block) — trivial
+  merge (T19.7 adds a `FolderGrantLostException` branch ahead of this generic rethrow).
 - **T15.10 — Move domain DTOs out of `data/`.** `med`. `ScannedFile` is used by the abstract
   `AudioIndexerService` seam → it must live in `audio/domain/`, not `data/recording_repository.dart`.
   Revisit gpa `QueueItem`/`WarmedItem` placement after T15.3 (the dead `QueueItem` goes; `WarmedItem`
