@@ -911,6 +911,19 @@ guarantee it's wired as a hook. No user-visible behavior change.
 - **T15.11 — Offload AI image write.** `med`. `fal_ai_image_service.dart:135` does
   `file.writeAsBytes(bytes, flush: true)` for an MB-scale download on the main isolate. Move to
   `compute()`. *Deps:* none.
+  **Shipped.** The plan's `fal_ai_image_service.dart:135` path was stale (the
+  service is Pollinations-keyless, not fal.ai); the real site is
+  `pollinations_image_service.dart:_writeBytes` (called once per queued word
+  in the foreground drain). `_writeBytes` now dispatches to a top-level
+  `_writeImageBytes` via `compute()`; the path string + bytes cross the
+  isolate boundary in a plain `_ImageWriteArgs` holder. Spawn cost is
+  invisible — the 1.2s rate gate dwarfs it. Behavior-preserving: the existing
+  bytes+path+cache-row suite stays green; added a 64KB intact-write regression
+  to pin that non-trivial payloads survive the isolate transfer. Gate green
+  (558 pass, 91.5% coverage, Android skipped — Dart-only). No device step:
+  `compute()` is a framework primitive, and the write's observable contract
+  (file at `docsDir/<relativePath>`, exact bytes, parent dir created) is
+  fully unit-pinned.
 - **T15.12 — Extract shared timestamp-range selector.** `med`. `review_event_repository.eventTimestamps`
   ≈ `word_log_repository.textLogTimestamps` (~85% identical). One parameterized helper over table +
   column + kind. *Deps:* none.
