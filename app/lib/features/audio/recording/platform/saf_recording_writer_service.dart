@@ -14,6 +14,9 @@ import 'package:rivendell/features/audio/recording/application/recording_writer_
 class SafRecordingWriterService implements RecordingWriterService {
   static const MethodChannel _channel = MethodChannel('rivendell/record');
 
+  /// Kotlin `copyToFolder` error codes.
+  static const _noGrantCode = 'NO_PERSISTED_GRANT';
+
   @override
   Future<String> copyToFolder({
     required String treeUri,
@@ -34,6 +37,11 @@ class SafRecordingWriterService implements RecordingWriterService {
       }
       return result;
     } on PlatformException catch (e) {
+      // NO_PERSISTED_GRANT = the SAF tree grant lapsed; route to re-pick
+      // (T19.7). Anything else is a genuine IO/provider failure.
+      if (e.code == _noGrantCode) {
+        throw FolderGrantLostException(e.message);
+      }
       throw FileSystemException('copy failed: ${e.code} ${e.message ?? ''}');
     }
   }
