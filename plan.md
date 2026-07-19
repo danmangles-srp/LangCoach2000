@@ -2,9 +2,12 @@
 
 > The ordered **HOW** for Rivendell — an offline-first Android app that turns Samsung Voice Recorder
 > recordings into a GPA review pipeline with vocab logs, Anki flashcards, AI concept images, coaching
-> tasks, and weekly email reports. Six milestones, executed in order; **all six = sellable v1.0**.
-> Each milestone ends with a **ticket list — 1 ticket = 1 PR** off `dev`, in dependency order. Don't
-> start the next ticket until the current one's gate exits `0` and its PR is open.
+> tasks, and weekly email reports.
+>
+> **Restart here:** the [Plan of Attack](#plan-of-attack-restart-here) section below is the single source
+> of truth for **what is done** and **what to do next**, in order. Everything from M0 onward is reference
+> detail; completed milestones are marked `COMPLETE` and can be skipped. Each ticket = 1 PR off `dev`,
+> in dependency order; don't start the next until the current one's gate exits `0` and its PR is open.
 >
 > Read **Architecture decisions** and **Reconciled dependency matrix** first — they are authoritative for
 > the stack. Source of truth for *what* is `requirements.md` (FR-* / NFR-*); its ACs are the definition
@@ -67,6 +70,99 @@ Pinned at M0; versions recorded in the M0 PR. Re-pin only if a resolution fails 
 | Notifications | `flutter_local_notifications` + `android_alarm_manager_plus` | exact-alarms for due tasks |
 | Charts | `fl_chart` | analytics dashboard |
 | Logging | injected `AppLogger` | tagged: `DB/AUDIO/RECORD/ANKI/AI/MAIL/TASK/NOTIFY/CHART/CORE` |
+
+## Plan of Attack (restart here)
+
+> Status as of 2026-07-19. This section supersedes the per-milestone headers for "what's next." The
+> milestone bodies below remain the authoritative detail for ACs, deps, and root-cause notes.
+
+### Status board
+
+All planned milestones are shipped. Remaining work = the M15 deferred low-priority refactors + the
+`!`-sweep chore + a device-confirm parking lot.
+
+| Milestone | State | Shipped via |
+| --- | --- | --- |
+| M0 Foundation | COMPLETE | bootstrap |
+| M1 Core audio sync + native playback | COMPLETE | — |
+| M2 GPA scheduler + in-app capture | COMPLETE | — |
+| M3 Word log + image attach | COMPLETE | — |
+| M4 Anki generation + AI image | COMPLETE | — |
+| M5 Tasks + coach + notifications | COMPLETE | — |
+| M6 Analytics dashboard + email reports | COMPLETE | #43–#47 |
+| M7 UX + queue polish | COMPLETE | — |
+| M8 Playback-flow + safe-area | COMPLETE | #31 |
+| M9 Feedback batch 2 + AnkiDroid 2.24 | COMPLETE (T9.1 moved to M16) | #48–#50 |
+| M10 Capture naming + rename/delete + queue strictness | COMPLETE | #42 |
+| M11 XP + streak motivation | COMPLETE | #98–#102 |
+| M14 Feedback batch 4 (queue backlog, settings crash, auto-advance duration, image attach, MediaStore) | COMPLETE | #51–#55 |
+| M15 Architecture health pass (highs) | COMPLETE | #56–#63; T15.9 (#6), T15.11 |
+| M16 AnkiDroid runtime-grant (T9.1, finally) | COMPLETE (pending device-confirm) | #64, #65 |
+| M18 AI image queue hardening + wordlog attach retirement | COMPLETE | T18.1/3/4/5/6 + T18.2 (`drainQueueFromBackground`) |
+| M19 Reactive queue + English-prompt + auto-advance fix | COMPLETE | T19.1–T19.7 |
+
+### Next-work queue (ordered, 1 ticket = 1 PR off `dev`)
+
+These are the only open code items. Take top-down; each is self-contained.
+
+1. **Backlog — eliminate `!` null-asserts.** ~19 sites still use `!`, which the project rules forbid.
+   Grep `!` in `lib/`, replace with `?.` / `??` / explicit handling. *Deps:* none. *Decision before
+   starting:* one bundled PR vs per-feature PRs (the user leans one-bundle for a related-area sweep).
+2. **T15.10 — Move domain DTOs out of `data/`.** `med`. `ScannedFile` is used by the abstract
+   `AudioIndexerService` seam but lives in `audio/data/recording_repository.dart` → move to
+   `audio/domain/`. *Deps:* T15.3 (shipped #58).
+3. **T15.12 — Extract shared timestamp-range selector.** `med`.
+   `review_event_repository.eventTimestamps` ≈ `word_log_repository.textLogTimestamps` (~85% identical).
+   One parameterized helper over table + column + kind. *Deps:* none.
+4. **T15.13 — i18n + presentation-decode polish.** `med`. Externalize the
+   `weekly_report_settings_section` "Save failed" snackbar + the `recording_detail` "D+7" milestone
+   label to `AppStrings`; move `word_log_section` `Image.file` decode behind an application service.
+   *Deps:* none.
+5. **T15.14 — `domain/` Flutter-SDK-free.** `low`. 7 domain files import
+   `package:flutter/foundation.dart` only for `@immutable` — switch to `package:meta/meta.dart` or drop
+   (`@freezed` implies immutability). Files: gpa (`gpa_intervals`, `review_status`, `queue_warmup`),
+   wordlog (`vocab_pair`), anki (`anki_model_spec`), report (`report_schedule`), audio
+   (`recording_state`, `playback_snapshot`). *Deps:* none.
+6. **T15.16 — Close coverage holes.** `low`. v1→v9 migration-step upgrade test (`app_database.dart`
+   ~32%); `recording_indexer` parse-path tests (NFR-2.2.1 surface); a `review_providers` append-failure
+   test that locks T15.4. *Deps:* T15.4 (shipped #59).
+7. **Dead-string cleanup (trivial).** The `wordLogAddImage` l10n key (`app_strings.dart`) is no longer
+   wired after T18.6 retired the attach-image affordance — drop the en/uz entries + ctor/field/getter
+   once confirmed unused. *Deps:* none.
+8. **T15.15 — Reconcile `plan.md` with reality (doc).** `low`. Largely subsumed by this Plan of Attack
+   rewrite; close once the stale refs flagged in the M15 body are pruned. *Deps:* none.
+
+### Device-confirm parking lot (shipped code, pending on-device verify)
+
+Cannot be closed from context — needs a physical device. Track separately; **do not** re-pick these up
+as code work without re-verifying the device symptom first.
+
+- **T14.4** — word-log image attach open-once fix (#54).
+- **T14.5** — capture → Samsung "All recordings" via MediaStore (#55).
+- **T16** — AnkiDroid runtime-grant flow (#64 / #65).
+- **T19.7** — recording-save SAF permission denial + re-pick folder (#94).
+- **T18.2** — workmanager background-isolate drain. `drainQueueFromBackground` is implemented; the open
+  risk is background-isolate plugin init (drift + http + secure-storage). The **foreground reactive
+  path is the product path** — if closed-app ~15-min drain isn't required, leave as-is.
+
+### Decision points (ask before executing)
+
+- **`!`-sweep shape:** one PR or per-feature? Default to one bundled PR for a related-area refactor
+  unless the diff gets large.
+- **T18.2 deep verify:** only shipped item with a real architectural risk flag. Confirm the user wants
+  closed-app drain before investing in background-isolate plugin wiring.
+- **New milestones:** none planned. If real use surfaces new defects, open a feedback-batch milestone
+  (M20+) following the M14/M19 root-cause-analysis pattern.
+
+### Execution loop (unchanged)
+
+Branch off `dev` → 1 ticket → TDD red/green → `sh scripts/gate.sh` (codegen → format → analyze →
+test → ≥80% coverage floor) → commit (Conventional Commits, lowercase, no emoji, no Co-authored-by)
+→ PR targeting `dev` (never `main`; if `origin/dev` is missing, recreate it or ask — don't retarget to
+`main`) → squash-merge → backfill the `plan.md` ticket marker with the PR number. Standard Gate before
+every push.
+
+---
 
 ## COMPLETE Milestone 0: Foundation (bootstrap)
 
