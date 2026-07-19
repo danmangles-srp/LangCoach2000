@@ -240,6 +240,8 @@ class _StatusView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final body = this.body;
+    final hint = this.hint;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -256,7 +258,7 @@ class _StatusView extends StatelessWidget {
             if (body != null) ...[
               const SizedBox(height: 8),
               Text(
-                body!,
+                body,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -266,7 +268,7 @@ class _StatusView extends StatelessWidget {
             if (hint != null) ...[
               const SizedBox(height: 8),
               Text(
-                hint!,
+                hint,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
