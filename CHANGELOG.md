@@ -5,6 +5,62 @@ All notable changes to **Rivendell** are documented here. The format follows
 [SemVer](https://semver.org/). Notation `(T x.y)` references the task in
 `plan.md`.
 
+## [0.2.0] — 2026-07-19
+
+Second beta cut. Adds the motivation layer (XP, levels, streaks, freezes) and
+moves weekly email off app-password SMTP onto Google OAuth + Gmail API. Also
+fixes two playback transport bugs reported in real use: auto-advance leaving
+the next recording at 0:00, and the transport button not flipping to play on
+completion.
+
+### Added
+- **XP + level engine (M11)** — a `xp_events` ledger drives an XP→level
+  curve; five actions award XP (review-event completion, word-log attach,
+  task completion, reading/movie activity log, streak daily). `(#98, #99)`
+- **Streaks + freezes (M11)** — consecutive-day review streak with a
+  banked-freeze safety net so one missed day doesn't reset progress. `(#100)`
+- **Reading/movie activity log (M11)** — manual log of outside reading/
+  watching that earns XP and feeds the streak. `(#101)`
+- **Progress dashboard + global indicator (M11)** — a dashboard card
+  (level + XP bar + streak + freeze badge) on Today, plus a compact
+  level/streak chip in the HomeShell AppBar; both hide behind a Settings
+  toggle. `(#102)`
+- Background AI-image drain now opens the SQLCipher store with a key
+  resolved off the main isolate (carries the single-key-owner contract
+  into the background pass).
+
+### Changed
+- **Weekly email auth: Google OAuth + Gmail API** replaces the SMTP
+  app-password flow. Sign in with a Google account once; reports send via
+  Gmail. Removes SMTP credentials from Settings. `(#104)`
+- AI-image byte-write moved off the main isolate — large image writes no
+  longer cause frame drops. `(#95)`
+
+### Fixed
+- **Auto-advance showed the next recording at 0:00.** T14.3's duration seed
+  read `recordings.durationMs`, a column never persisted in production, so
+  the real length came only from just_audio's async `durationStream` — which
+  races when the engine swaps sources straight out of a `completed` state.
+  The handler now patches the authoritative duration from `setAudioSource`'s
+  return value onto the media item immediately. `(#105)`
+- **Transport button on completion.** With auto-advance off, finishing a
+  recording now flips the button to play (it previously showed a replay
+  glyph, and could read pause on just_audio edges that keep `playing=true`
+  into the completed phase). Tapping still restarts from the top. `(#105)`
+- Recording save routes a lapsed SAF folder grant to re-pick instead of
+  throwing. `(#94)`
+- SAF adapter rethrows preserve the platform stack trace across the boundary
+  for diagnosable errors. `(#96)`
+- Last `!` null-assertions removed from `lib/` — promotion-safe patterns
+  throughout. `(#103)`
+
+### Concessions — not-working / not-done (beta)
+- iOS port: out of scope (Android-first beta).
+- Network egress limited by design — AI image + weekly email are the only
+  online features, both connectivity-gated.
+- Google OAuth client must ship a valid `oauth_client` (Android type +
+  SHA-1) in `google-services.json`, or sign-in fails silently.
+
 ## [0.1.1] — 2026-07-18
 
 First beta cut (re-cuts the deleted 0.1.0 RC). Adds the Rivendell brand icon
