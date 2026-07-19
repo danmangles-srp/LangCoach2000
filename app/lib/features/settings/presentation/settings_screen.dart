@@ -40,6 +40,20 @@ class SettingsScreen extends ConsumerWidget {
             onChanged: (v) =>
                 ref.read(appSettingsProvider.notifier).setAutoAdvance(value: v),
           ),
+          SwitchListTile(
+            secondary: const Icon(Icons.trending_up_rounded),
+            title: Text(strings.settingsProgressIndicatorTitle),
+            subtitle: Text(
+              strings.settingsProgressIndicatorSubtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            value: settings.showProgressIndicator,
+            onChanged: (v) => ref
+                .read(appSettingsProvider.notifier)
+                .setShowProgressIndicator(value: v),
+          ),
           const Divider(height: 1, indent: 16, endIndent: 16),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),

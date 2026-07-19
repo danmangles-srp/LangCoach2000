@@ -12,6 +12,7 @@ import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/progress/application/streak_service.dart';
 import 'package:rivendell/features/progress/data/activity_log_repository.dart';
 import 'package:rivendell/features/progress/data/xp_repository.dart';
+import 'package:rivendell/features/progress/domain/progress_snapshot.dart';
 
 /// Singleton [XpRepository] over the local store. Shared by every awarding
 /// site so an award called inside another repo's transaction joins it (Drift
@@ -50,3 +51,19 @@ final activityLogRepositoryProvider = FutureProvider<ActivityLogRepository>(
 final activityLogsProvider = FutureProvider<List<ActivityLog>>(
   (ref) async => (await ref.watch(activityLogRepositoryProvider.future)).all(),
 );
+
+/// The derived progress view the dashboard card + AppBar chip read (T11.5).
+/// Fans out the XP ledger sum + the streak result into one [ProgressSnapshot].
+/// Invalidate after any award (the append-only ledgers are the source of
+/// truth — the snapshot is pure derivation over them).
+final progressSnapshotProvider = FutureProvider<ProgressSnapshot>((ref) async {
+  final xpRepo = await ref.watch(xpRepositoryProvider.future);
+  final streak = await ref.watch(streakServiceProvider.future);
+  final total = await xpRepo.total();
+  final snap = await streak.snapshot();
+  return ProgressSnapshot.fromLedger(
+    totalXp: total,
+    streakCount: snap.count,
+    freezesBanked: snap.freezesBanked,
+  );
+});

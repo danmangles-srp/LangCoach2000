@@ -15,6 +15,7 @@ class AppSettings {
     this.autoAdvanceNext = true,
     this.themePreference = ThemePreference.system,
     this.aiImagePromptTemplate = defaultAiImagePrompt,
+    this.showProgressIndicator = true,
   });
 
   /// On natural playback completion, cue + navigate to the next recording in
@@ -29,16 +30,24 @@ class AppSettings {
   /// as the default by the notifier so the engine never sends an empty prompt.
   final String aiImagePromptTemplate;
 
+  /// Show the compact level/streak chip in the Today AppBar (T11.5). Defaults
+  /// on. The dashboard card on the Today screen stays regardless — this only
+  /// gates the glance indicator. XP is informational; nothing gates on it.
+  final bool showProgressIndicator;
+
   AppSettings copyWith({
     bool? autoAdvanceNext,
     ThemePreference? themePreference,
     String? aiImagePromptTemplate,
+    bool? showProgressIndicator,
   }) {
     return AppSettings(
       autoAdvanceNext: autoAdvanceNext ?? this.autoAdvanceNext,
       themePreference: themePreference ?? this.themePreference,
       aiImagePromptTemplate:
           aiImagePromptTemplate ?? this.aiImagePromptTemplate,
+      showProgressIndicator:
+          showProgressIndicator ?? this.showProgressIndicator,
     );
   }
 }
