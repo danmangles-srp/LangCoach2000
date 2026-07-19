@@ -234,6 +234,15 @@ class AppStrings {
     aiQueueAttemptsN: 'Attempts: {n}',
     aiQueueLastErrorLabel: 'Last error',
     aiQueueEnqueuedLabel: 'Enqueued',
+    progressChipTooltipN: 'Level {level} · {streak} day streak',
+    progressCardLevelN: 'Level {level}',
+    progressCardXpOfTotal: '{into} / {per} XP',
+    progressCardStreakDays: '{n} day streak',
+    progressCardFreezeBadge: 'Freeze available',
+    progressCardStreakZero: 'Review today to start a streak',
+    settingsProgressIndicatorTitle: 'Show progress chip',
+    settingsProgressIndicatorSubtitle:
+        'Display the level + streak indicator in the top bar.',
   );
 
   static const _uz = _Bundle(
@@ -452,6 +461,15 @@ class AppStrings {
     aiQueueAttemptsN: 'Urinishlar: {n}',
     aiQueueLastErrorLabel: 'So‘nggi xato',
     aiQueueEnqueuedLabel: 'Navbatga olindi',
+    progressChipTooltipN: '{streak} kunlik seriya · {level}-bosqich',
+    progressCardLevelN: '{level}-bosqich',
+    progressCardXpOfTotal: '{into} / {per} XP',
+    progressCardStreakDays: '{n} kunlik seriya',
+    progressCardFreezeBadge: 'Muzlatish mavjud',
+    progressCardStreakZero: 'Seriyani boshlash uchun bugun takrorlang',
+    settingsProgressIndicatorTitle: 'Taraqqiyot chipini ko‘rsatish',
+    settingsProgressIndicatorSubtitle:
+        'Yuqori panelda bosqich + seriya ko‘rsatkichini ko‘rsatish.',
   );
 
   // Resolve the bundle for the active locale, falling back to English.
@@ -660,6 +678,25 @@ class AppStrings {
   String get aiQueueLastErrorLabel => _bundle.aiQueueLastErrorLabel;
   String get aiQueueEnqueuedLabel => _bundle.aiQueueEnqueuedLabel;
 
+  String progressChipTooltip(int level, int streak) => _bundle
+      .progressChipTooltipN
+      .replaceAll('{level}', '$level')
+      .replaceAll('{streak}', '$streak');
+  String progressCardLevel(int level) =>
+      _bundle.progressCardLevelN.replaceAll('{level}', '$level');
+  String progressCardXpOfTotal(int into, int per) => _bundle
+      .progressCardXpOfTotal
+      .replaceAll('{into}', '$into')
+      .replaceAll('{per}', '$per');
+  String progressCardStreakDays(int n) =>
+      _bundle.progressCardStreakDays.replaceAll('{n}', '$n');
+  String get progressCardFreezeBadge => _bundle.progressCardFreezeBadge;
+  String get progressCardStreakZero => _bundle.progressCardStreakZero;
+  String get settingsProgressIndicatorTitle =>
+      _bundle.settingsProgressIndicatorTitle;
+  String get settingsProgressIndicatorSubtitle =>
+      _bundle.settingsProgressIndicatorSubtitle;
+
   // The standard Flutter Localizations accessor convention (`AppStrings.of`);
   // VGA's "static method → constructor" lint doesn't fit the lookup pattern.
   // ignore: prefer_constructors_over_static_methods
@@ -851,6 +888,14 @@ class _Bundle {
     required this.aiQueueAttemptsN,
     required this.aiQueueLastErrorLabel,
     required this.aiQueueEnqueuedLabel,
+    required this.progressChipTooltipN,
+    required this.progressCardLevelN,
+    required this.progressCardXpOfTotal,
+    required this.progressCardStreakDays,
+    required this.progressCardFreezeBadge,
+    required this.progressCardStreakZero,
+    required this.settingsProgressIndicatorTitle,
+    required this.settingsProgressIndicatorSubtitle,
   });
 
   final String recordingsTitle;
@@ -1032,6 +1077,14 @@ class _Bundle {
   final String aiQueueAttemptsN;
   final String aiQueueLastErrorLabel;
   final String aiQueueEnqueuedLabel;
+  final String progressChipTooltipN;
+  final String progressCardLevelN;
+  final String progressCardXpOfTotal;
+  final String progressCardStreakDays;
+  final String progressCardFreezeBadge;
+  final String progressCardStreakZero;
+  final String settingsProgressIndicatorTitle;
+  final String settingsProgressIndicatorSubtitle;
 }
 
 class _AppStringsDelegate extends LocalizationsDelegate<AppStrings> {
