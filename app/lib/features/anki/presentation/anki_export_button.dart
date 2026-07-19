@@ -300,11 +300,11 @@ class _AnkiExportButtonState extends ConsumerState<AnkiExportButton> {
               ),
             ],
           ),
-          if (_errorDetail != null) ...[
+          if (_errorDetail case final errorDetail?) ...[
             const SizedBox(height: 4),
             // Selectable so the user can copy the real cause into a bug report.
             SelectableText(
-              _errorDetail!,
+              errorDetail,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

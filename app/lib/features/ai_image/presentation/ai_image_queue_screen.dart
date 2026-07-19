@@ -190,14 +190,14 @@ class _PendingItemCard extends ConsumerWidget {
               style: labelStyle,
             ),
             Text(strings.aiQueueAttempts(item.attempts), style: labelStyle),
-            if (item.lastError != null) ...[
+            if (item.lastError case final lastError?) ...[
               const SizedBox(height: 6),
               Text(
                 strings.aiQueueLastErrorLabel,
                 style: labelStyle?.copyWith(fontWeight: FontWeight.w600),
               ),
               // Selectable so a real failure message can be copied out.
-              SelectableText(item.lastError!, style: theme.textTheme.bodySmall),
+              SelectableText(lastError, style: theme.textTheme.bodySmall),
             ],
             OverflowBar(
               spacing: 8,
