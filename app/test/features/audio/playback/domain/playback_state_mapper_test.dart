@@ -42,6 +42,22 @@ void main() {
     expect(snapshot.isPlaying, isFalse);
   });
 
+  // Bug: on natural completion some just_audio edges keep `playing=true` while
+  // reporting the completed phase. The transport button + togglePlayPause both
+  // branch on isPlaying first, so a completed-but-playing snapshot would show
+  // the pause affordance and pause-on-tap instead of replay-from-top. A
+  // completed item is never "playing" from the app's point of view.
+  test('completed phase forces isPlaying false even when the engine reports '
+      'playing', () {
+    final snapshot = mapPlaybackState(
+      transport(phase: AudioProcessingState.completed),
+      recordingId: 5,
+      duration: const Duration(seconds: 100),
+    );
+    expect(snapshot.isCompleted, isTrue);
+    expect(snapshot.isPlaying, isFalse);
+  });
+
   test('carries position + buffered through verbatim', () {
     final snapshot = mapPlaybackState(
       transport(

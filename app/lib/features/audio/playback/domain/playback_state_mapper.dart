@@ -15,11 +15,17 @@ PlaybackSnapshot mapPlaybackState(
   required int? recordingId,
   required Duration duration,
 }) {
+  final completed = state.processingState == AudioProcessingState.completed;
   return PlaybackSnapshot(
     recordingId: recordingId,
     processingState: state.processingState,
-    isPlaying: state.playing,
-    isCompleted: state.processingState == AudioProcessingState.completed,
+    // A completed item is never "playing" from the app's view, even if the
+    // engine reports `playing=true` on the completed edge — the transport
+    // button + togglePlayPause branch on isPlaying first, so without this a
+    // completed recording would show pause + pause-on-tap instead of
+    // replay-from-top.
+    isPlaying: state.playing && !completed,
+    isCompleted: completed,
     position: state.updatePosition,
     duration: duration,
     bufferedPosition: state.bufferedPosition,
