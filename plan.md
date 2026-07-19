@@ -825,6 +825,13 @@ MediaStore. No new scope — all sharpen existing surfaces.
   writing from the controller forces creation of `appDatabaseProvider`/`recordingRepositoryProvider`
   during a build frame in widget tests that don't override the DB, entangling the same guard; needs
   a cleaner injection seam (capture the repo at boot, not mid-build). The zero-length bug is fixed.
+  **Re-fixed (#105, v0.2.0):** the seed was inert in production — `recordings.durationMs` is never
+  persisted (`setDuration` is test-only), so the real length came solely from just_audio's async
+  `durationStream`, which races when the engine swaps sources out of a `completed` state on
+  auto-advance. `RivendellAudioHandler.loadRecording` now patches the authoritative duration from
+  `setAudioSource`'s return value onto the media item immediately. Persist-back (T15.x) still
+  deferred — a sub-second `0:00` flash can appear during the `setAudioSource` await; eliminating it
+  fully needs the deferred persist-back.
 - **COMPLETE (#54, pending device confirm) T14.4 — Word-log image attach root-cause (open-once fix).** Failed three times (T8.3 diagnostics,
   T9.2 BitmapFactory re-encode). Symptom is "doesn't attach" — the `wordLogAttachFailed` snackbar
   from `word_log_section.dart _attachImage`, which fires on `isSupportedImageExt` rejection **or**
