@@ -1,6 +1,6 @@
 // Email queue handler (T6.5, NFR-2.1.3). Drives the EmailService via the shared
-// QueueHandler contract. Fake service + a controllable config provider — no
-// network, no DB.
+// QueueHandler contract. Fake service + a controllable credentials provider —
+// no network, no DB.
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,16 +8,17 @@ import 'package:rivendell/core/logging/app_logger.dart';
 import 'package:rivendell/features/report/application/email_queue_handler.dart';
 import 'package:rivendell/features/report/domain/email_message.dart';
 import 'package:rivendell/features/report/domain/email_service.dart';
+import 'package:rivendell/features/report/domain/gmail_credentials.dart';
 
 class _RecordingEmailService implements EmailService {
   _RecordingEmailService({this._failure});
 
   final Exception? _failure;
-  final List<({EmailMessage message, SmtpConfig config})> calls = [];
+  final List<({EmailMessage message, GmailCredentials credentials})> calls = [];
 
   @override
-  Future<void> send(EmailMessage message, SmtpConfig config) async {
-    calls.add((message: message, config: config));
+  Future<void> send(EmailMessage message, GmailCredentials credentials) async {
+    calls.add((message: message, credentials: credentials));
     if (_failure case final Exception f) throw f;
   }
 }
@@ -39,15 +40,16 @@ void main() {
     subject: 'Weekly',
     htmlBody: '<p>hi</p>',
   );
+  const credentials = GmailCredentials(
+    emailAddress: 'me@gmail.com',
+    accessToken: 'ya29.fake',
+  );
 
-  test('parses payload + sends with the current config', () async {
+  test('parses payload + sends with the current credentials', () async {
     final service = _RecordingEmailService();
     final handler = makeEmailQueueHandler(
       service: service,
-      configProvider: () async => SmtpConfig.gmail(
-        username: 'me@gmail.com',
-        password: 'abcdefghijklmnop',
-      ),
+      credentialsProvider: () async => credentials,
       logger: logger,
     );
 
@@ -55,32 +57,31 @@ void main() {
 
     expect(service.calls.length, 1);
     expect(service.calls.single.message.recipient, 'user@example.com');
-    expect(service.calls.single.config.username, 'me@gmail.com');
+    expect(service.calls.single.credentials.emailAddress, 'me@gmail.com');
   });
 
-  test('throws when creds unset + does NOT call send', () async {
+  test('throws when not signed in + does NOT call send', () async {
     final service = _RecordingEmailService();
     final handler = makeEmailQueueHandler(
       service: service,
-      configProvider: () async => null,
+      credentialsProvider: () async => null,
       logger: logger,
     );
 
     await expectLater(
       handler(message.toJsonString()),
-      throwsA(isA<SmtpNotConfiguredException>()),
+      throwsA(isA<EmailNotConfiguredException>()),
     );
     expect(service.calls, isEmpty);
   });
 
   test('propagates send failures (throw = retry)', () async {
     final service = _RecordingEmailService(
-      failure: Exception('SMTP 535 auth failed'),
+      failure: Exception('Gmail API 401 invalid_grant'),
     );
     final handler = makeEmailQueueHandler(
       service: service,
-      configProvider: () async =>
-          SmtpConfig.gmail(username: 'me@gmail.com', password: 'bad'),
+      credentialsProvider: () async => credentials,
       logger: logger,
     );
 

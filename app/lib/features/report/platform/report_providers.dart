@@ -101,7 +101,7 @@ final weeklyReportDispatcherProvider = FutureProvider<WeeklyReportDispatcher>((
     ),
     recipientProvider: () async => readReportRecipient(
       settingsRepo,
-      fallback: await readSmtpUsername(settingsRepo),
+      fallback: await readGmailAccount(settingsRepo),
     ),
     renderer: renderer,
     enqueue: queueRepo.enqueue,
@@ -111,13 +111,6 @@ final weeklyReportDispatcherProvider = FutureProvider<WeeklyReportDispatcher>((
     },
   );
 });
-
-/// Read the stored SMTP username (Gmail address). Mirrors the key in
-/// email_providers.dart so this layer can use it as the recipient fallback
-/// without coupling settings UI to the email wiring.
-Future<String?> readSmtpUsername(KvRepository repo) async {
-  return repo.read('smtp.username');
-}
 
 /// Dispatch this cycle's report if it's due and a recipient is configured.
 /// Called from app boot (foreground path) and the workmanager dispatch task

@@ -28,6 +28,7 @@ env.json
 .env.*
 *.keystore
 *.jks
+app/android/app/google-services.json
 
 ### Local scratch / test databases (never commit a DB file)
 *.db
