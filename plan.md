@@ -640,7 +640,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   optional duration field; on save, insert the `activity_logs` row **and** fire the T11.2
   reading/movie XP hook (+15). List view of past logs on the dashboard (optional delete). Pure-Dart
   repo tests + a widget test for the dialog. *ACs:* M11 AC 2 (5th source). *Deps:* T11.1, T11.2.
-- COMPLETE (#TBD) **T11.5 — XP & streak dashboard card + global indicator + settings toggle.**
+- COMPLETE (#102) **T11.5 — XP & streak dashboard card + global indicator + settings toggle.**
   - **Dashboard card** on `today_queue_screen.dart` (above the queue list): level + `xpIntoLevel/500`
     progress bar + streak count + a freeze-available badge (frost icon when `banked > 0`).
   - **Global indicator** visible on all main screens: a compact level/streak chip in the `HomeShell`
