@@ -16,6 +16,8 @@ import 'package:rivendell/features/audio/presentation/recording_nav_context.dart
 import 'package:rivendell/features/gpa/application/review_providers.dart';
 import 'package:rivendell/features/gpa/data/review_event_repository.dart';
 import 'package:rivendell/features/progress/presentation/log_activity_dialog.dart';
+import 'package:rivendell/features/progress/presentation/progress_chip.dart';
+import 'package:rivendell/features/progress/presentation/progress_dashboard_card.dart';
 import 'package:rivendell/l10n/app_strings.dart';
 
 class TodayQueueScreen extends ConsumerWidget {
@@ -31,6 +33,10 @@ class TodayQueueScreen extends ConsumerWidget {
         title: Text(strings.queueTitle),
         centerTitle: false,
         actions: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Center(child: ProgressChip()),
+          ),
           IconButton(
             tooltip: strings.activityLogTooltip,
             icon: const Icon(Icons.history_edu_outlined),
@@ -78,6 +84,7 @@ class TodayQueueScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
+                const ProgressDashboardCard(),
                 _SectionHeader(label: strings.queueNavToday),
                 for (final item in queue.today)
                   _WarmedTile(

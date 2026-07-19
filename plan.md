@@ -631,7 +631,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   current ISO week > last-grant week and banked < 1, set banked = 1 and stamp last-grant. Pure-Dart
   engine tests: 3-day run, gap-with-freeze continues, gap-no-freeze resets, freeze auto-grant fires
   once per ISO week, cap-1 banking. **No UI gating on reset.** *ACs:* M11 AC 3. *Deps:* T2.3, T11.1.
-- COMPLETE (#TBD) **T11.4 — Reading/movie activity log.** New manual XP source. Schema: `activity_logs` table
+- COMPLETE (#101) **T11.4 — Reading/movie activity log.** New manual XP source. Schema: `activity_logs` table
   (`features/progress/data/activity_logs_table.dart`): `id`, `kind` (`reading`/`movie`), `title`
   (text), `durationMinutes` (int, nullable), `at` (DateTime). Register in `app_database.dart`
   (schemaVersion bump to 11 — fold with T11.1's bump if shipped together). Repository +
@@ -640,7 +640,7 @@ week** (for a day off). Nothing is ever gated on XP or streak.
   optional duration field; on save, insert the `activity_logs` row **and** fire the T11.2
   reading/movie XP hook (+15). List view of past logs on the dashboard (optional delete). Pure-Dart
   repo tests + a widget test for the dialog. *ACs:* M11 AC 2 (5th source). *Deps:* T11.1, T11.2.
-- **T11.5 — XP & streak dashboard card + global indicator + settings toggle.**
+- COMPLETE (#TBD) **T11.5 — XP & streak dashboard card + global indicator + settings toggle.**
   - **Dashboard card** on `today_queue_screen.dart` (above the queue list): level + `xpIntoLevel/500`
     progress bar + streak count + a freeze-available badge (frost icon when `banked > 0`).
   - **Global indicator** visible on all main screens: a compact level/streak chip in the `HomeShell`

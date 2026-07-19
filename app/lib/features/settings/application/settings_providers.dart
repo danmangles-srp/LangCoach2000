@@ -13,6 +13,7 @@ import 'package:rivendell/features/settings/domain/app_settings.dart';
 const _kAutoAdvanceNext = 'settings.auto_advance_next';
 const _kThemePreference = 'settings.theme_preference';
 const _kAiImagePromptTemplate = 'settings.ai_image_prompt_template';
+const _kShowProgressIndicator = 'settings.show_progress';
 
 /// The [KvRepository] singleton backing user preferences.
 final settingsRepositoryProvider = FutureProvider<KvRepository>((ref) async {
@@ -40,6 +41,7 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       final autoRaw = await repo.read(_kAutoAdvanceNext);
       final themeRaw = await repo.read(_kThemePreference);
       final promptRaw = await repo.read(_kAiImagePromptTemplate);
+      final showProgressRaw = await repo.read(_kShowProgressIndicator);
       // Only an explicit "false" disables auto-advance; a missing key keeps the
       // default-on behavior so upgrades don't surprise existing users.
       final autoAdvance = autoRaw != 'false';
@@ -52,10 +54,14 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
       final prompt = (promptRaw == null || promptRaw.trim().isEmpty)
           ? defaultAiImagePrompt
           : promptRaw;
+      // Same default-on semantics as auto-advance: only an explicit "false"
+      // hides the chip.
+      final showProgress = showProgressRaw != 'false';
       state = AppSettings(
         autoAdvanceNext: autoAdvance,
         themePreference: theme,
         aiImagePromptTemplate: prompt,
+        showProgressIndicator: showProgress,
       );
     } on Object {
       // Hydration is best-effort: a missing or corrupt store keeps the defaults
@@ -83,5 +89,11 @@ class AppSettingsNotifier extends Notifier<AppSettings> {
     state = state.copyWith(aiImagePromptTemplate: resolved);
     final repo = await ref.read(settingsRepositoryProvider.future);
     await repo.write(_kAiImagePromptTemplate, resolved);
+  }
+
+  Future<void> setShowProgressIndicator({required bool value}) async {
+    state = state.copyWith(showProgressIndicator: value);
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    await repo.write(_kShowProgressIndicator, value.toString());
   }
 }
