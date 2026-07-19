@@ -447,8 +447,9 @@ class _ReviewSummaryCard extends StatelessWidget {
     final reachedLabel = status.milestoneReached >= 0
         ? 'D+${timeline[status.milestoneReached].intervalDays}'
         : strings.reviewNoneYet;
-    final lastLabel = status.lastReviewed != null
-        ? dateFormat.format(status.lastReviewed!)
+    final lastReviewed = status.lastReviewed;
+    final lastLabel = lastReviewed != null
+        ? dateFormat.format(lastReviewed)
         : strings.reviewNever;
 
     return Card(

@@ -119,6 +119,7 @@ class _TaskEditDialogState extends State<TaskEditDialog> {
     final dateFormat = DateFormat.yMMMd(
       Localizations.localeOf(context).toLanguageTag(),
     );
+    final dueDate = _dueDate;
     return AlertDialog(
       title: Text(
         widget.existing == null ? strings.tasksAdd : strings.taskFieldTitle,
@@ -151,9 +152,9 @@ class _TaskEditDialogState extends State<TaskEditDialog> {
               children: [
                 Expanded(
                   child: Text(
-                    _dueDate == null
+                    dueDate == null
                         ? strings.taskNoDate
-                        : strings.taskDueOn(dateFormat.format(_dueDate!)),
+                        : strings.taskDueOn(dateFormat.format(dueDate)),
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
@@ -161,7 +162,7 @@ class _TaskEditDialogState extends State<TaskEditDialog> {
                   onPressed: _pickDate,
                   child: Text(strings.taskFieldDueDate),
                 ),
-                if (_dueDate != null)
+                if (dueDate != null)
                   TextButton(
                     onPressed: _clearDate,
                     child: Text(strings.taskClearDate),
