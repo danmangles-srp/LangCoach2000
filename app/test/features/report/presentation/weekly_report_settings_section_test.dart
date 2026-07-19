@@ -69,4 +69,12 @@ void main() {
 
     expect(_fieldText(tester, 'Recipient email'), 'reviewer@rivendell.app');
   });
+
+  testWidgets('renders the send-test-email affordance', (tester) async {
+    await tester.pumpWidget(_host(db));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('Send test email'), findsOneWidget);
+  });
 }

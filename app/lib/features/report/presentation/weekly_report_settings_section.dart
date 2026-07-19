@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:rivendell/core/queue/platform/queue_providers.dart';
+import 'package:rivendell/features/report/domain/email_message.dart';
 import 'package:rivendell/features/report/domain/report_schedule.dart';
 import 'package:rivendell/features/report/platform/email_providers.dart';
 import 'package:rivendell/features/report/platform/report_providers.dart';
@@ -66,9 +68,20 @@ class _WeeklyReportSettingsSectionState
       final repo = await ref.read(settingsRepositoryProvider.future);
       await writeGmailAccount(repo, creds.emailAddress);
       ref.invalidate(gmailAccountProvider);
-    } on Object {
+      // Signing in changes the credential the email handler resolves, but the
+      // queue table is untouched, so no pending-change drain fires. Kick one
+      // so a queued report retries immediately with the fresh token instead of
+      // waiting for an ambient backoff / online edge (or never, if the app is
+      // backgrounded and only the workmanager isolate — which can't run
+      // google_sign_in — is awake).
+      final worker = await ref.read(queueProcessorProvider.future);
+      unawaited(worker.drain());
+    } on Object catch (e, st) {
+      // Surface the real PlatformException (e.g. ApiException code 10 =
+      // DEVELOPER_ERROR = SHA-1 mismatch) so the cause isn't swallowed.
+      debugPrint('google sign-in failed: $e\n$st');
       messenger.showSnackBar(
-        SnackBar(content: Text(strings.settingsReportSignInFailed)),
+        SnackBar(content: Text('${strings.settingsReportSignInFailed}: $e')),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -92,6 +105,50 @@ class _WeeklyReportSettingsSectionState
     messenger.showSnackBar(
       SnackBar(content: Text(strings.settingsReportRecipientSaved)),
     );
+  }
+
+  Future<void> _sendTestEmail() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final strings = AppStrings.of(context);
+    setState(() => _busy = true);
+    try {
+      // Resolve a FRESH token — the cached one may be stale, and this is the
+      // only path that proves the full UI -> OAuth -> Gmail REST chain works.
+      final signIn = ref.read(googleSignInServiceProvider);
+      final creds = await signIn.ensureFreshCredentials();
+      if (creds == null) {
+        messenger.showSnackBar(
+          SnackBar(content: Text(strings.settingsReportSignInRequiredForTest)),
+        );
+        return;
+      }
+      final repo = await ref.read(settingsRepositoryProvider.future);
+      // fallback = the signed-in address, so recipient is always populated.
+      final storedRecipient = await readReportRecipient(
+        repo,
+        fallback: creds.emailAddress,
+      );
+      final recipient = storedRecipient ?? creds.emailAddress;
+      final message = EmailMessage(
+        recipient: recipient,
+        subject: 'Rivendell test email',
+        htmlBody:
+            '<p>This is a test email from Rivendell. If you received this, '
+            'weekly reports are configured correctly.</p>',
+      );
+      final service = ref.read(gmailApiEmailServiceProvider);
+      await service.send(message, creds);
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.settingsReportTestSent)),
+      );
+    } on Object catch (e, st) {
+      debugPrint('test email failed: $e\n$st');
+      messenger.showSnackBar(
+        SnackBar(content: Text('${strings.settingsReportTestFailed}: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -227,6 +284,14 @@ class _WeeklyReportSettingsSectionState
             onPressed: _saveRecipient,
             icon: const Icon(Icons.save_rounded),
             label: Text(strings.settingsReportRecipientSaved),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: FilledButton.tonalIcon(
+            onPressed: _busy ? null : _sendTestEmail,
+            icon: const Icon(Icons.send_rounded),
+            label: Text(strings.settingsReportSendTestEmail),
           ),
         ),
         const Divider(height: 1, indent: 16, endIndent: 16),

@@ -216,6 +216,10 @@ class AppStrings {
         'Not signed in — connect a Google account to send reports.',
     settingsReportSignInFailed: 'Sign in failed',
     settingsReportRecipientSaved: 'Recipient saved',
+    settingsReportSendTestEmail: 'Send test email',
+    settingsReportTestSent: 'Test email sent',
+    settingsReportTestFailed: 'Test email failed',
+    settingsReportSignInRequiredForTest: 'Sign in first to send a test',
     settingsReportLastSentLabel: 'Last sent',
     settingsReportNextSendLabel: 'Next send',
     settingsReportNeverSent: 'Never',
@@ -443,6 +447,10 @@ class AppStrings {
         'Kirilmagan — hisobotlarni yuborish uchun Google hisobini ulang.',
     settingsReportSignInFailed: 'Kirish amalga oshmadi',
     settingsReportRecipientSaved: 'Qabul qiluvchi saqlandi',
+    settingsReportSendTestEmail: 'Sinov xati yuborish',
+    settingsReportTestSent: 'Sinov xati yuborildi',
+    settingsReportTestFailed: 'Sinov xati yuborilmadi',
+    settingsReportSignInRequiredForTest: 'Sinov yuborish uchun avval kiring',
     settingsReportLastSentLabel: 'Oxirgi yuborilgan',
     settingsReportNextSendLabel: 'Keyingi yuborish',
     settingsReportNeverSent: 'Hech qachon',
@@ -657,6 +665,11 @@ class AppStrings {
   String get settingsReportSignInFailed => _bundle.settingsReportSignInFailed;
   String get settingsReportRecipientSaved =>
       _bundle.settingsReportRecipientSaved;
+  String get settingsReportSendTestEmail => _bundle.settingsReportSendTestEmail;
+  String get settingsReportTestSent => _bundle.settingsReportTestSent;
+  String get settingsReportTestFailed => _bundle.settingsReportTestFailed;
+  String get settingsReportSignInRequiredForTest =>
+      _bundle.settingsReportSignInRequiredForTest;
   String get settingsReportLastSentLabel => _bundle.settingsReportLastSentLabel;
   String get settingsReportNextSendLabel => _bundle.settingsReportNextSendLabel;
   String get settingsReportNeverSent => _bundle.settingsReportNeverSent;
@@ -873,6 +886,10 @@ class _Bundle {
     required this.settingsReportNotSignedIn,
     required this.settingsReportSignInFailed,
     required this.settingsReportRecipientSaved,
+    required this.settingsReportSendTestEmail,
+    required this.settingsReportTestSent,
+    required this.settingsReportTestFailed,
+    required this.settingsReportSignInRequiredForTest,
     required this.settingsReportLastSentLabel,
     required this.settingsReportNextSendLabel,
     required this.settingsReportNeverSent,
@@ -1063,6 +1080,10 @@ class _Bundle {
   final String settingsReportNotSignedIn;
   final String settingsReportSignInFailed;
   final String settingsReportRecipientSaved;
+  final String settingsReportSendTestEmail;
+  final String settingsReportTestSent;
+  final String settingsReportTestFailed;
+  final String settingsReportSignInRequiredForTest;
   final String settingsReportLastSentLabel;
   final String settingsReportNextSendLabel;
   final String settingsReportNeverSent;
