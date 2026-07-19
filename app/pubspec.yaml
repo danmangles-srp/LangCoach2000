@@ -56,7 +56,10 @@ dependencies:
   timezone: ^0.11.1
   # Native charts for the analytics dashboard (T6.3, FR-1.5.2).
   fl_chart: ^0.71.0
-  mailer: ^7.1.0
+  # Google OAuth sign-in for the weekly email report (FR-1.5.3). Resolves a
+  # gmail.send-scoped access token; sends via the Gmail REST API. Replaces the
+  # former SMTP app-password path.
+  google_sign_in: ^6.2.1
 
 dev_dependencies:
   flutter_test:

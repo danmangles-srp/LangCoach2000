@@ -209,12 +209,17 @@ class AppStrings {
     settingsReportRecipientHint: 'you@example.com',
     settingsReportRecipientHelp:
         'Defaults to your Gmail address when left blank.',
-    settingsReportSmtpUserLabel: 'Gmail address',
-    settingsReportSmtpPasswordLabel: 'App password',
-    settingsReportSmtpPasswordHelp:
-        'A 16-character Google app password (2FA required).',
-    settingsReportSaveCredentials: 'Save credentials',
-    settingsReportCredentialsSaved: 'Credentials saved',
+    settingsReportSignInWithGoogle: 'Sign in with Google',
+    settingsReportSignOut: 'Sign out',
+    settingsReportSignedInAs: 'Signed in as',
+    settingsReportNotSignedIn:
+        'Not signed in — connect a Google account to send reports.',
+    settingsReportSignInFailed: 'Sign in failed',
+    settingsReportRecipientSaved: 'Recipient saved',
+    settingsReportSendTestEmail: 'Send test email',
+    settingsReportTestSent: 'Test email sent',
+    settingsReportTestFailed: 'Test email failed',
+    settingsReportSignInRequiredForTest: 'Sign in first to send a test',
     settingsReportLastSentLabel: 'Last sent',
     settingsReportNextSendLabel: 'Next send',
     settingsReportNeverSent: 'Never',
@@ -435,12 +440,17 @@ class AppStrings {
     settingsReportRecipientHint: 'you@example.com',
     settingsReportRecipientHelp:
         'Bo‘sh qoldirilsa, Gmail manzilingizdan foydalaniladi.',
-    settingsReportSmtpUserLabel: 'Gmail manzili',
-    settingsReportSmtpPasswordLabel: 'Ilova paroli',
-    settingsReportSmtpPasswordHelp:
-        '16 belgidan iborat Google ilova paroli (2FA kerak).',
-    settingsReportSaveCredentials: 'Maxfiy maʼlumotni saqlash',
-    settingsReportCredentialsSaved: 'Maxfiy maʼlumot saqlandi',
+    settingsReportSignInWithGoogle: 'Google orqali kirish',
+    settingsReportSignOut: 'Chiqish',
+    settingsReportSignedInAs: 'Hisob:',
+    settingsReportNotSignedIn:
+        'Kirilmagan — hisobotlarni yuborish uchun Google hisobini ulang.',
+    settingsReportSignInFailed: 'Kirish amalga oshmadi',
+    settingsReportRecipientSaved: 'Qabul qiluvchi saqlandi',
+    settingsReportSendTestEmail: 'Sinov xati yuborish',
+    settingsReportTestSent: 'Sinov xati yuborildi',
+    settingsReportTestFailed: 'Sinov xati yuborilmadi',
+    settingsReportSignInRequiredForTest: 'Sinov yuborish uchun avval kiring',
     settingsReportLastSentLabel: 'Oxirgi yuborilgan',
     settingsReportNextSendLabel: 'Keyingi yuborish',
     settingsReportNeverSent: 'Hech qachon',
@@ -647,15 +657,19 @@ class AppStrings {
       _bundle.settingsReportRecipientLabel;
   String get settingsReportRecipientHint => _bundle.settingsReportRecipientHint;
   String get settingsReportRecipientHelp => _bundle.settingsReportRecipientHelp;
-  String get settingsReportSmtpUserLabel => _bundle.settingsReportSmtpUserLabel;
-  String get settingsReportSmtpPasswordLabel =>
-      _bundle.settingsReportSmtpPasswordLabel;
-  String get settingsReportSmtpPasswordHelp =>
-      _bundle.settingsReportSmtpPasswordHelp;
-  String get settingsReportSaveCredentials =>
-      _bundle.settingsReportSaveCredentials;
-  String get settingsReportCredentialsSaved =>
-      _bundle.settingsReportCredentialsSaved;
+  String get settingsReportSignInWithGoogle =>
+      _bundle.settingsReportSignInWithGoogle;
+  String get settingsReportSignOut => _bundle.settingsReportSignOut;
+  String get settingsReportSignedInAs => _bundle.settingsReportSignedInAs;
+  String get settingsReportNotSignedIn => _bundle.settingsReportNotSignedIn;
+  String get settingsReportSignInFailed => _bundle.settingsReportSignInFailed;
+  String get settingsReportRecipientSaved =>
+      _bundle.settingsReportRecipientSaved;
+  String get settingsReportSendTestEmail => _bundle.settingsReportSendTestEmail;
+  String get settingsReportTestSent => _bundle.settingsReportTestSent;
+  String get settingsReportTestFailed => _bundle.settingsReportTestFailed;
+  String get settingsReportSignInRequiredForTest =>
+      _bundle.settingsReportSignInRequiredForTest;
   String get settingsReportLastSentLabel => _bundle.settingsReportLastSentLabel;
   String get settingsReportNextSendLabel => _bundle.settingsReportNextSendLabel;
   String get settingsReportNeverSent => _bundle.settingsReportNeverSent;
@@ -866,11 +880,16 @@ class _Bundle {
     required this.settingsReportRecipientLabel,
     required this.settingsReportRecipientHint,
     required this.settingsReportRecipientHelp,
-    required this.settingsReportSmtpUserLabel,
-    required this.settingsReportSmtpPasswordLabel,
-    required this.settingsReportSmtpPasswordHelp,
-    required this.settingsReportSaveCredentials,
-    required this.settingsReportCredentialsSaved,
+    required this.settingsReportSignInWithGoogle,
+    required this.settingsReportSignOut,
+    required this.settingsReportSignedInAs,
+    required this.settingsReportNotSignedIn,
+    required this.settingsReportSignInFailed,
+    required this.settingsReportRecipientSaved,
+    required this.settingsReportSendTestEmail,
+    required this.settingsReportTestSent,
+    required this.settingsReportTestFailed,
+    required this.settingsReportSignInRequiredForTest,
     required this.settingsReportLastSentLabel,
     required this.settingsReportNextSendLabel,
     required this.settingsReportNeverSent,
@@ -1055,11 +1074,16 @@ class _Bundle {
   final String settingsReportRecipientLabel;
   final String settingsReportRecipientHint;
   final String settingsReportRecipientHelp;
-  final String settingsReportSmtpUserLabel;
-  final String settingsReportSmtpPasswordLabel;
-  final String settingsReportSmtpPasswordHelp;
-  final String settingsReportSaveCredentials;
-  final String settingsReportCredentialsSaved;
+  final String settingsReportSignInWithGoogle;
+  final String settingsReportSignOut;
+  final String settingsReportSignedInAs;
+  final String settingsReportNotSignedIn;
+  final String settingsReportSignInFailed;
+  final String settingsReportRecipientSaved;
+  final String settingsReportSendTestEmail;
+  final String settingsReportTestSent;
+  final String settingsReportTestFailed;
+  final String settingsReportSignInRequiredForTest;
   final String settingsReportLastSentLabel;
   final String settingsReportNextSendLabel;
   final String settingsReportNeverSent;

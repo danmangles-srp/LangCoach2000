@@ -2,6 +2,10 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // google_sign_in (FR-1.5.3): consumes google-services.json. The build will
+    // fail until that file is dropped into android/app/ — see the PR description
+    // for the one-time Google Cloud Console setup.
+    id("com.google.gms.google-services")
 }
 
 android {
