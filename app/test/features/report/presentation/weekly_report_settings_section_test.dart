@@ -1,10 +1,9 @@
-// WeeklyReportSettingsSection widget test (T14.2). Regression: the three SMTP
-// TextEditingControllers were declared `late final` and never constructed, so
-// the first build threw a LateInitializationError the moment it read
-// `_username`. This mounts the real SettingsScreen over an in-memory Drift KV
-// store (no device, no channel) and asserts the section builds and hydrates
-// the saved username + recipient into the fields. Presentation is coverage-
-// excluded, so this guards the state-shape regression only.
+// WeeklyReportSettingsSection widget test (T14.2 / OAuth swap). Mounts the real
+// SettingsScreen over an in-memory Drift KV store (no device, no platform
+// channel) and asserts the section renders the Google sign-in affordance when
+// signed out, plus hydrates a saved recipient override into the field. Build
+// never touches the google_sign_in plugin (only the KV-backed
+// gmailAccountProvider), so this stays a pure widget test.
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -46,37 +45,28 @@ void main() {
   setUp(() => db = AppDatabase.forTesting(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  testWidgets(
-    'mounts without throwing (regression: LateInitializationError on SMTP '
-    'TextEditingControllers)',
-    (tester) async {
-      await tester.pumpWidget(_host(db));
-      // The section renders asynchronously once the KV store resolves; pump
-      // the frame + the microtask queue without flush-and-settle (no periodic
-      // timers expected here, but pumpAndSettle would also catch the throw).
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
+  testWidgets('mounts without throwing (regression: state-shape on rebuild)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_host(db));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Weekly email report'), findsOneWidget);
-      expect(find.text('Gmail address'), findsOneWidget);
-      expect(find.text('Recipient email'), findsOneWidget);
-    },
-  );
+    expect(find.text('Weekly email report'), findsOneWidget);
+    expect(find.text('Sign in with Google'), findsOneWidget);
+    expect(find.text('Recipient email'), findsOneWidget);
+  });
 
-  testWidgets('hydrates saved SMTP username + recipient into the fields', (
+  testWidgets('hydrates a saved recipient override into the field', (
     tester,
   ) async {
     final kv = KvRepository(db);
-    await kv.write('smtp.username', 'coach@rivendell.app');
-    await kv.write('smtp.recipient', 'reviewer@rivendell.app');
+    await kv.write('email.recipient', 'reviewer@rivendell.app');
 
     await tester.pumpWidget(_host(db));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(_fieldText(tester, 'Gmail address'), 'coach@rivendell.app');
     expect(_fieldText(tester, 'Recipient email'), 'reviewer@rivendell.app');
-    // Password is never re-hydrated into the field (we never read it back).
-    expect(_fieldText(tester, 'App password'), isEmpty);
   });
 }

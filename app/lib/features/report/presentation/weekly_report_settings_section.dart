@@ -1,7 +1,9 @@
 // Weekly-report settings section (T6.6, FR-1.5.3). Embedded in the Settings
-// screen. Day/time pickers persist immediately (mirroring the theme toggle);
-// the SMTP credentials + recipient block commits on the Save button so a
-// partially-typed password never reaches the encrypted store.
+// screen. Day/time pickers persist immediately (mirroring the theme toggle).
+// Google sign-in commits on tap: a successful sign-in persists the account
+// email for display + the recipient default; sign-out clears it. The recipient
+// override commits on its own Save button so a half-typed address never
+// reaches the encrypted store.
 
 import 'dart:async';
 
@@ -9,7 +11,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:rivendell/core/database/kv_repository.dart';
 import 'package:rivendell/features/report/domain/report_schedule.dart';
 import 'package:rivendell/features/report/platform/email_providers.dart';
 import 'package:rivendell/features/report/platform/report_providers.dart';
@@ -26,64 +27,71 @@ class WeeklyReportSettingsSection extends ConsumerStatefulWidget {
 
 class _WeeklyReportSettingsSectionState
     extends ConsumerState<WeeklyReportSettingsSection> {
-  late final TextEditingController _username;
-  late final TextEditingController _password;
   late final TextEditingController _recipient;
   bool _hydrated = false;
-  bool _saving = false;
+  bool _busy = false;
 
   @override
   void initState() {
     super.initState();
-    _username = TextEditingController();
-    _password = TextEditingController();
     _recipient = TextEditingController();
   }
 
   @override
   void dispose() {
-    _username.dispose();
-    _password.dispose();
     _recipient.dispose();
     super.dispose();
   }
 
-  Future<void> _hydrate(KvRepository repo) async {
+  Future<void> _hydrate(String? accountEmail) async {
     if (_hydrated) return;
-    final username = await readSmtpUsername(repo);
-    final recipient = await readReportRecipient(repo);
-    _username.text = username ?? '';
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    final recipient = await readReportRecipient(repo, fallback: accountEmail);
     _recipient.text = recipient ?? '';
     _hydrated = true;
     if (mounted) setState(() {});
   }
 
-  Future<void> _save() async {
-    setState(() => _saving = true);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+  Future<void> _signIn() async {
+    final messenger = ScaffoldMessenger.of(context);
     final strings = AppStrings.of(context);
+    setState(() => _busy = true);
     try {
+      final signIn = ref.read(googleSignInServiceProvider);
+      final creds = await signIn.signIn();
+      if (creds == null) {
+        // User cancelled the account picker — no error surfacing.
+        return;
+      }
       final repo = await ref.read(settingsRepositoryProvider.future);
-      await writeSmtpCredentials(
-        repo,
-        username: _username.text.trim(),
-        password: _password.text,
-      );
-      await writeReportRecipient(
-        repo,
-        _recipient.text.trim().isEmpty ? null : _recipient.text.trim(),
-      );
-      _password.clear();
-      if (mounted) setState(() => _saving = false);
-      scaffoldMessenger.showSnackBar(
-        SnackBar(content: Text(strings.settingsReportCredentialsSaved)),
-      );
+      await writeGmailAccount(repo, creds.emailAddress);
+      ref.invalidate(gmailAccountProvider);
     } on Object {
-      if (mounted) setState(() => _saving = false);
-      scaffoldMessenger.showSnackBar(
-        const SnackBar(content: Text('Save failed')),
+      messenger.showSnackBar(
+        SnackBar(content: Text(strings.settingsReportSignInFailed)),
       );
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<void> _signOut() async {
+    final signIn = ref.read(googleSignInServiceProvider);
+    await signIn.signOut();
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    await clearGmailAccount(repo);
+    ref.invalidate(gmailAccountProvider);
+  }
+
+  Future<void> _saveRecipient() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final strings = AppStrings.of(context);
+    final repo = await ref.read(settingsRepositoryProvider.future);
+    final value = _recipient.text.trim();
+    await writeReportRecipient(repo, value.isEmpty ? null : value);
+    messenger.showSnackBar(
+      SnackBar(content: Text(strings.settingsReportRecipientSaved)),
+    );
   }
 
   @override
@@ -93,10 +101,14 @@ class _WeeklyReportSettingsSectionState
     final schedule = ref.watch(reportScheduleProvider);
     final lastSent = ref.watch(reportLastSentProvider).value;
     final nextFire = ref.watch(reportNextFireProvider).value;
-    final repoAsync = ref.watch(settingsRepositoryProvider);
+    final accountEmail = ref.watch(gmailAccountProvider).value;
 
-    if (repoAsync.hasValue && !_hydrated) {
-      _hydrate(repoAsync.requireValue);
+    if (accountEmail != null && !_hydrated) {
+      // Hydrate the recipient field once the account is known so the default
+      // (the signed-in email) shows through.
+      _hydrate(accountEmail);
+    } else if (accountEmail == null && !_hydrated) {
+      _hydrate(null);
     }
 
     final dayFormat = DateFormat.EEEE();
@@ -152,32 +164,48 @@ class _WeeklyReportSettingsSectionState
           ),
         ),
         const Divider(height: 1, indent: 16, endIndent: 16),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: TextField(
-            controller: _username,
-            keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
-              labelText: strings.settingsReportSmtpUserLabel,
-              border: const OutlineInputBorder(),
-              isDense: true,
+        // Google account block — sign in / signed-in chip / sign out.
+        if (accountEmail == null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  strings.settingsReportNotSignedIn,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.tonalIcon(
+                  onPressed: _busy ? null : _signIn,
+                  icon: const Icon(Icons.login_rounded),
+                  label: Text(strings.settingsReportSignInWithGoogle),
+                ),
+              ],
+            ),
+          )
+        else
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(
+                Icons.person_rounded,
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            title: Text(
+              '${strings.settingsReportSignedInAs} $accountEmail',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: TextButton(
+              onPressed: _signOut,
+              child: Text(strings.settingsReportSignOut),
             ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: TextField(
-            controller: _password,
-            obscureText: true,
-            decoration: InputDecoration(
-              labelText: strings.settingsReportSmtpPasswordLabel,
-              helperText: strings.settingsReportSmtpPasswordHelp,
-              helperMaxLines: 2,
-              border: const OutlineInputBorder(),
-              isDense: true,
-            ),
-          ),
-        ),
+        const Divider(height: 1, indent: 16, endIndent: 16),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(
@@ -196,9 +224,9 @@ class _WeeklyReportSettingsSectionState
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: FilledButton.icon(
-            onPressed: _saving ? null : _save,
+            onPressed: _saveRecipient,
             icon: const Icon(Icons.save_rounded),
-            label: Text(strings.settingsReportSaveCredentials),
+            label: Text(strings.settingsReportRecipientSaved),
           ),
         ),
         const Divider(height: 1, indent: 16, endIndent: 16),

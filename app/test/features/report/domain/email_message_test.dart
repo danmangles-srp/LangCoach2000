@@ -1,4 +1,4 @@
-// EmailMessage + SmtpConfig (T6.5) — JSON round-trip + Gmail preset.
+// EmailMessage (T6.5) — JSON round-trip.
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -42,20 +42,6 @@ void main() {
       expect(json, contains('"recipient":"r@e.x"'));
       expect(json, contains('"subject":"subj"'));
       expect(json, contains('"html_body":"<b>body</b>"'));
-    });
-  });
-
-  group('SmtpConfig.gmail', () {
-    test('uses the documented Gmail host + STARTTLS port', () {
-      final c = SmtpConfig.gmail(
-        username: 'me@gmail.com',
-        password: 'abcdefghijklmnop',
-      );
-      expect(c.host, 'smtp.gmail.com');
-      expect(c.port, 587);
-      expect(c.useSsl, isFalse);
-      expect(c.username, 'me@gmail.com');
-      expect(c.password, 'abcdefghijklmnop');
     });
   });
 }
