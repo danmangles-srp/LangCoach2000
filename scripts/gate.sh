@@ -79,6 +79,13 @@ fi
 
 # 2. Format (CI-style: fail if anything is unformatted).
 echo "gate: format"
+# Normalize CRLF -> LF in the working tree first. gitattributes pins eol=lf, but
+# writes that bypass git (editors, codegen, some tooling) can still leave CR on
+# disk; dart format then reports a spurious diff under --output=none and aborts
+# before analyze/test. Stripping CR is a no-op for LF-intended files and makes
+# the format check reflect real formatting, not line endings.
+find "$app_dir" -type f -name '*.dart' -print0 \
+  | xargs -0 -r sed -i 's/\r$//'
 dart format --output=none --set-exit-if-changed .
 
 # 3. Static analysis.
