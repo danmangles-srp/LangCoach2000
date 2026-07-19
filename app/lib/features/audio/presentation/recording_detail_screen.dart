@@ -688,14 +688,16 @@ class _TransportButton extends StatelessWidget {
     final strings = AppStrings.of(context);
     final theme = Theme.of(context);
     final disabled = snapshot.isError;
-    final tooltip = snapshot.isCompleted
-        ? strings.replayTooltip
-        : (snapshot.isPlaying ? strings.pauseTooltip : strings.playTooltip);
+    // Play/pause only — no separate replay affordance. A completed recording
+    // shows play (the user asked for play, not replay, when auto-advance is
+    // off); tapping it restarts from the top via togglePlayPause's
+    // isCompleted branch. Matches standard audio-player UX.
+    final tooltip = snapshot.isPlaying
+        ? strings.pauseTooltip
+        : strings.playTooltip;
     final icon = snapshot.isPlaying
         ? Icons.pause_rounded
-        : (snapshot.isCompleted
-              ? Icons.replay_rounded
-              : Icons.play_arrow_rounded);
+        : Icons.play_arrow_rounded;
 
     return Center(
       child: SizedBox(

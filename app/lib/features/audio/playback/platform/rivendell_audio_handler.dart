@@ -63,9 +63,18 @@ class RivendellAudioHandler extends BaseAudioHandler with SeekHandler {
     _currentRecordingId = recording.id;
     mediaItem.add(mediaItemFromRecording(recording));
     _logger.i(LogTag.audio, 'cued ${recording.name}');
-    await _player.setAudioSource(
+    // setAudioSource returns the source's resolved duration; patch it onto the
+    // media item immediately rather than waiting on durationStream. On
+    // auto-advance the engine swaps sources straight out of a `completed`
+    // state and the async durationStream can race or drop, leaving the new
+    // recording stuck at 0:00. `_player.duration` is authoritative here.
+    final resolved = await _player.setAudioSource(
       AudioSource.uri(Uri.parse(recording.filePath)),
     );
+    final seeded = mediaItem.value;
+    if (resolved != null && seeded != null && seeded.duration != resolved) {
+      mediaItem.add(seeded.copyWith(duration: resolved));
+    }
   }
 
   @override

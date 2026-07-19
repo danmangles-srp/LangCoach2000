@@ -171,4 +171,27 @@ void main() {
       expect(find.text('lecture-1.m4a'), findsOneWidget);
     },
   );
+
+  // Bug: when a recording finishes with auto-advance off (no nav context), the
+  // transport button must flip to the play affordance — not stay on pause, and
+  // not a separate replay icon. Tapping restarts from the top.
+  testWidgets(
+    'on completion with no auto-advance the transport button shows play',
+    (tester) async {
+      final fake = _FakePlaybackService();
+      await tester.pumpWidget(_host(fake: fake, startId: 1, nav: null));
+      await tester.pumpAndSettle();
+
+      // Playing → pause icon.
+      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+
+      fake.emitCompleted();
+      await tester.pumpAndSettle();
+
+      // Completed → play icon, never pause or replay.
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.pause_rounded), findsNothing);
+      expect(find.byIcon(Icons.replay_rounded), findsNothing);
+    },
+  );
 }
